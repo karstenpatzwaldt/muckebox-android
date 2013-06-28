@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory
+        android:title="@string/server_settings_title"
+        android:key="pref_key_server_settings">
+        <EditTextPreference
+            android:key="server_address"
+            android:title="@string/server_address_setting_title"
+            android:summary="@string/server_address_setting_summary"/>
+        <EditTextPreference
+            android:key="server_port"
+            android:title="@string/server_port_setting_title"
+            android:summary="@string/server_port_setting_summary"
+            android:numeric="integer"
+            android:defaultValue="2342"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/transcoding_settings_title"
+        android:key="pref_key_transcoding_settings">
+        <CheckBoxPreference
+            android:key="transcoding_enable"
+            android:title="@string/transcoding_enable_setting_title"
+            android:summary="@string/transcoding_enable_setting_summary"
+            android:defaultValue="true"/>
+        <ListPreference
+            android:dependency="transcoding_enable"
+            android:key="transcoding_type"
+            android:title="@string/transcoding_format_setting_title"
+            android:summary="@string/transcoding_format_setting_summary"
+            android:dialogTitle="@string/transcoding_format_setting_dialog_title"
+            android:entries="@array/transcoding_format_setting_entries"
+            android:entryValues="@array/transcoding_format_setting_values"
+            android:defaultValue="@string/transcoding_format_setting_default"/>
+        <ListPreference
+            android:dependency="transcoding_enable"
+            android:key="transcoding_quality"
+            android:title="@string/transcoding_quality_setting_title"
+            android:summary="@string/transcoding_quality_setting_summary"
+            android:dialogTitle="@string/transcoding_quality_setting_dialog_title"
+            android:entries="@array/transcoding_quality_setting_entries"
+            android:entryValues="@array/transcoding_quality_setting_values"
+            android:defaultValue="@string/transcoding_quality_setting_default"/>
+    </PreferenceCategory>
+    
+    <PreferenceCategory
+        android:title="@string/caching_settings_title"
+        android:key="pref_key_caching_settings">
+        <CheckBoxPreference
+            android:key="caching_enable"
+            android:title="@string/caching_enable_setting_title"
+            android:summary="@string/caching_enable_setting_summary"
+            android:defaultValue="true"/>
+        <EditTextPreference
+            android:dependency="caching_enable"
+            android:key="key_cache_size"
+            android:title="@string/cache_size_setting_title"
+            android:summary="@string/cache_size_setting_summary"
+            android:numeric="integer"
+            android:defaultValue="500"/>
+    </PreferenceCategory>
+</PreferenceScreen>

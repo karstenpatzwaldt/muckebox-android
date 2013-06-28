@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Muckebox</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_section1">Artists</string>
+    <string name="title_section2">Albums</string>
+    <string name="refresh">Refresh</string>
+    
+    <string name="title_activity_settings">Settings</string>
+    
+    <string name="server_settings_title">Server</string>
+    
+	<string name="server_address_setting_title">Server</string>
+	<string name="server_address_setting_summary">Hostname or IP of your server</string>
+	
+	<string name="server_port_setting_title">Port</string>
+	<string name="server_port_setting_summary">Port your server is listening on</string>
+	
+	<string name="transcoding_settings_title">Transcoding</string>
+	
+	<string name="transcoding_enable_setting_title">Enable</string>
+	<string name="transcoding_enable_setting_summary">Transcode music on the server</string>
+	
+	<string name="transcoding_format_setting_title">Format</string>
+	<string name="transcoding_format_setting_summary">Transcode to this format</string>
+	<string name="transcoding_format_setting_dialog_title">Choose transcoding format</string>
+	
+	<string-array name="transcoding_format_setting_entries">
+	    <item>Ogg Vorbis</item>
+	    <item>Opus</item>
+	    <item>MP3</item>
+	</string-array>
+	
+	<string-array name="transcoding_format_setting_values">
+	    <item>ogg</item>
+	    <item>opus</item>
+	    <item>mp3</item>
+	</string-array>
+	
+	<string name="transcoding_format_setting_default">ogg</string>
+	
+	<string name="transcoding_quality_setting_title">Quality</string>
+	<string name="transcoding_quality_setting_summary">This determines audio quality and network bandwidth</string>
+	<string name="transcoding_quality_setting_dialog_title">Choose transcoding quality</string>
+	
+	<string-array name="transcoding_quality_setting_entries">
+	    <item>Highest</item>
+	    <item>High</item>
+	    <item>Medium</item>
+	    <item>Low</item>
+	    <item>Lowest</item>
+	</string-array>
+	
+	<string-array name="transcoding_quality_setting_values">
+	    <item>highest</item>
+	    <item>high</item>
+	    <item>medium</item>
+	    <item>low</item>
+	    <item>lowest</item>
+	</string-array>
+	
+	<string name="transcoding_quality_setting_default">high</string>
+	
+	<string name="caching_settings_title">Caching</string>
+	
+	<string name="caching_enable_setting_title">Enable</string>
+	<string name="caching_enable_setting_summary">Cache streamed music on the device</string>
+	
+	<string name="cache_size_setting_title">Cache Size</string>
+	<string name="cache_size_setting_summary">Maximum size in MB</string>
+	
+	<!--  ERRORS -->
+	
+	<string name="error_reload_artists">An error occurred while refreshing the artist list.</string>
+	<string name="error_json">An error occurred while parsing the JSON response.</string>
+</resources>
