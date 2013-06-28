@@ -31,7 +31,7 @@
             android:name="org.muckebox.android.db.Provider"
             android:authorities="org.muckebox.android.provider"
             android:enabled="true"
-            android:exported="true" >
+            android:exported="false" >
         </provider>
 
         <activity

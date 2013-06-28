@@ -11,11 +11,8 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 
 public class BrowseActivity extends FragmentActivity {
     SectionsPagerAdapter mSectionsPagerAdapter;
@@ -96,19 +93,6 @@ public class BrowseActivity extends FragmentActivity {
                     return getString(R.string.title_section2).toUpperCase(l);
             }
             return null;
-        }
-    }
-    
-    public static class AlbumListFragment extends Fragment {
-        public AlbumListFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.album_browse, container, false);
-            
-            return rootView;
         }
     }
 }

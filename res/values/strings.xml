@@ -74,4 +74,5 @@
 	
 	<string name="error_reload_artists">An error occurred while refreshing the artist list.</string>
 	<string name="error_json">An error occurred while parsing the JSON response.</string>
+	<string name="error_reload_albums">An error occurred while refreshing the album list.</string>
 </resources>

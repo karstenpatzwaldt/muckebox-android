@@ -32,6 +32,6 @@ public final class MuckeboxContract {
 			COLUMN_NAME_TITLE
 		};
 		
-		public static final String SORT_ODER = COLUMN_NAME_TITLE + " ASC ";
+		public static final String SORT_ORDER = COLUMN_NAME_TITLE + " ASC ";
 	}
 }
