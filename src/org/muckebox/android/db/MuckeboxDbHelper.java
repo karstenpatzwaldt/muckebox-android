@@ -2,6 +2,7 @@ package org.muckebox.android.db;
 
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -32,7 +33,25 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_ALBUM_TABLE =
 			"DROP TABLE IF EXISTS " + AlbumEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 3;
+	private static final String SQL_CREATE_TRACK_TABLE =
+			"CREATE TABLE " + TrackEntry.TABLE_NAME + " (" +
+			TrackEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
+			TrackEntry.COLUMN_NAME_REMOTE_ID + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_REMOTE_ALBUM_ID + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_REMOTE_ARTIST_ID + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_TITLE + TEXT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_DISCNUMBER + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_TRACKNUMBER + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_LABEL + TEXT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_CATALOGNUMBER + TEXT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_LENGTH + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_DISPLAY_ARTIST + TEXT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_DATE + TEXT_TYPE +
+			")";
+	private static final String SQL_DROP_TRACK_TABLE =
+			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;
+	
+	private static final int DB_VERSION = 4;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {
@@ -43,12 +62,14 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(SQL_CREATE_ARTIST_TABLE);
 		db.execSQL(SQL_CREATE_ALBUM_TABLE);
+		db.execSQL(SQL_CREATE_TRACK_TABLE);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		db.execSQL(SQL_DROP_ARTIST_TABLE);
 		db.execSQL(SQL_DROP_ALBUM_TABLE);
+		db.execSQL(SQL_DROP_TRACK_TABLE);
 		
 		onCreate(db);
 	}

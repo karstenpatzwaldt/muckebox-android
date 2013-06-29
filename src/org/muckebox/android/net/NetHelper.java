@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,15 +26,40 @@ public class NetHelper {
 		return mSharedPref;
 	}
 	
-	public static JSONArray callApi(String query, String extra) throws IOException, JSONException {
-		URL url = getApiUrl(query, extra);
-		HttpURLConnection conn = getDefaultConnection(url);
+	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
+		String str_url = getApiUrl(query, id);
+
+		if ((keys != null) && (values != null) && (keys.length > 0))
+		{
+			if (keys.length != values.length)
+				throw new IOException();
+			
+			str_url += "?";
+
+			for (int i = 0; i < keys.length; ++i)
+			{
+				str_url += URLEncoder.encode(keys[i], "UTF-8") + "=" +
+						URLEncoder.encode(values[i], "UTF-8");
+			}
+		}
+		
+		HttpURLConnection conn = getDefaultConnection(new URL(str_url));
 		String response = getResponseAsString(conn);
 		
 		return new JSONArray(response);
 	}
 	
-	public static URL getApiUrl(String query, String extra) throws IOException {
+	public static JSONArray callApi(String query, String id) throws IOException, JSONException
+	{
+		return callApi(query, id, null, null);
+	}
+	
+	public static JSONArray callApi(String query) throws IOException, JSONException
+	{
+		return callApi(query, null, null, null);
+	}
+	
+	public static String getApiUrl(String query, String extra) throws IOException {
 		String str_url;
 		
 		str_url = "http://";
@@ -43,9 +69,14 @@ public class NetHelper {
 		str_url += "/api/";
 		str_url += query;
 		
+		if (extra != null)
+		{
+			str_url += "/" + extra;
+		}
+		
 		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
-		return new URL(str_url);
+		return str_url;
 	}
 	
 	public static HttpURLConnection getDefaultConnection(URL url) throws IOException {

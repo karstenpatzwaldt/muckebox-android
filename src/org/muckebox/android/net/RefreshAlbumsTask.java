@@ -26,7 +26,7 @@ public class RefreshAlbumsTask extends AsyncTask<Void, Void, Integer> {
 	{
 		try {
 			Context c = Muckebox.getAppContext();
-			JSONArray json = NetHelper.callApi("albums", "");
+			JSONArray json = NetHelper.callApi("albums");
 			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 			
 			db.beginTransaction();

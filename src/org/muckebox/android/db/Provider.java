@@ -3,6 +3,7 @@ package org.muckebox.android.db;
 
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -26,6 +27,13 @@ public class Provider extends ContentProvider {
 	public static final Uri URI_ALBUMS = Uri.parse(ALBUMS);
 	public static final String ALBUM_ID_BASE = ALBUMS + "/id=";
 	public static final String ALBUM_TITLE_BASE = ALBUMS + "/title=";
+	
+	public static final String TRACKS = SCHEME + AUTHORITY + "/tracks";
+	public static final Uri URI_TRACKS = Uri.parse(TRACKS);
+	public static final String TRACK_ID_BASE = TRACKS + "/id=";
+	public static final String TRACK_TITLE_BASE = TRACKS + "/title=";
+	public static final String TRACK_ALBUM_BASE = TRACKS + "/album=";
+	public static final String TRACK_ARTIST_BASE = TRACKS + "/artist=";
 	
 	private static MuckeboxDbHelper mDbHelper = null;
 	
@@ -133,6 +141,62 @@ public class Provider extends ContentProvider {
 					AlbumEntry.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
+		} else if (URI_TRACKS.equals(uri)) {
+			Log.d(LOG_TAG, "Query all tracks");
+			
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					null, null, null, null, TrackEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
+		} else if (uri.toString().startsWith(TRACK_ID_BASE)) {
+			final long id = Long.parseLong(uri.toString().substring(TRACK_ID_BASE.length()));
+			
+			Log.d(LOG_TAG, "Query track id = " + id);
+			
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackEntry.COLUMN_NAME_REMOTE_ID + " IS ?",
+					new String[] { String.valueOf(id) }, null, null,
+					TrackEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
+		} else if (uri.toString().startsWith(TRACK_TITLE_BASE)) {
+			String name = uri.toString().substring(TRACK_TITLE_BASE.length());
+			
+			Log.d(LOG_TAG, "Query track name = " + name);
+
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					"LOWER(" + TrackEntry.COLUMN_NAME_TITLE + ") LIKE LOWER(?)",
+					new String[] { "%" + name + "%" }, null, null,
+					TrackEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
+		} else if (uri.toString().startsWith(TRACK_ALBUM_BASE)) {
+			String album_id = uri.toString().substring(TRACK_ALBUM_BASE.length());
+			
+			Log.d(LOG_TAG, "Query track album = " + album_id);
+			
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackEntry.COLUMN_NAME_REMOTE_ALBUM_ID + " IS ?",
+					new String[] { album_id }, null, null,
+					TrackEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
+		} else if (uri.toString().startsWith(TRACK_ARTIST_BASE)) {
+			String artist_id = uri.toString().substring(TRACK_ARTIST_BASE.length());
+			
+			Log.d(LOG_TAG, "Query track artist = " + artist_id);
+			
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackEntry.COLUMN_NAME_REMOTE_ARTIST_ID + " IS ?",
+					new String[] { artist_id }, null, null,
+					TrackEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS)
 		} else {
 	        throw new UnsupportedOperationException("Unknown URI");
 	    }

@@ -26,7 +26,7 @@ public class RefreshArtistsTask extends AsyncTask<Void, Void, Integer> {
 	{
 		try {
 			Context c = Muckebox.getAppContext();
-			JSONArray json = NetHelper.callApi("artists", "");
+			JSONArray json = NetHelper.callApi("artists");
 			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 			
 			db.beginTransaction();
