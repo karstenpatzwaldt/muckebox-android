@@ -6,6 +6,7 @@ public final class MuckeboxContract {
 	public MuckeboxContract() { }
 	
 	public static final String AS = " AS ";
+	public static final String ASC = " COLLATE LOCALIZED ASC";
 	
 	public static abstract class ArtistEntry implements BaseColumns {
 		public static final String TABLE_NAME = "artists";
@@ -24,13 +25,14 @@ public final class MuckeboxContract {
     		FULL_NAME + AS + ALIAS_NAME
     	};
     	
-    	public final static String SORT_ORDER = ALIAS_NAME + " ASC ";
+    	public final static String SORT_ORDER = ALIAS_NAME + ASC;
 	}
 	
 	public static abstract class AlbumEntry implements BaseColumns {
 		public static final String TABLE_NAME = "albums";
 		
 		public static final String SHORT_ID			= _ID;
+		public static final String SHORT_COUNT		= _COUNT;
 		public static final String SHORT_ARTIST_ID	= "artist_id";
 		public static final String SHORT_TITLE 		= "title";
 		
@@ -39,6 +41,7 @@ public final class MuckeboxContract {
 		public static final String FULL_TITLE		= TABLE_NAME + "." + SHORT_TITLE;
 
 		public static final String ALIAS_ID 		= TABLE_NAME + "_" + SHORT_ID;
+		public static final String ALIAS_COUNT		= TABLE_NAME + "_" + SHORT_COUNT;
 		public static final String ALIAS_ARTIST_ID 	= TABLE_NAME + "_" + SHORT_ARTIST_ID;
 		public static final String ALIAS_TITLE		= TABLE_NAME + "_" + SHORT_TITLE;
 		
@@ -48,7 +51,7 @@ public final class MuckeboxContract {
 			FULL_TITLE + AS + ALIAS_TITLE
 		};
 		
-		public static final String SORT_ORDER = ALIAS_TITLE + " ASC ";
+		public static final String SORT_ORDER = ALIAS_TITLE + ASC;
 	}
 	
 	public static abstract class TrackEntry implements BaseColumns {
@@ -118,5 +121,20 @@ public final class MuckeboxContract {
 		};
 		
 		public static final String SORT_ORDER = AlbumEntry.SORT_ORDER;
+	}
+	
+	public static abstract class ArtistAlbumJoin implements BaseColumns {
+		public static final String TABLE_NAME = ArtistEntry.TABLE_NAME + " JOIN " +
+				AlbumEntry.TABLE_NAME + " ON (" + ArtistEntry.FULL_ID + " = " +
+				AlbumEntry.FULL_ARTIST_ID + ")";
+		
+		public static final String[] PROJECTION = {
+			ArtistEntry.FULL_ID,
+			ArtistEntry.FULL_NAME + AS + ArtistEntry.ALIAS_NAME,
+			"COUNT(" + AlbumEntry.FULL_ARTIST_ID + ") " + AS + AlbumEntry.ALIAS_COUNT
+		};
+		
+		public static final String SORT_ORDER = ArtistEntry.SORT_ORDER;
+		public static final String GROUP_BY = ArtistEntry.FULL_ID;
 	}
 }

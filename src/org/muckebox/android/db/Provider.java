@@ -3,6 +3,7 @@ package org.muckebox.android.db;
 
 import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
+import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
@@ -92,8 +93,9 @@ public class Provider extends ContentProvider {
 			Log.d(LOG_TAG, "Query all artists");
 			
 			result = getReadableDatabase(getContext()).query(
-					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
-					null, null, null, null, ArtistEntry.SORT_ORDER, null);
+					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
+					null, null, ArtistAlbumJoin.GROUP_BY, null,
+					ArtistAlbumJoin.SORT_ORDER, null);
 			result.setNotificationUri(getContext().getContentResolver(), URI_ARTISTS);
 		} else if (uri.toString().startsWith(ARTIST_ID_BASE)) {
 			final long id = Long.parseLong(uri.toString().substring(ARTIST_ID_BASE.length()));
@@ -101,10 +103,10 @@ public class Provider extends ContentProvider {
 			Log.d(LOG_TAG, "Query artist id = " + id);
 			
 			result = getReadableDatabase(getContext()).query(
-					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
+					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
 					ArtistEntry.FULL_ID + " IS ?",
-					new String[] { String.valueOf(id) }, null, null,
-					ArtistEntry.SORT_ORDER, null);
+					new String[] { String.valueOf(id) }, ArtistAlbumJoin.GROUP_BY, null,
+					ArtistAlbumJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ARTISTS);
 		} else if (uri.toString().startsWith(ARTIST_NAME_BASE)) {
@@ -113,10 +115,10 @@ public class Provider extends ContentProvider {
 			Log.d(LOG_TAG, "Query artist name = " + name);
 			
 			result = getReadableDatabase(getContext()).query(
-					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
+					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
 					"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
-					new String[] { "%" + name + "%" }, null, null,
-					ArtistEntry.SORT_ORDER, null);
+					new String[] { "%" + name + "%" }, ArtistAlbumJoin.GROUP_BY, null,
+					ArtistAlbumJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ARTISTS);
 		} else if (URI_ALBUMS.equals(uri))
