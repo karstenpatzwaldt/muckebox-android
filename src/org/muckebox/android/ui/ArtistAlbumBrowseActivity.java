@@ -19,8 +19,7 @@ public class ArtistAlbumBrowseActivity extends Activity {
         if (savedInstanceState == null) {
             // During initial setup, plug in the details fragment.
         	long artist_id = getIntent().getLongExtra("artist_id", 0);
-        	String name = getIntent().getStringExtra("artist_name").
-        			toUpperCase(Locale.getDefault());
+        	String name = getIntent().getStringExtra("artist_name").toUpperCase(Locale.getDefault());
         	
             AlbumListFragment details = AlbumListFragment.newInstanceFromArtist(artist_id);
             TextView header = (TextView) findViewById(R.id.artist_albums_title_strip);

@@ -1,6 +1,5 @@
 package org.muckebox.android.ui;
 
-import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
@@ -149,28 +148,20 @@ public class ArtistListFragment extends ListFragment
         return true;
     }
 
-    @Override public void onListItemClick(ListView l, View v, int position, long id) {   	
-    	Cursor c = Muckebox.getAppContext().getContentResolver().query(
-    			Uri.parse(Provider.ARTIST_ID_BASE + id),
-    			ArtistEntry.PROJECTION,
-    			ArtistEntry._ID + "IS ?",
-    			new String[] { String.valueOf(id) },
-    			null);
-
-    	int name_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_NAME);
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {   	
+    	Cursor c = (Cursor) l.getItemAtPosition(position);
+    	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
     	
-    	while (c.moveToNext()) {
-        	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
-        	
-        	String name = c.getString(name_index);
-        	
-        	Log.d(LOG_TAG, "Opening album list for artist " + id + "(" + name + ")");
-        	
-        	intent.putExtra("artist_id", id);
-        	intent.putExtra("artist_name", name);
+    	int name_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_NAME);
+    	String name = c.getString(name_index);
+    	
+    	Log.d(LOG_TAG, "Opening album list for artist " + id + "(" + name + ")");
+    	
+    	intent.putExtra("artist_id", id);
+    	intent.putExtra("artist_name", name);
 
-        	startActivity(intent);  		
-    	}
+    	startActivity(intent);  		
     	
     	c.close();
     }
