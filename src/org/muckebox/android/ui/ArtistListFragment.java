@@ -52,8 +52,8 @@ public class ArtistListFragment extends ListFragment
         // Create an empty adapter we will use to display the loaded data.
         mAdapter = new SimpleCursorAdapter(getActivity(),
                 R.layout.artist_list_row, null,
-                new String[] { ArtistEntry.ALIAS_NAME, AlbumEntry.ALIAS_COUNT },
-                new int[] { R.id.artist_list_row_name, R.id.artist_list_row_count }, 0);
+                new String[] { ArtistEntry.ALIAS_NAME, AlbumEntry.ALIAS_TITLE },
+                new int[] { R.id.artist_list_row_name, R.id.artist_list_album_titles }, 0);
         setListAdapter(mAdapter);
 
         // Start out with a progress indicator.

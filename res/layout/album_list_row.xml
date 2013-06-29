@@ -12,6 +12,8 @@
         android:typeface="normal"
         android:textSize="17sp"
         android:textStyle="normal"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textColor="#040404"/>
  
     <TextView
@@ -21,6 +23,8 @@
         android:layout_below="@id/album_list_row_title"
         android:textSize="12sp"
         android:layout_marginTop="1dip"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textColor="#050505" />
 
 </RelativeLayout>

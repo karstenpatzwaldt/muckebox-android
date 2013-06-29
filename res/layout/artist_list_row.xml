@@ -1,26 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?><RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="8dp" >
     
-    <!-- 
-    <LinearLayout android:id="@+id/status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="3dip"
-        android:layout_alignParentLeft="true"
-        android:layout_marginRight="5dip">
- 
-        <ImageView
-            android:id="@+id/list_image"
-            android:layout_width="50dip"
-            android:layout_height="50dip"
-            android:contentDescription="huha" />
- 
-    </LinearLayout>
-    -->
     
     <TextView
         android:id="@+id/artist_list_row_name"
@@ -29,24 +12,19 @@
         android:typeface="normal"
         android:textSize="17sp"
         android:textStyle="normal"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textColor="#040404"/>
  
     <TextView
-        android:id="@+id/artist_list_row_count"
+        android:id="@+id/artist_list_album_titles"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/artist_list_row_name"
         android:textSize="12sp"
         android:layout_marginTop="1dip"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textColor="#050505" />
-    
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/artist_list_row_count"
-        android:layout_below="@id/artist_list_row_name"
-        android:textSize="12sp"
-        android:layout_marginTop="1dip"
-        android:text=" Album(s)"
-        android:textColor="#050505" />
+
 </RelativeLayout>

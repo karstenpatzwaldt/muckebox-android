@@ -131,7 +131,7 @@ public final class MuckeboxContract {
 		public static final String[] PROJECTION = {
 			ArtistEntry.FULL_ID,
 			ArtistEntry.FULL_NAME + AS + ArtistEntry.ALIAS_NAME,
-			"COUNT(" + AlbumEntry.FULL_ARTIST_ID + ") " + AS + AlbumEntry.ALIAS_COUNT
+			"GROUP_CONCAT(" + AlbumEntry.FULL_TITLE + ", ', ') " + AS + AlbumEntry.ALIAS_TITLE
 		};
 		
 		public static final String SORT_ORDER = ArtistEntry.SORT_ORDER;
