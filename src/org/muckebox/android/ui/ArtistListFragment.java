@@ -1,19 +1,22 @@
 package org.muckebox.android.ui;
 
+import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.net.RefreshArtistsTask;
+import org.muckebox.android.ui.ArtistAlbumBrowseActivity;
 
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
+import android.app.ListFragment;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -30,6 +33,7 @@ import android.widget.SearchView.OnQueryTextListener;
 public class ArtistListFragment extends ListFragment
 	implements OnQueryTextListener, OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
+	private final static String LOG_TAG = "ArtistListFragment";
 	
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
@@ -145,9 +149,32 @@ public class ArtistListFragment extends ListFragment
         return true;
     }
 
-    @Override public void onListItemClick(ListView l, View v, int position, long id) {
-        // Insert desired behavior here.
-        Log.i("FragmentComplexList", "Item clicked: " + id);
+    @Override public void onListItemClick(ListView l, View v, int position, long id) {   	
+    	Cursor c = Muckebox.getAppContext().getContentResolver().query(
+    			Uri.parse(Provider.ARTIST_ID_BASE + id),
+    			ArtistEntry.PROJECTION,
+    			ArtistEntry._ID + "IS ?",
+    			new String[] { String.valueOf(id) },
+    			null);
+    	
+    	int id_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_REMOTE_ID);
+    	int name_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_NAME);
+    	
+    	while (c.moveToNext()) {
+        	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
+        	
+        	int artist_id = c.getInt(id_index);
+        	String name = c.getString(name_index);
+        	
+        	Log.d(LOG_TAG, "Opening album list for artist " + artist_id + "(" + name + ")");
+        	
+        	intent.putExtra("artist_id", artist_id);
+        	intent.putExtra("artist_name", name);
+
+        	startActivity(intent);  		
+    	}
+    	
+    	c.close();
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {

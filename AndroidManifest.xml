@@ -38,6 +38,10 @@
             android:name="org.muckebox.android.ui.SettingsActivity"
             android:label="@string/title_activity_settings" >
         </activity>
+        <activity
+            android:name="org.muckebox.android.ui.ArtistAlbumBrowseActivity"
+            android:label="@string/title_activity_artist_album_browse_activiy" >
+        </activity>
     </application>
 
 </manifest>

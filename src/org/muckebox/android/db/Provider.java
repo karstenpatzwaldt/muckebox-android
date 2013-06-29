@@ -27,6 +27,7 @@ public class Provider extends ContentProvider {
 	public static final Uri URI_ALBUMS = Uri.parse(ALBUMS);
 	public static final String ALBUM_ID_BASE = ALBUMS + "/id=";
 	public static final String ALBUM_TITLE_BASE = ALBUMS + "/title=";
+	public static final String ALBUM_ARTIST_BASE = ALBUMS + "/artist=";
 	
 	public static final String TRACKS = SCHEME + AUTHORITY + "/tracks";
 	public static final Uri URI_TRACKS = Uri.parse(TRACKS);
@@ -91,7 +92,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
-					ArtistEntry.COLUMN_NAME_REMOTE_ID + " IS ?",
+					ArtistEntry._ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					ArtistEntry.SORT_ORDER, null);
 			
@@ -138,6 +139,19 @@ public class Provider extends ContentProvider {
 					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
 					"LOWER(" + AlbumEntry.COLUMN_NAME_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
+					AlbumEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
+		} else if (uri.toString().startsWith(ALBUM_ARTIST_BASE))
+		{
+			final long id = Long.parseLong(uri.toString().substring(ALBUM_ARTIST_BASE.length()));
+			
+			Log.d(LOG_TAG, "Query album artist = " + id);
+			
+			result = getDbHelper(getContext()).getReadableDatabase().query(
+					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
+					AlbumEntry.COLUMN_NAME_REMOTE_ARTIST_ID + " IS ?",
+					new String[] { String.valueOf(id) }, null, null,
 					AlbumEntry.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
@@ -196,7 +210,7 @@ public class Provider extends ContentProvider {
 					new String[] { artist_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
-			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS)
+			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
 		} else {
 	        throw new UnsupportedOperationException("Unknown URI");
 	    }

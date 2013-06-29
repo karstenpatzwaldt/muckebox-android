@@ -10,10 +10,10 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
+import android.app.ListFragment;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Loader;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -36,6 +36,29 @@ public class AlbumListFragment extends ListFragment
 	String mCurFilter;
 	MenuItem mRefreshItem;
 	static boolean mListLoaded = false;
+	
+	public static AlbumListFragment newInstanceFromArtist(int artist_id) {
+		AlbumListFragment f = new AlbumListFragment();
+		Bundle args = new Bundle();
+		
+		args.putInt("artist", artist_id);
+		f.setArguments(args);
+		
+		return f;
+	}
+	
+	public Integer getArtistId() {
+		Bundle args = getArguments();
+		
+		if (args == null)
+			return -1;
+		
+		return args.getInt("artist", -1);
+	}
+	
+	public boolean hasArtistId() {
+		return getArtistId() != -1;
+	}
 	
 	@Override public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -80,23 +103,26 @@ public class AlbumListFragment extends ListFragment
     }
 
     @Override public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        // Place an action bar item for searching.
-        MenuItem item = menu.add("Search");
-        item.setIcon(android.R.drawable.ic_menu_search);
-        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
-                | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-        
-        mSearchView = new MySearchView(getActivity());
-        mSearchView.setOnQueryTextListener(this);
-        mSearchView.setOnCloseListener(this);
-        mSearchView.setIconifiedByDefault(true);
-        
-        //Applies white color on searchview text
-        int id = mSearchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
-        TextView textView = (TextView) mSearchView.findViewById(id);
-        textView.setTextColor(Color.WHITE);
-        
-        item.setActionView(mSearchView);
+    	if (! hasArtistId())
+    	{
+	        // Place an action bar item for searching.
+	        MenuItem item = menu.add("Search");
+	        item.setIcon(android.R.drawable.ic_menu_search);
+	        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
+	                | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+	        
+	        mSearchView = new MySearchView(getActivity());
+	        mSearchView.setOnQueryTextListener(this);
+	        mSearchView.setOnCloseListener(this);
+	        mSearchView.setIconifiedByDefault(true);
+	        
+	        //Applies white color on searchview text
+	        int id = mSearchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+	        TextView textView = (TextView) mSearchView.findViewById(id);
+	        textView.setTextColor(Color.WHITE);
+	        
+	        item.setActionView(mSearchView);
+    	}
         
         mRefreshItem = menu.add("Refresh");
         mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
@@ -156,7 +182,9 @@ public class AlbumListFragment extends ListFragment
         // First, pick the base URI to use depending on whether we are
         // currently filtering.
         Uri baseUri;
-        if (mCurFilter != null) {
+        if (hasArtistId()) {
+        	baseUri = Uri.parse(Provider.ALBUM_ARTIST_BASE + getArtistId().toString());
+        } else if (mCurFilter != null) {
             baseUri = Uri.parse(Provider.ALBUM_TITLE_BASE + mCurFilter);
         } else {
             baseUri = Provider.URI_ALBUMS;
