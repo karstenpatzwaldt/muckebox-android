@@ -71,9 +71,9 @@ public class AlbumListFragment extends ListFragment
 
         // Create an empty adapter we will use to display the loaded data.
         mAdapter = new SimpleCursorAdapter(getActivity(),
-                android.R.layout.simple_list_item_2, null,
+                R.layout.album_list_row, null,
                 new String[] { AlbumEntry.ALIAS_TITLE, ArtistEntry.ALIAS_NAME },
-                new int[] { android.R.id.text1, android.R.id.text2 }, 0);
+                new int[] { R.id.album_list_row_title, R.id.album_list_row_artist }, 0);
         setListAdapter(mAdapter);
 
         // Start out with a progress indicator.
