@@ -34,27 +34,28 @@ public class RefreshTracksTask extends AsyncTask<Integer, Void, Integer> {
 				SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 				
 				db.beginTransaction();
-				db.delete(TrackEntry.TABLE_NAME, null, null);
+				db.delete(TrackEntry.TABLE_NAME, TrackEntry.COLUMN_NAME_ALBUM_ID + " IS ?",
+						new String[] { album_ids[i].toString() });
 				
 				for (int j = 0; j < json.length(); ++j) {
 					JSONObject o = json.getJSONObject(j);
 					ContentValues values = new ContentValues();
 					
-					values.put(TrackEntry._ID, o.getInt("id"));
-					values.put(TrackEntry.COLUMN_NAME_ARTIST_ID,  o.getInt("artist_id"));
-					values.put(TrackEntry.COLUMN_NAME_ALBUM_ID, o.getInt("album_id"));
+					values.put(TrackEntry.ID, o.getInt("id"));
+					values.put(TrackEntry.ARTIST_ID,  o.getInt("artist_id"));
+					values.put(TrackEntry.ALBUM_ID, o.getInt("album_id"));
 					
-					values.put(TrackEntry.COLUMN_NAME_TITLE, o.getString("title"));
+					values.put(TrackEntry.TITLE, o.getString("title"));
 					
-					values.put(TrackEntry.COLUMN_NAME_TRACKNUMBER, o.getInt("tracknumber"));
-					values.put(TrackEntry.COLUMN_NAME_DISCNUMBER, o.getInt("discnumber"));
+					values.put(TrackEntry.TRACKNUMBER, o.getInt("tracknumber"));
+					values.put(TrackEntry.DISCNUMBER, o.getInt("discnumber"));
 					
-					values.put(TrackEntry.COLUMN_NAME_LABEL, o.getString("label"));
-					values.put(TrackEntry.COLUMN_NAME_CATALOGNUMBER, o.getString("catalognumber"));
+					values.put(TrackEntry.LABEL, o.getString("label"));
+					values.put(TrackEntry.CATALOGNUMBER, o.getString("catalognumber"));
 					
-					values.put(TrackEntry.COLUMN_NAME_LENGTH, o.getInt("length"));
-					values.put(TrackEntry.COLUMN_NAME_DISPLAY_ARTIST, o.getString("displayartist"));
-					values.put(TrackEntry.COLUMN_NAME_DATE, o.getString("date"));
+					values.put(TrackEntry.LENGTH, o.getInt("length"));
+					values.put(TrackEntry.DISPLAY_ARTIST, o.getString("displayartist"));
+					values.put(TrackEntry.DATE, o.getString("date"));
 					
 					db.insert(TrackEntry.TABLE_NAME, null, values);
 				}

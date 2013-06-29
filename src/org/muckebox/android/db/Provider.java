@@ -1,6 +1,7 @@
 package org.muckebox.android.db;
 
 
+import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
@@ -9,6 +10,7 @@ import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.util.Log;
 
@@ -37,6 +39,7 @@ public class Provider extends ContentProvider {
 	public static final String TRACK_ARTIST_BASE = TRACKS + "/artist=";
 	
 	private static MuckeboxDbHelper mDbHelper = null;
+	private static SQLiteDatabase mReadableDb = null;
 	
 	public Provider() {
 	}
@@ -71,6 +74,13 @@ public class Provider extends ContentProvider {
 		
 		return mDbHelper;
 	}
+	
+	private static SQLiteDatabase getReadableDatabase(final Context context) {
+		if (mReadableDb == null)
+			mReadableDb = getDbHelper(context).getReadableDatabase();
+		
+		return mReadableDb;
+	}
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection,
@@ -81,7 +91,7 @@ public class Provider extends ContentProvider {
 		{
 			Log.d(LOG_TAG, "Query all artists");
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
 					null, null, null, null, ArtistEntry.SORT_ORDER, null);
 			result.setNotificationUri(getContext().getContentResolver(), URI_ARTISTS);
@@ -90,9 +100,9 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query artist id = " + id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
-					ArtistEntry._ID + " IS ?",
+					ArtistEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					ArtistEntry.SORT_ORDER, null);
 			
@@ -102,9 +112,9 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query artist name = " + name);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					ArtistEntry.TABLE_NAME, ArtistEntry.PROJECTION,
-					"LOWER(" + ArtistEntry.COLUMN_NAME_NAME + ") LIKE LOWER(?)",
+					"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
 					ArtistEntry.SORT_ORDER, null);
 			
@@ -113,9 +123,9 @@ public class Provider extends ContentProvider {
 		{
 			Log.d(LOG_TAG, "Query all albums");
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
-					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					null, null, null, null, AlbumEntry.SORT_ORDER, null);
+			result = getReadableDatabase(getContext()).query(
+					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+					null, null, null, null, AlbumArtistJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
 		} else if (uri.toString().startsWith(ALBUM_ID_BASE)) {
@@ -123,11 +133,11 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album id = " + id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
-					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					AlbumEntry._ID + " IS ?",
+			result = getReadableDatabase(getContext()).query(
+					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+					AlbumEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
-					AlbumEntry.SORT_ORDER, null);
+					AlbumArtistJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
 		} else if (uri.toString().startsWith(ALBUM_TITLE_BASE)) {
@@ -135,11 +145,11 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album name = " + name);
 
-			result = getDbHelper(getContext()).getReadableDatabase().query(
-					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					"LOWER(" + AlbumEntry.COLUMN_NAME_TITLE + ") LIKE LOWER(?)",
+			result = getReadableDatabase(getContext()).query(
+					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+					"LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
-					AlbumEntry.SORT_ORDER, null);
+					AlbumArtistJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
 		} else if (uri.toString().startsWith(ALBUM_ARTIST_BASE))
@@ -148,17 +158,17 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album artist = " + id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
-					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					AlbumEntry.COLUMN_NAME_ARTIST_ID + " IS ?",
+			result = getReadableDatabase(getContext()).query(
+					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+					AlbumEntry.FULL_ARTIST_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
-					AlbumEntry.SORT_ORDER, null);
+					AlbumArtistJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ALBUMS);
 		} else if (URI_TRACKS.equals(uri)) {
 			Log.d(LOG_TAG, "Query all tracks");
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					null, null, null, null, TrackEntry.SORT_ORDER, null);
 			
@@ -168,9 +178,9 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track id = " + id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry._ID + " IS ?",
+					TrackEntry.COLUMN_NAME_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -180,7 +190,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track name = " + name);
 
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					"LOWER(" + TrackEntry.COLUMN_NAME_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
@@ -192,7 +202,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track album = " + album_id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					TrackEntry.COLUMN_NAME_ALBUM_ID + " IS ?",
 					new String[] { album_id }, null, null,
@@ -204,7 +214,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track artist = " + artist_id);
 			
-			result = getDbHelper(getContext()).getReadableDatabase().query(
+			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					TrackEntry.COLUMN_NAME_ARTIST_ID + " IS ?",
 					new String[] { artist_id }, null, null,

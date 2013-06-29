@@ -17,5 +17,4 @@
         android:gravity="center"
         android:textColor="#fff"
         android:textSize="14sp" />
-    
 </LinearLayout>

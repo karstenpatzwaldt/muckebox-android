@@ -36,8 +36,8 @@ public class RefreshArtistsTask extends AsyncTask<Void, Void, Integer> {
 				JSONObject o = json.getJSONObject(i);
 				ContentValues values = new ContentValues();
 				
-				values.put(ArtistEntry._ID, o.getInt("id"));
-				values.put(ArtistEntry.COLUMN_NAME_NAME, o.getString("name"));
+				values.put(ArtistEntry.SHORT_ID, o.getInt("id"));
+				values.put(ArtistEntry.SHORT_NAME, o.getString("name"));
 				
 				db.insert(ArtistEntry.TABLE_NAME, null, values);
 			}

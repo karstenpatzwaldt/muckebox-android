@@ -1,6 +1,7 @@
 package org.muckebox.android.ui;
 
 import org.muckebox.android.R;
+import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshAlbumsTask;
@@ -70,9 +71,9 @@ public class AlbumListFragment extends ListFragment
 
         // Create an empty adapter we will use to display the loaded data.
         mAdapter = new SimpleCursorAdapter(getActivity(),
-                android.R.layout.simple_list_item_1, null,
-                new String[] { AlbumEntry.COLUMN_NAME_TITLE },
-                new int[] { android.R.id.text1 }, 0);
+                android.R.layout.simple_list_item_2, null,
+                new String[] { AlbumEntry.ALIAS_TITLE, ArtistEntry.ALIAS_NAME },
+                new int[] { android.R.id.text1, android.R.id.text2 }, 0);
         setListAdapter(mAdapter);
 
         // Start out with a progress indicator.

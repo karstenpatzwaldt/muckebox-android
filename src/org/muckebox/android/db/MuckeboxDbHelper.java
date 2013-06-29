@@ -16,39 +16,39 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	
 	private static final String SQL_CREATE_ARTIST_TABLE = 
 			"CREATE TABLE " + ArtistEntry.TABLE_NAME + " (" +
-			ArtistEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			ArtistEntry.COLUMN_NAME_NAME + TEXT_TYPE +
+			ArtistEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
+			ArtistEntry.SHORT_NAME + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_ARTIST_TABLE =
 			"DROP TABLE IF EXISTS " + ArtistEntry.TABLE_NAME;
 	
 	private static final String SQL_CREATE_ALBUM_TABLE =
 			"CREATE TABLE " + AlbumEntry.TABLE_NAME + " (" +
-			AlbumEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			AlbumEntry.COLUMN_NAME_ARTIST_ID + INT_TYPE + SEP +
-			AlbumEntry.COLUMN_NAME_TITLE + TEXT_TYPE +
+			AlbumEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
+			AlbumEntry.SHORT_ARTIST_ID + INT_TYPE + SEP +
+			AlbumEntry.SHORT_TITLE + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_ALBUM_TABLE =
 			"DROP TABLE IF EXISTS " + AlbumEntry.TABLE_NAME;
 	
 	private static final String SQL_CREATE_TRACK_TABLE =
 			"CREATE TABLE " + TrackEntry.TABLE_NAME + " (" +
-			TrackEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			TrackEntry.COLUMN_NAME_ALBUM_ID + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_ARTIST_ID + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_TITLE + TEXT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_DISCNUMBER + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_TRACKNUMBER + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_LABEL + TEXT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_CATALOGNUMBER + TEXT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_LENGTH + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_DISPLAY_ARTIST + TEXT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_DATE + TEXT_TYPE +
+			TrackEntry.ID + INT_TYPE + PRIMARY_KEY + SEP +
+			TrackEntry.ALBUM_ID + INT_TYPE + SEP +
+			TrackEntry.ARTIST_ID + INT_TYPE + SEP +
+			TrackEntry.TITLE + TEXT_TYPE + SEP +
+			TrackEntry.DISCNUMBER + INT_TYPE + SEP +
+			TrackEntry.TRACKNUMBER + INT_TYPE + SEP +
+			TrackEntry.LABEL + TEXT_TYPE + SEP +
+			TrackEntry.CATALOGNUMBER + TEXT_TYPE + SEP +
+			TrackEntry.LENGTH + INT_TYPE + SEP +
+			TrackEntry.DISPLAY_ARTIST + TEXT_TYPE + SEP +
+			TrackEntry.DATE + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_TRACK_TABLE =
 			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 5;
+	private static final int DB_VERSION = 7;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {

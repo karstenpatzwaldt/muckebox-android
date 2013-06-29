@@ -51,7 +51,7 @@ public class ArtistListFragment extends ListFragment
         // Create an empty adapter we will use to display the loaded data.
         mAdapter = new SimpleCursorAdapter(getActivity(),
                 android.R.layout.simple_list_item_1, null,
-                new String[] { ArtistEntry.COLUMN_NAME_NAME },
+                new String[] { ArtistEntry.ALIAS_NAME },
                 new int[] { android.R.id.text1 }, 0);
         setListAdapter(mAdapter);
 
@@ -153,7 +153,7 @@ public class ArtistListFragment extends ListFragment
     	Cursor c = (Cursor) l.getItemAtPosition(position);
     	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
     	
-    	int name_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_NAME);
+    	int name_index = c.getColumnIndex(ArtistEntry.ALIAS_NAME);
     	String name = c.getString(name_index);
     	
     	Log.d(LOG_TAG, "Opening album list for artist " + id + "(" + name + ")");
@@ -162,8 +162,6 @@ public class ArtistListFragment extends ListFragment
     	intent.putExtra("artist_name", name);
 
     	startActivity(intent);  		
-    	
-    	c.close();
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
