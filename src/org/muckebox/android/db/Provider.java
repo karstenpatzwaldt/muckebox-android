@@ -125,7 +125,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					AlbumEntry.COLUMN_NAME_REMOTE_ID + " IS ?",
+					AlbumEntry._ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					AlbumEntry.SORT_ORDER, null);
 			
@@ -150,7 +150,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					AlbumEntry.TABLE_NAME, AlbumEntry.PROJECTION,
-					AlbumEntry.COLUMN_NAME_REMOTE_ARTIST_ID + " IS ?",
+					AlbumEntry.COLUMN_NAME_ARTIST_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					AlbumEntry.SORT_ORDER, null);
 			
@@ -170,7 +170,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_REMOTE_ID + " IS ?",
+					TrackEntry._ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -194,7 +194,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_REMOTE_ALBUM_ID + " IS ?",
+					TrackEntry.COLUMN_NAME_ALBUM_ID + " IS ?",
 					new String[] { album_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -206,7 +206,7 @@ public class Provider extends ContentProvider {
 			
 			result = getDbHelper(getContext()).getReadableDatabase().query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_REMOTE_ARTIST_ID + " IS ?",
+					TrackEntry.COLUMN_NAME_ARTIST_ID + " IS ?",
 					new String[] { artist_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			

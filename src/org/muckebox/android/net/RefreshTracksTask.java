@@ -40,9 +40,9 @@ public class RefreshTracksTask extends AsyncTask<Integer, Void, Integer> {
 					JSONObject o = json.getJSONObject(j);
 					ContentValues values = new ContentValues();
 					
-					values.put(TrackEntry.COLUMN_NAME_REMOTE_ID, o.getInt("id"));
-					values.put(TrackEntry.COLUMN_NAME_REMOTE_ARTIST_ID,  o.getInt("artist_id"));
-					values.put(TrackEntry.COLUMN_NAME_REMOTE_ALBUM_ID, o.getInt("album_id"));
+					values.put(TrackEntry._ID, o.getInt("id"));
+					values.put(TrackEntry.COLUMN_NAME_ARTIST_ID,  o.getInt("artist_id"));
+					values.put(TrackEntry.COLUMN_NAME_ALBUM_ID, o.getInt("album_id"));
 					
 					values.put(TrackEntry.COLUMN_NAME_TITLE, o.getString("title"));
 					

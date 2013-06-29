@@ -17,7 +17,6 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_CREATE_ARTIST_TABLE = 
 			"CREATE TABLE " + ArtistEntry.TABLE_NAME + " (" +
 			ArtistEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			ArtistEntry.COLUMN_NAME_REMOTE_ID + INT_TYPE + SEP +
 			ArtistEntry.COLUMN_NAME_NAME + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_ARTIST_TABLE =
@@ -26,8 +25,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_CREATE_ALBUM_TABLE =
 			"CREATE TABLE " + AlbumEntry.TABLE_NAME + " (" +
 			AlbumEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			AlbumEntry.COLUMN_NAME_REMOTE_ID + INT_TYPE + SEP +
-			AlbumEntry.COLUMN_NAME_REMOTE_ARTIST_ID + INT_TYPE + SEP +
+			AlbumEntry.COLUMN_NAME_ARTIST_ID + INT_TYPE + SEP +
 			AlbumEntry.COLUMN_NAME_TITLE + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_ALBUM_TABLE =
@@ -36,9 +34,8 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_CREATE_TRACK_TABLE =
 			"CREATE TABLE " + TrackEntry.TABLE_NAME + " (" +
 			TrackEntry._ID + INT_TYPE + PRIMARY_KEY + SEP +
-			TrackEntry.COLUMN_NAME_REMOTE_ID + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_REMOTE_ALBUM_ID + INT_TYPE + SEP +
-			TrackEntry.COLUMN_NAME_REMOTE_ARTIST_ID + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_ALBUM_ID + INT_TYPE + SEP +
+			TrackEntry.COLUMN_NAME_ARTIST_ID + INT_TYPE + SEP +
 			TrackEntry.COLUMN_NAME_TITLE + TEXT_TYPE + SEP +
 			TrackEntry.COLUMN_NAME_DISCNUMBER + INT_TYPE + SEP +
 			TrackEntry.COLUMN_NAME_TRACKNUMBER + INT_TYPE + SEP +
@@ -51,7 +48,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_TRACK_TABLE =
 			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 4;
+	private static final int DB_VERSION = 5;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {

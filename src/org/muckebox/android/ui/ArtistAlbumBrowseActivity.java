@@ -18,7 +18,7 @@ public class ArtistAlbumBrowseActivity extends Activity {
 		
         if (savedInstanceState == null) {
             // During initial setup, plug in the details fragment.
-        	int artist_id = getIntent().getIntExtra("artist_id", 0);
+        	long artist_id = getIntent().getLongExtra("artist_id", 0);
         	String name = getIntent().getStringExtra("artist_name").
         			toUpperCase(Locale.getDefault());
         	

@@ -37,23 +37,23 @@ public class AlbumListFragment extends ListFragment
 	MenuItem mRefreshItem;
 	static boolean mListLoaded = false;
 	
-	public static AlbumListFragment newInstanceFromArtist(int artist_id) {
+	public static AlbumListFragment newInstanceFromArtist(long artist_id) {
 		AlbumListFragment f = new AlbumListFragment();
 		Bundle args = new Bundle();
 		
-		args.putInt("artist", artist_id);
+		args.putLong("artist_id", artist_id);
 		f.setArguments(args);
 		
 		return f;
 	}
 	
-	public Integer getArtistId() {
+	public long getArtistId() {
 		Bundle args = getArguments();
 		
 		if (args == null)
 			return -1;
 		
-		return args.getInt("artist", -1);
+		return args.getLong("artist_id", -1);
 	}
 	
 	public boolean hasArtistId() {
@@ -183,7 +183,7 @@ public class AlbumListFragment extends ListFragment
         // currently filtering.
         Uri baseUri;
         if (hasArtistId()) {
-        	baseUri = Uri.parse(Provider.ALBUM_ARTIST_BASE + getArtistId().toString());
+        	baseUri = Uri.parse(Provider.ALBUM_ARTIST_BASE + Long.toString(getArtistId()));
         } else if (mCurFilter != null) {
             baseUri = Uri.parse(Provider.ALBUM_TITLE_BASE + mCurFilter);
         } else {

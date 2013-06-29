@@ -156,19 +156,17 @@ public class ArtistListFragment extends ListFragment
     			ArtistEntry._ID + "IS ?",
     			new String[] { String.valueOf(id) },
     			null);
-    	
-    	int id_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_REMOTE_ID);
+
     	int name_index = c.getColumnIndex(ArtistEntry.COLUMN_NAME_NAME);
     	
     	while (c.moveToNext()) {
         	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
         	
-        	int artist_id = c.getInt(id_index);
         	String name = c.getString(name_index);
         	
-        	Log.d(LOG_TAG, "Opening album list for artist " + artist_id + "(" + name + ")");
+        	Log.d(LOG_TAG, "Opening album list for artist " + id + "(" + name + ")");
         	
-        	intent.putExtra("artist_id", artist_id);
+        	intent.putExtra("artist_id", id);
         	intent.putExtra("artist_name", name);
 
         	startActivity(intent);  		

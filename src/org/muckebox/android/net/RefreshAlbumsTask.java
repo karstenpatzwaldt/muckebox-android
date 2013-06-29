@@ -36,9 +36,9 @@ public class RefreshAlbumsTask extends AsyncTask<Void, Void, Integer> {
 				JSONObject o = json.getJSONObject(i);
 				ContentValues values = new ContentValues();
 				
-				values.put(AlbumEntry.COLUMN_NAME_REMOTE_ID, o.getInt("id"));
+				values.put(AlbumEntry._ID, o.getInt("id"));
 				values.put(AlbumEntry.COLUMN_NAME_TITLE, o.getString("title"));
-				values.put(AlbumEntry.COLUMN_NAME_REMOTE_ARTIST_ID, o.getInt("artist_id"));
+				values.put(AlbumEntry.COLUMN_NAME_ARTIST_ID, o.getInt("artist_id"));
 				
 				db.insert(AlbumEntry.TABLE_NAME, null, values);
 			}
