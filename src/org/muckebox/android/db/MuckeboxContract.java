@@ -57,54 +57,66 @@ public final class MuckeboxContract {
 	public static abstract class TrackEntry implements BaseColumns {
 		public static final String TABLE_NAME	= "tracks";
 		
-		public static final String ID				= _ID;
+		public static final String SHORT_ID				= _ID;
 
-		public static final String ALBUM_ID			= "album_id";
-		public static final String ARTIST_ID		= "artist_id";
-		public static final String TITLE			= "title";
+		public static final String SHORT_ALBUM_ID		= "album_id";
+		public static final String SHORT_ARTIST_ID		= "artist_id";
+		public static final String SHORT_TITLE			= "title";
 		
-		public static final String TRACKNUMBER		= "tracknumber";
-		public static final String DISCNUMBER		= "discnumber";
+		public static final String SHORT_TRACKNUMBER	= "tracknumber";
+		public static final String SHORT_DISCNUMBER		= "discnumber";
 		
-		public static final String LABEL			= "label";
-		public static final String CATALOGNUMBER	= "catalognumber";
+		public static final String SHORT_LABEL			= "label";
+		public static final String SHORT_CATALOGNUMBER	= "catalognumber";
 		
-		public static final String LENGTH			= "length";
-		public static final String DISPLAY_ARTIST	= "display_artist";
-		public static final String DATE				= "date";
+		public static final String SHORT_LENGTH			= "length";
+		public static final String SHORT_DISPLAY_ARTIST	= "display_artist";
+		public static final String SHORT_DATE			= "date";
 		
-		public static final String COLUMN_NAME_ID				= TABLE_NAME + "." + ID;
-		public static final String COLUMN_NAME_ALBUM_ID			= TABLE_NAME + "." + ALBUM_ID;
-		public static final String COLUMN_NAME_ARTIST_ID		= TABLE_NAME + "." + ARTIST_ID;
-		public static final String COLUMN_NAME_TITLE			= TABLE_NAME + "." + TITLE;
-		public static final String COLUMN_NAME_TRACKNUMBER		= TABLE_NAME + "." + TRACKNUMBER;
-		public static final String COLUMN_NAME_DISCNUMBER		= TABLE_NAME + "." + DISCNUMBER;
-		public static final String COLUMN_NAME_LABEL			= TABLE_NAME + "." + LABEL;
-		public static final String COLUMN_NAME_CATALOGNUMBER	= TABLE_NAME + "." + CATALOGNUMBER;
-		public static final String COLUMN_NAME_LENGTH			= TABLE_NAME + "." + LENGTH;
-		public static final String COLUMN_NAME_DISPLAY_ARTIST	= TABLE_NAME + "." + DISPLAY_ARTIST;
-		public static final String COLUMN_NAME_DATE				= TABLE_NAME + "." + DATE;
+		public static final String FULL_ID				= TABLE_NAME + "." + SHORT_ID;
+		public static final String FULL_ALBUM_ID		= TABLE_NAME + "." + SHORT_ALBUM_ID;
+		public static final String FULL_ARTIST_ID		= TABLE_NAME + "." + SHORT_ARTIST_ID;
+		public static final String FULL_TITLE			= TABLE_NAME + "." + SHORT_TITLE;
+		public static final String FULL_TRACKNUMBER		= TABLE_NAME + "." + SHORT_TRACKNUMBER;
+		public static final String FULL_DISCNUMBER		= TABLE_NAME + "." + SHORT_DISCNUMBER;
+		public static final String FULL_LABEL			= TABLE_NAME + "." + SHORT_LABEL;
+		public static final String FULL_CATALOGNUMBER	= TABLE_NAME + "." + SHORT_CATALOGNUMBER;
+		public static final String FULL_LENGTH			= TABLE_NAME + "." + SHORT_LENGTH;
+		public static final String FULL_DISPLAY_ARTIST	= TABLE_NAME + "." + SHORT_DISPLAY_ARTIST;
+		public static final String FULL_DATE			= TABLE_NAME + "." + SHORT_DATE;		
+		
+		public static final String ALIAS_ID				= TABLE_NAME + "_" + SHORT_ID;
+		public static final String ALIAS_ALBUM_ID		= TABLE_NAME + "_" + SHORT_ALBUM_ID;
+		public static final String ALIAS_ARTIST_ID		= TABLE_NAME + "_" + SHORT_ARTIST_ID;
+		public static final String ALIAS_TITLE			= TABLE_NAME + "_" + SHORT_TITLE;
+		public static final String ALIAS_TRACKNUMBER	= TABLE_NAME + "_" + SHORT_TRACKNUMBER;
+		public static final String ALIAS_DISCNUMBER		= TABLE_NAME + "_" + SHORT_DISCNUMBER;
+		public static final String ALIAS_LABEL			= TABLE_NAME + "_" + SHORT_LABEL;
+		public static final String ALIAS_CATALOGNUMBER	= TABLE_NAME + "_" + SHORT_CATALOGNUMBER;
+		public static final String ALIAS_LENGTH			= TABLE_NAME + "_" + SHORT_LENGTH;
+		public static final String ALIAS_DISPLAY_ARTIST	= TABLE_NAME + "_" + SHORT_DISPLAY_ARTIST;
+		public static final String ALIAS_DATE			= TABLE_NAME + "_" + SHORT_DATE;
 		
 		public static final String[] PROJECTION = {
-			COLUMN_NAME_ID,
-			COLUMN_NAME_ALBUM_ID,
-			COLUMN_NAME_ARTIST_ID,
-			COLUMN_NAME_TITLE,
+			FULL_ID,
+			FULL_ALBUM_ID + AS + ALIAS_ALBUM_ID,
+			FULL_ARTIST_ID + AS + ALIAS_ARTIST_ID,
+			FULL_TITLE + AS + ALIAS_TITLE,
 			
-			COLUMN_NAME_TRACKNUMBER,
-			COLUMN_NAME_DISCNUMBER,
+			FULL_TRACKNUMBER + AS + ALIAS_TRACKNUMBER,
+			FULL_DISCNUMBER + AS + ALIAS_DISCNUMBER,
 			
-			COLUMN_NAME_LABEL,
-			COLUMN_NAME_CATALOGNUMBER,
+			FULL_LABEL + AS + ALIAS_LABEL,
+			FULL_CATALOGNUMBER + AS + ALIAS_CATALOGNUMBER,
 			
-			COLUMN_NAME_LENGTH,
-			COLUMN_NAME_DISPLAY_ARTIST,
-			COLUMN_NAME_DATE
+			FULL_LENGTH + AS + ALIAS_LENGTH,
+			FULL_DISPLAY_ARTIST + AS + ALIAS_DISPLAY_ARTIST,
+			FULL_DATE + AS + ALIAS_DATE
 		};
 		
 		public static final String SORT_ORDER =
-				"(" + COLUMN_NAME_DISCNUMBER + " * 1000 + " +
-				COLUMN_NAME_TRACKNUMBER + ") ASC ";
+				"(" + FULL_DISCNUMBER + " * 1000 + " +
+				FULL_TRACKNUMBER + ") ASC ";
 	}
 	
 	public static abstract class AlbumArtistJoin implements BaseColumns {

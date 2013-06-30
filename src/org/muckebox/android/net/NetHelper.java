@@ -43,6 +43,8 @@ public class NetHelper {
 			}
 		}
 		
+		Log.i(LOG_TAG, "Connecting to " + str_url);
+		
 		HttpURLConnection conn = getDefaultConnection(new URL(str_url));
 		String response = getResponseAsString(conn);
 		
@@ -73,8 +75,6 @@ public class NetHelper {
 		{
 			str_url += "/" + extra;
 		}
-		
-		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
 		return str_url;
 	}

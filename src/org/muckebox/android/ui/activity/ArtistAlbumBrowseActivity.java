@@ -1,6 +1,7 @@
-package org.muckebox.android.ui;
+package org.muckebox.android.ui.activity;
 
 import org.muckebox.android.R;
+import org.muckebox.android.ui.fragment.AlbumListFragment;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -31,7 +32,7 @@ public class ArtistAlbumBrowseActivity extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.artist_album_browse_activiy, menu);
+		getMenuInflater().inflate(R.menu.artist_album_browse, menu);
 		return true;
 	}
 

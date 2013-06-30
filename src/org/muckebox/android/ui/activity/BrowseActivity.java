@@ -1,8 +1,10 @@
-package org.muckebox.android.ui;
+package org.muckebox.android.ui.activity;
 
 import java.util.Locale;
 
 import org.muckebox.android.R;
+import org.muckebox.android.ui.fragment.AlbumListFragment;
+import org.muckebox.android.ui.fragment.ArtistListFragment;
 
 import android.content.Intent;
 import android.os.Bundle;

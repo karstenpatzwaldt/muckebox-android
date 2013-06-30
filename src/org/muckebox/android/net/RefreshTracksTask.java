@@ -18,11 +18,11 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
-public class RefreshTracksTask extends AsyncTask<Integer, Void, Integer> {
+public class RefreshTracksTask extends AsyncTask<Long, Void, Integer> {
 	private final static String LOG_TAG = "RefreshAlbumTracksTask";
 	
 	@Override
-	protected Integer doInBackground(Integer... album_ids)
+	protected Integer doInBackground(Long... album_ids)
 	{
 		try {
 			Context c = Muckebox.getAppContext();
@@ -34,28 +34,32 @@ public class RefreshTracksTask extends AsyncTask<Integer, Void, Integer> {
 				SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 				
 				db.beginTransaction();
-				db.delete(TrackEntry.TABLE_NAME, TrackEntry.COLUMN_NAME_ALBUM_ID + " IS ?",
+				
+				db.delete(TrackEntry.TABLE_NAME, TrackEntry.FULL_ALBUM_ID + " IS ?",
 						new String[] { album_ids[i].toString() });
 				
 				for (int j = 0; j < json.length(); ++j) {
 					JSONObject o = json.getJSONObject(j);
 					ContentValues values = new ContentValues();
 					
-					values.put(TrackEntry.ID, o.getInt("id"));
-					values.put(TrackEntry.ARTIST_ID,  o.getInt("artist_id"));
-					values.put(TrackEntry.ALBUM_ID, o.getInt("album_id"));
+					values.put(TrackEntry.SHORT_ID, o.getInt("id"));
+					values.put(TrackEntry.SHORT_ARTIST_ID,  o.getInt("artist_id"));
+					values.put(TrackEntry.SHORT_ALBUM_ID, o.getInt("album_id"));
 					
-					values.put(TrackEntry.TITLE, o.getString("title"));
+					values.put(TrackEntry.SHORT_TITLE, o.getString("title"));
 					
-					values.put(TrackEntry.TRACKNUMBER, o.getInt("tracknumber"));
-					values.put(TrackEntry.DISCNUMBER, o.getInt("discnumber"));
+					if (! o.isNull("tracknumber"))
+						values.put(TrackEntry.SHORT_TRACKNUMBER, o.getInt("tracknumber"));
 					
-					values.put(TrackEntry.LABEL, o.getString("label"));
-					values.put(TrackEntry.CATALOGNUMBER, o.getString("catalognumber"));
+					if (! o.isNull("discnumber"))
+						values.put(TrackEntry.SHORT_DISCNUMBER, o.getInt("discnumber"));
 					
-					values.put(TrackEntry.LENGTH, o.getInt("length"));
-					values.put(TrackEntry.DISPLAY_ARTIST, o.getString("displayartist"));
-					values.put(TrackEntry.DATE, o.getString("date"));
+					values.put(TrackEntry.SHORT_LABEL, o.getString("label"));
+					values.put(TrackEntry.SHORT_CATALOGNUMBER, o.getString("catalognumber"));
+					
+					values.put(TrackEntry.SHORT_LENGTH, o.getInt("length"));
+					values.put(TrackEntry.SHORT_DISPLAY_ARTIST, o.getString("displayartist"));
+					values.put(TrackEntry.SHORT_DATE, o.getString("date"));
 					
 					db.insert(TrackEntry.TABLE_NAME, null, values);
 				}

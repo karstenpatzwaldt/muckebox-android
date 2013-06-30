@@ -182,7 +182,7 @@ public class Provider extends ContentProvider {
 			
 			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_ID + " IS ?",
+					TrackEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -194,7 +194,7 @@ public class Provider extends ContentProvider {
 
 			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					"LOWER(" + TrackEntry.COLUMN_NAME_TITLE + ") LIKE LOWER(?)",
+					"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -206,7 +206,7 @@ public class Provider extends ContentProvider {
 			
 			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_ALBUM_ID + " IS ?",
+					TrackEntry.FULL_ALBUM_ID + " IS ?",
 					new String[] { album_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
@@ -218,7 +218,7 @@ public class Provider extends ContentProvider {
 			
 			result = getReadableDatabase(getContext()).query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					TrackEntry.COLUMN_NAME_ARTIST_ID + " IS ?",
+					TrackEntry.FULL_ARTIST_ID + " IS ?",
 					new String[] { artist_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			

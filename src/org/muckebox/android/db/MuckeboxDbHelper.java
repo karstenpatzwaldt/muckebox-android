@@ -33,17 +33,17 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	
 	private static final String SQL_CREATE_TRACK_TABLE =
 			"CREATE TABLE " + TrackEntry.TABLE_NAME + " (" +
-			TrackEntry.ID + INT_TYPE + PRIMARY_KEY + SEP +
-			TrackEntry.ALBUM_ID + INT_TYPE + SEP +
-			TrackEntry.ARTIST_ID + INT_TYPE + SEP +
-			TrackEntry.TITLE + TEXT_TYPE + SEP +
-			TrackEntry.DISCNUMBER + INT_TYPE + SEP +
-			TrackEntry.TRACKNUMBER + INT_TYPE + SEP +
-			TrackEntry.LABEL + TEXT_TYPE + SEP +
-			TrackEntry.CATALOGNUMBER + TEXT_TYPE + SEP +
-			TrackEntry.LENGTH + INT_TYPE + SEP +
-			TrackEntry.DISPLAY_ARTIST + TEXT_TYPE + SEP +
-			TrackEntry.DATE + TEXT_TYPE +
+			TrackEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
+			TrackEntry.SHORT_ALBUM_ID + INT_TYPE + SEP +
+			TrackEntry.SHORT_ARTIST_ID + INT_TYPE + SEP +
+			TrackEntry.SHORT_TITLE + TEXT_TYPE + SEP +
+			TrackEntry.SHORT_DISCNUMBER + INT_TYPE + SEP +
+			TrackEntry.SHORT_TRACKNUMBER + INT_TYPE + SEP +
+			TrackEntry.SHORT_LABEL + TEXT_TYPE + SEP +
+			TrackEntry.SHORT_CATALOGNUMBER + TEXT_TYPE + SEP +
+			TrackEntry.SHORT_LENGTH + INT_TYPE + SEP +
+			TrackEntry.SHORT_DISPLAY_ARTIST + TEXT_TYPE + SEP +
+			TrackEntry.SHORT_DATE + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_TRACK_TABLE =
 			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;

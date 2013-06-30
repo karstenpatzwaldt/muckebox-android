@@ -1,4 +1,4 @@
-package org.muckebox.android.ui;
+package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
 

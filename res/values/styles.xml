@@ -18,8 +18,8 @@
     </style>
     
     <style name="FullSize">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item> 
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item> 
     </style>
     
     <style name="ListItem">
@@ -45,6 +45,12 @@
         <item name="android:textSize">@dimen/list_secondary_text_size</item>
         <item name="android:textColor">@android:color/darker_gray</item>
         <item name="android:layout_marginTop">1dip</item>
+    </style>
+    
+    <style name="ListItemPlaytime" parent="@style/ListItemText">
+        <item name="android:gravity">right</item>
+        <item name="android:textSize">@dimen/list_primary_text_size</item>
+        <item name="android:textColor">@android:color/darker_gray</item>
     </style>
 
     <style name="TitleStrip">

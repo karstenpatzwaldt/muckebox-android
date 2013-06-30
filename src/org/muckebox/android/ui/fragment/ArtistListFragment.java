@@ -1,10 +1,11 @@
-package org.muckebox.android.ui;
+package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
-import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
-import org.muckebox.android.net.RefreshAlbumsTask;
+import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.net.RefreshArtistsTask;
+import org.muckebox.android.ui.activity.ArtistAlbumBrowseActivity;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -14,6 +15,7 @@ import android.os.Bundle;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.text.TextUtils;
 import android.util.Log;
@@ -28,9 +30,10 @@ import android.widget.TextView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 
-public class AlbumListFragment extends ListFragment
+public class ArtistListFragment extends ListFragment
 	implements OnQueryTextListener, OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
+	private final static String LOG_TAG = "ArtistListFragment";
 	
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
@@ -38,42 +41,19 @@ public class AlbumListFragment extends ListFragment
 	MenuItem mRefreshItem;
 	static boolean mListLoaded = false;
 	
-	public static AlbumListFragment newInstanceFromArtist(long artist_id) {
-		AlbumListFragment f = new AlbumListFragment();
-		Bundle args = new Bundle();
-		
-		args.putLong("artist_id", artist_id);
-		f.setArguments(args);
-		
-		return f;
-	}
-	
-	public long getArtistId() {
-		Bundle args = getArguments();
-		
-		if (args == null)
-			return -1;
-		
-		return args.getLong("artist_id", -1);
-	}
-	
-	public boolean hasArtistId() {
-		return getArtistId() != -1;
-	}
-	
 	@Override public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         
-        setEmptyText("No Albums");
+        setEmptyText("No artists");
 
         // We have a menu item to show in action bar.
         setHasOptionsMenu(true);
 
         // Create an empty adapter we will use to display the loaded data.
         mAdapter = new SimpleCursorAdapter(getActivity(),
-                R.layout.album_list_row, null,
-                new String[] { AlbumEntry.ALIAS_TITLE, ArtistEntry.ALIAS_NAME },
-                new int[] { R.id.album_list_row_title, R.id.album_list_row_artist }, 0);
+                R.layout.list_row_artist, null,
+                new String[] { ArtistEntry.ALIAS_NAME, AlbumEntry.ALIAS_TITLE },
+                new int[] { R.id.artist_list_row_name, R.id.artist_list_album_titles }, 0);
         setListAdapter(mAdapter);
 
         // Start out with a progress indicator.
@@ -84,7 +64,7 @@ public class AlbumListFragment extends ListFragment
         getLoaderManager().initLoader(0, null, this);
         
         if (! mListLoaded) {
-        	new RefreshAlbumsTask().execute();
+        	new RefreshArtistsTask().execute();
         	mListLoaded = true;
         }
     }
@@ -104,26 +84,23 @@ public class AlbumListFragment extends ListFragment
     }
 
     @Override public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	if (! hasArtistId())
-    	{
-	        // Place an action bar item for searching.
-	        MenuItem item = menu.add("Search");
-	        item.setIcon(android.R.drawable.ic_menu_search);
-	        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
-	                | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-	        
-	        mSearchView = new MySearchView(getActivity());
-	        mSearchView.setOnQueryTextListener(this);
-	        mSearchView.setOnCloseListener(this);
-	        mSearchView.setIconifiedByDefault(true);
-	        
-	        //Applies white color on searchview text
-	        int id = mSearchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
-	        TextView textView = (TextView) mSearchView.findViewById(id);
-	        textView.setTextColor(Color.WHITE);
-	        
-	        item.setActionView(mSearchView);
-    	}
+        // Place an action bar item for searching.
+        MenuItem item = menu.add("Search");
+        item.setIcon(android.R.drawable.ic_menu_search);
+        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
+                | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        
+        mSearchView = new MySearchView(getActivity());
+        mSearchView.setOnQueryTextListener(this);
+        mSearchView.setOnCloseListener(this);
+        mSearchView.setIconifiedByDefault(true);
+        
+        //Applies white color on searchview text
+        int id = mSearchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+        TextView textView = (TextView) mSearchView.findViewById(id);
+        textView.setTextColor(Color.WHITE);
+        
+        item.setActionView(mSearchView);
         
         mRefreshItem = menu.add("Refresh");
         mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
@@ -134,7 +111,7 @@ public class AlbumListFragment extends ListFragment
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item == mRefreshItem)
     	{
-    		new RefreshAlbumsTask().execute();
+    		new RefreshArtistsTask().execute();
     		return true;
     	}
     	
@@ -172,9 +149,20 @@ public class AlbumListFragment extends ListFragment
         return true;
     }
 
-    @Override public void onListItemClick(ListView l, View v, int position, long id) {
-        // Insert desired behavior here.
-        Log.i("FragmentComplexList", "Item clicked: " + id);
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {   	
+    	Cursor c = (Cursor) l.getItemAtPosition(position);
+    	Intent intent = new Intent(getActivity(), ArtistAlbumBrowseActivity.class);
+    	
+    	int name_index = c.getColumnIndex(ArtistEntry.ALIAS_NAME);
+    	String name = c.getString(name_index);
+    	
+    	Log.d(LOG_TAG, "Opening album list for artist " + id + "(" + name + ")");
+    	
+    	intent.putExtra("artist_id", id);
+    	intent.putExtra("artist_name", name);
+
+    	startActivity(intent);  		
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -183,17 +171,15 @@ public class AlbumListFragment extends ListFragment
         // First, pick the base URI to use depending on whether we are
         // currently filtering.
         Uri baseUri;
-        if (hasArtistId()) {
-        	baseUri = Uri.parse(Provider.ALBUM_ARTIST_BASE + Long.toString(getArtistId()));
-        } else if (mCurFilter != null) {
-            baseUri = Uri.parse(Provider.ALBUM_TITLE_BASE + mCurFilter);
+        if (mCurFilter != null) {
+            baseUri = Uri.parse(Provider.ARTIST_NAME_BASE + mCurFilter);
         } else {
-            baseUri = Provider.URI_ALBUMS;
+            baseUri = Provider.URI_ARTISTS;
         }
 
         return new CursorLoader(getActivity(), baseUri,
-                AlbumEntry.PROJECTION, null, null,
-                AlbumEntry.SORT_ORDER);
+                ArtistEntry.PROJECTION, null, null,
+                ArtistEntry.SORT_ORDER);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

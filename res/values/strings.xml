@@ -6,6 +6,9 @@
     <string name="title_section1">Artists</string>
     <string name="title_section2">Albums</string>
     <string name="refresh">Refresh</string>
+    
+    <!-- SETTINGS -->
+    
     <string name="title_activity_settings">Settings</string>
     <string name="server_settings_title">Server</string>
     <string name="server_address_setting_title">Server</string>
@@ -63,7 +66,8 @@
     <string name="error_json">An error occurred while parsing the JSON response.</string>
     <string name="error_reload_albums">An error occurred while refreshing the album list.</string>
     <string name="error_reload_tracks">An error occurred while refreshing the track list.</string>
+    
+    <!--  TITLES -->
     <string name="title_activity_artist_album_browse_activiy">Albums</string>
-    <string name="hello_world">Hello world!</string>
-
+    <string name="title_activity_track_browse_activiy">Tracks</string>
 </resources>
