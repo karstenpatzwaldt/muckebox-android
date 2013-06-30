@@ -16,5 +16,6 @@
         android:paddingTop="4dp"
         android:gravity="center"
         android:textColor="#fff"
-        android:textSize="14sp" />
+        android:textSize="14sp"
+        android:textAllCaps="true" />
 </LinearLayout>
