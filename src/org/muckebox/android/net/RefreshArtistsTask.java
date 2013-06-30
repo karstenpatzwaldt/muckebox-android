@@ -24,30 +24,36 @@ public class RefreshArtistsTask extends AsyncTask<Void, Void, Integer> {
 	@Override
 	protected Integer doInBackground(Void... nothing)
 	{
+
 		try {
 			Context c = Muckebox.getAppContext();
-			JSONArray json = NetHelper.callApi("artists");
 			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
+			JSONArray json = NetHelper.callApi("artists");
 			
 			db.beginTransaction();
-			db.delete(ArtistEntry.TABLE_NAME, null, null);
 			
-			for (int i = 0; i < json.length(); ++i) {
-				JSONObject o = json.getJSONObject(i);
-				ContentValues values = new ContentValues();
+			try {
+				db.delete(ArtistEntry.TABLE_NAME, null, null);
 				
-				values.put(ArtistEntry.SHORT_ID, o.getInt("id"));
-				values.put(ArtistEntry.SHORT_NAME, o.getString("name"));
+				for (int i = 0; i < json.length(); ++i) {
+					JSONObject o = json.getJSONObject(i);
+					ContentValues values = new ContentValues();
+					
+					values.put(ArtistEntry.SHORT_ID, o.getInt("id"));
+					values.put(ArtistEntry.SHORT_NAME, o.getString("name"));
+					
+					db.insert(ArtistEntry.TABLE_NAME, null, values);
+				}
+	
+				db.setTransactionSuccessful();
 				
-				db.insert(ArtistEntry.TABLE_NAME, null, values);
+				Log.d(LOG_TAG, "Got " + json.length() + " artists");
+				
+				c.getContentResolver().notifyChange(Provider.URI_ARTISTS, null, false);
+			}  finally
+			{
+				db.endTransaction();
 			}
-
-			db.setTransactionSuccessful();
-			db.endTransaction();
-			
-			Log.d(LOG_TAG, "Got " + json.length() + " artists");
-			
-			c.getContentResolver().notifyChange(Provider.URI_ARTISTS, null, false);
 		} catch (IOException e) {
 			Log.d(LOG_TAG, e.getMessage());
 			return R.string.error_reload_artists;

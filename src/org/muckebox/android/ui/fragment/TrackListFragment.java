@@ -15,11 +15,11 @@ import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SearchView.OnCloseListener;
@@ -150,8 +150,23 @@ public class TrackListFragment extends ListFragment
     }
 
     @Override public void onListItemClick(ListView l, View v, int position, long id) {
-        // Insert desired behavior here.
-        Log.i("FragmentComplexList", "Item clicked: " + id);
+    	LinearLayout buttons = (LinearLayout) v.findViewById(R.id.track_list_buttons);
+    	
+    	if (buttons.getVisibility() == View.GONE)
+    	{
+    		for (int i = 0; i < l.getChildCount(); ++i)
+    		{
+    			View entry = l.getChildAt(i);
+    			LinearLayout other_buttons = 
+    					(LinearLayout) entry.findViewById(R.id.track_list_buttons);
+    			other_buttons.setVisibility(View.GONE);
+    		}
+    		
+    		buttons.setVisibility(View.VISIBLE);
+    	} else
+    	{
+    		buttons.setVisibility(View.GONE);
+    	}
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {

@@ -70,4 +70,9 @@
     <!--  TITLES -->
     <string name="title_activity_artist_album_browse_activiy">Albums</string>
     <string name="title_activity_track_browse_activiy">Tracks</string>
+    
+    <!-- BUTTONS -->
+    <string name="play">Play</string>
+    <string name="download">Download</string>
+    <string name="add_to_queue">Add to Queue</string>
 </resources>

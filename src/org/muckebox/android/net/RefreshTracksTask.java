@@ -26,57 +26,60 @@ public class RefreshTracksTask extends AsyncTask<Long, Void, Integer> {
 	{
 		try {
 			Context c = Muckebox.getAppContext();
-			
+			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
+
 			for (int i = 0; i < album_ids.length; ++i) {
 				JSONArray json = NetHelper.callApi("tracks", "",
 						new String[] { "album" },
 						new String[] { album_ids[i].toString() });
-				SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
-				
+
 				db.beginTransaction();
 				
-				db.delete(TrackEntry.TABLE_NAME, TrackEntry.FULL_ALBUM_ID + " IS ?",
-						new String[] { album_ids[i].toString() });
-				
-				for (int j = 0; j < json.length(); ++j) {
-					JSONObject o = json.getJSONObject(j);
-					ContentValues values = new ContentValues();
+				try {
+					db.delete(TrackEntry.TABLE_NAME, TrackEntry.FULL_ALBUM_ID + " IS ?",
+							new String[] { album_ids[i].toString() });
 					
-					values.put(TrackEntry.SHORT_ID, o.getInt("id"));
-					values.put(TrackEntry.SHORT_ARTIST_ID,  o.getInt("artist_id"));
-					values.put(TrackEntry.SHORT_ALBUM_ID, o.getInt("album_id"));
-					
-					values.put(TrackEntry.SHORT_TITLE, o.getString("title"));
-					
-					if (! o.isNull("tracknumber"))
-						values.put(TrackEntry.SHORT_TRACKNUMBER, o.getInt("tracknumber"));
-					
-					if (! o.isNull("discnumber"))
-						values.put(TrackEntry.SHORT_DISCNUMBER, o.getInt("discnumber"));
-					
-					values.put(TrackEntry.SHORT_LABEL, o.getString("label"));
-					values.put(TrackEntry.SHORT_CATALOGNUMBER, o.getString("catalognumber"));
-					
-					values.put(TrackEntry.SHORT_LENGTH, o.getInt("length"));
-					values.put(TrackEntry.SHORT_DISPLAY_ARTIST, o.getString("displayartist"));
-					values.put(TrackEntry.SHORT_DATE, o.getString("date"));
-					
-					db.insert(TrackEntry.TABLE_NAME, null, values);
-				}
+					for (int j = 0; j < json.length(); ++j) {
+						JSONObject o = json.getJSONObject(j);
+						ContentValues values = new ContentValues();
+						
+						values.put(TrackEntry.SHORT_ID, o.getInt("id"));
+						values.put(TrackEntry.SHORT_ARTIST_ID,  o.getInt("artist_id"));
+						values.put(TrackEntry.SHORT_ALBUM_ID, o.getInt("album_id"));
+						
+						values.put(TrackEntry.SHORT_TITLE, o.getString("title"));
+						
+						if (! o.isNull("tracknumber"))
+							values.put(TrackEntry.SHORT_TRACKNUMBER, o.getInt("tracknumber"));
+						
+						if (! o.isNull("discnumber"))
+							values.put(TrackEntry.SHORT_DISCNUMBER, o.getInt("discnumber"));
+						
+						values.put(TrackEntry.SHORT_LABEL, o.getString("label"));
+						values.put(TrackEntry.SHORT_CATALOGNUMBER, o.getString("catalognumber"));
+						
+						values.put(TrackEntry.SHORT_LENGTH, o.getInt("length"));
+						values.put(TrackEntry.SHORT_DISPLAY_ARTIST, o.getString("displayartist"));
+						values.put(TrackEntry.SHORT_DATE, o.getString("date"));
+						
+						db.insert(TrackEntry.TABLE_NAME, null, values);
+					}
+		
 	
-				db.setTransactionSuccessful();
-				db.endTransaction();
-				
-				Log.d(LOG_TAG, "Got " + json.length() + " Tracks");
-				
-				c.getContentResolver().notifyChange(Provider.URI_TRACKS, null, false);
+					Log.d(LOG_TAG, "Got " + json.length() + " Tracks");
+					db.setTransactionSuccessful();
+					
+					c.getContentResolver().notifyChange(Provider.URI_TRACKS, null, false);
+				} finally {
+					db.endTransaction();
+				}
 			}
 		} catch (IOException e) {
 			Log.d(LOG_TAG, e.getMessage());
 			return R.string.error_reload_tracks;
 		} catch (JSONException e) {
 			return R.string.error_json;
-		}
+		} 
 		
 		return null;
 	}
