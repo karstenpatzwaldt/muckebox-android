@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:id="@+id/artist_album_list_top" >
+    android:id="@+id/artist_album_list_top"
+    style="@style/LinearVerticalFullsize" >
 
     <TextView
         android:id="@+id/artist_albums_title_strip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="#33b5e5"
-        android:paddingBottom="4dp"
-        android:paddingTop="4dp"
-        android:gravity="center"
-        android:textColor="#fff"
-        android:textSize="14sp"
-        android:textAllCaps="true" />
+       	style="@style/TextTitleStrip" />
 </LinearLayout>
