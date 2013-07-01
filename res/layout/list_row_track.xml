@@ -10,8 +10,10 @@
 		android:animateLayoutChanges="true"
 		android:background="@android:color/background_light" >
         
-	<RelativeLayout 
-	    style="@style/ListItem" >
+	<RelativeLayout
+	    android:id="@+id/track_list_texts"
+	    android:onClick="toggleButtons"
+	    style="@style/ClickableListItem">
 	
 	    <TextView
 	        android:id="@+id/track_list_title"
@@ -36,8 +38,7 @@
    	    android:layout_width="fill_parent"
    	    android:layout_height="wrap_content"
    	    android:paddingLeft="15sp"
-   	    android:background="#ff222222"
-		android:visibility="gone">
+   	    android:background="#ff222222" >
 	    
 	   	<LinearLayout
 	        android:layout_width="wrap_content"
@@ -48,17 +49,17 @@
 			android:showDividers="middle|end|beginning"
 			android:background="@android:color/background_light">
 	        
-	        <ImageView 
+	        <ImageButton 
 	            android:src="@drawable/av_play"
 	            android:contentDescription="@string/play"
 	            style="@style/TrackListButton" />
 	        
-	        <ImageView
+	        <ImageButton
 	            android:src="@drawable/av_add_to_queue"
 	            android:contentDescription="@string/add_to_queue"
 	            style="@style/TrackListButton" />
 	        
-	        <ImageView
+	        <ImageButton
 	            android:src="@drawable/av_download"
 	            android:contentDescription="@string/download"
 	            style="@style/TrackListButton" />

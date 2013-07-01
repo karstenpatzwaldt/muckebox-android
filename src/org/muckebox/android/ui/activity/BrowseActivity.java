@@ -25,19 +25,14 @@ public class BrowseActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_browse);
 
-
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the app.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
 
-        // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.browse, menu);
         return true;
     }

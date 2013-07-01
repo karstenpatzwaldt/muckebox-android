@@ -6,11 +6,14 @@ import org.muckebox.android.ui.fragment.TrackListFragment;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
+import android.view.View;
 import android.widget.TextView;
 
 public class TrackBrowseActivity extends Activity {
 	public final static String ALBUM_ID_ARG = "album_id";
 	public final static String TITLE_ARG = "title";
+	
+	TrackListFragment mDetailsFragment = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -22,12 +25,13 @@ public class TrackBrowseActivity extends Activity {
         	long artist_id = getIntent().getLongExtra(ALBUM_ID_ARG, 0);
         	String title = getIntent().getStringExtra(TITLE_ARG);
         	
-            TrackListFragment details = TrackListFragment.newInstanceFromAlbum(artist_id);
+            mDetailsFragment = TrackListFragment.newInstanceFromAlbum(artist_id);
             TextView header = (TextView) findViewById(R.id.track_list_title_strip);
             
             header.setText(title);
 
-            getFragmentManager().beginTransaction().add(R.id.track_list_top, details).commit();
+            getFragmentManager().beginTransaction().
+            	add(R.id.track_list_top, mDetailsFragment).commit();
         }
 	}
 
@@ -37,5 +41,9 @@ public class TrackBrowseActivity extends Activity {
 		getMenuInflater().inflate(R.menu.track_browse, menu);
 		return true;
 	}
-
+	
+    public void toggleButtons(View item)
+    {
+    	mDetailsFragment.toggleButtons(item);
+    }
 }

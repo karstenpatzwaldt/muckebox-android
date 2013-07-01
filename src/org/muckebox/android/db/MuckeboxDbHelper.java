@@ -48,7 +48,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_TRACK_TABLE =
 			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 7;
+	private static final int DB_VERSION = 1;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {
