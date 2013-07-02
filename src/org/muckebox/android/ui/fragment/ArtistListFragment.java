@@ -4,8 +4,10 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.net.RefreshTask;
 import org.muckebox.android.net.RefreshArtistsTask;
 import org.muckebox.android.ui.activity.ArtistAlbumBrowseActivity;
+import org.muckebox.android.ui.widgets.ImageViewRotater;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -32,7 +34,8 @@ import android.widget.SearchView.OnQueryTextListener;
 
 public class ArtistListFragment extends ListFragment
 	implements OnQueryTextListener, OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor> {
+	LoaderManager.LoaderCallbacks<Cursor>,
+	RefreshTask.Callbacks {
 	private final static String LOG_TAG = "ArtistListFragment";
 	
 	SimpleCursorAdapter mAdapter;
@@ -62,11 +65,6 @@ public class ArtistListFragment extends ListFragment
         // Prepare the loader.  Either re-connect with an existing one,
         // or start a new one.
         getLoaderManager().initLoader(0, null, this);
-        
-        if (! mListLoaded) {
-        	new RefreshArtistsTask().execute();
-        	mListLoaded = true;
-        }
     }
 
     public static class MySearchView extends SearchView {
@@ -105,13 +103,18 @@ public class ArtistListFragment extends ListFragment
         mRefreshItem = menu.add("Refresh");
         mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
         mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        
+        if (! mListLoaded) {
+        	new RefreshArtistsTask().setCallbacks(this).execute();
+        	mListLoaded = true;
+        }
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item == mRefreshItem)
     	{
-    		new RefreshArtistsTask().execute();
+    		new RefreshArtistsTask().setCallbacks(this).execute();
     		return true;
     	}
     	
@@ -201,4 +204,17 @@ public class ArtistListFragment extends ListFragment
         // longer using it.
         mAdapter.swapCursor(null);
     }
+
+	@Override
+	public void onRefreshStarted() {
+		mRefreshItem.setActionView(
+				ImageViewRotater.getRotatingImageView(
+						getActivity(), R.layout.action_view_refresh));
+	}
+
+	@Override
+	public void onRefreshFinished(boolean success) {
+		mRefreshItem.getActionView().clearAnimation();
+		mRefreshItem.setActionView(null);
+	}
 }

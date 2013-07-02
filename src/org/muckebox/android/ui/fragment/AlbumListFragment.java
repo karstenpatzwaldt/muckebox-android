@@ -5,7 +5,9 @@ import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshAlbumsTask;
+import org.muckebox.android.net.RefreshTask;
 import org.muckebox.android.ui.activity.TrackBrowseActivity;
+import org.muckebox.android.ui.widgets.ImageViewRotater;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -32,14 +34,15 @@ import android.widget.SearchView.OnQueryTextListener;
 
 public class AlbumListFragment extends ListFragment
 	implements OnQueryTextListener, OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor> {
+	LoaderManager.LoaderCallbacks<Cursor>,
+	RefreshTask.Callbacks {
 	private final static String LOG_TAG = "AlbumListFragment";
 	
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
 	MenuItem mRefreshItem;
-	static boolean mListLoaded = false;
+	boolean mListLoaded = false;
 	
 	public static AlbumListFragment newInstanceFromArtist(long artist_id) {
 		AlbumListFragment f = new AlbumListFragment();
@@ -85,11 +88,6 @@ public class AlbumListFragment extends ListFragment
         // Prepare the loader.  Either re-connect with an existing one,
         // or start a new one.
         getLoaderManager().initLoader(0, null, this);
-        
-        if (! mListLoaded) {
-        	new RefreshAlbumsTask().execute();
-        	mListLoaded = true;
-        }
     }
 
     public static class MySearchView extends SearchView {
@@ -131,13 +129,18 @@ public class AlbumListFragment extends ListFragment
         mRefreshItem = menu.add("Refresh");
         mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
         mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        
+        if (! mListLoaded) {
+        	new RefreshAlbumsTask().setCallbacks(this).execute();
+        	mListLoaded = true;
+        }
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item == mRefreshItem)
     	{
-    		new RefreshAlbumsTask().execute();
+    		new RefreshAlbumsTask().setCallbacks(this).execute();
     		return true;
     	}
     	
@@ -215,11 +218,8 @@ public class AlbumListFragment extends ListFragment
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        // Swap the new cursor in.  (The framework will take care of closing the
-        // old cursor once we return.)
         mAdapter.swapCursor(data);
 
-        // The list should now be shown.
         if (isResumed()) {
             setListShown(true);
         } else {
@@ -233,4 +233,17 @@ public class AlbumListFragment extends ListFragment
         // longer using it.
         mAdapter.swapCursor(null);
     }
+    
+	@Override
+	public void onRefreshStarted() {
+		mRefreshItem.setActionView(
+				ImageViewRotater.getRotatingImageView(
+						getActivity(), R.layout.action_view_refresh));
+	}
+
+	@Override
+	public void onRefreshFinished(boolean success) {
+		mRefreshItem.getActionView().clearAnimation();
+		mRefreshItem.setActionView(null);
+	}
 }

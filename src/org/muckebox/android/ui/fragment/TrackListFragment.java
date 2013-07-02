@@ -6,6 +6,8 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.net.RefreshTracksTask;
+import org.muckebox.android.net.RefreshTask;
+import org.muckebox.android.ui.widgets.ImageViewRotater;
 
 import android.database.Cursor;
 import android.net.Uri;
@@ -35,7 +37,8 @@ import android.widget.TextView;
 
 public class TrackListFragment extends ListFragment
 	implements OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor> {
+	LoaderManager.LoaderCallbacks<Cursor>,
+	RefreshTask.Callbacks {
 	private static final String LOG_TAG = "TrackListFragment";
 	
 	private static final String ALBUM_ID_ARG = "album_id";
@@ -192,11 +195,6 @@ public class TrackListFragment extends ListFragment
         setListAdapter(mAdapter);
         setListShown(false);
         getLoaderManager().initLoader(0, null, this);
-        
-        if (! mListLoaded) {
-        	new RefreshTracksTask().execute(getAlbumId());
-        	mListLoaded = true;
-        }
     }
 
     @Override
@@ -204,13 +202,18 @@ public class TrackListFragment extends ListFragment
         mRefreshItem = menu.add("Refresh");
         mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
         mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        
+        if (! mListLoaded) {
+        	new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
+        	mListLoaded = true;
+        }
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item == mRefreshItem)
     	{
-    		new RefreshTracksTask().execute(getAlbumId());
+    		new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
     		return true;
     	}
     	
@@ -326,4 +329,17 @@ public class TrackListFragment extends ListFragment
         // longer using it.
         mAdapter.swapCursor(null);
     }
+    
+	@Override
+	public void onRefreshStarted() {
+		mRefreshItem.setActionView(
+				ImageViewRotater.getRotatingImageView(
+						getActivity(), R.layout.action_view_refresh));
+	}
+
+	@Override
+	public void onRefreshFinished(boolean success) {
+		mRefreshItem.getActionView().clearAnimation();
+		mRefreshItem.setActionView(null);
+	}
 }

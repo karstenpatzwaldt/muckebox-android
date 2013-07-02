@@ -14,11 +14,9 @@ import org.muckebox.android.db.Provider;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
-public class RefreshTracksTask extends AsyncTask<Long, Void, Integer> {
+public class RefreshTracksTask extends RefreshTask<Long> {
 	private final static String LOG_TAG = "RefreshAlbumTracksTask";
 	
 	@Override
@@ -82,13 +80,5 @@ public class RefreshTracksTask extends AsyncTask<Long, Void, Integer> {
 		} 
 		
 		return null;
-	}
-	
-	@Override
-	protected void onPostExecute(Integer result) {
-		if (result != null)
-			Toast.makeText(Muckebox.getAppContext(),
-					result,
-					Toast.LENGTH_SHORT).show();
 	}
 }
