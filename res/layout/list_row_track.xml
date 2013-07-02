@@ -10,27 +10,39 @@
 		android:animateLayoutChanges="true"
 		android:background="@android:color/background_light" >
         
-	<RelativeLayout
+	<LinearLayout
 	    android:id="@+id/track_list_texts"
 	    android:onClick="toggleButtons"
-	    style="@style/ClickableListItem">
+	    style="@style/ClickableListItem"
+	    android:orientation="vertical">
 	
-	    <TextView
-	        android:id="@+id/track_list_title"
-			style="@style/ListItemPrimaryText"/>
-	 
+	    <LinearLayout
+	        style="@style/FullWidth"
+	        android:orientation="horizontal">
+	    
+		    <TextView
+		        android:id="@+id/track_list_title"
+				style="@style/ListItemPrimaryText"
+				android:layout_width="0dp"
+				android:layout_weight="1"
+				android:text="das ist ein ganz lilfdpofidoafuasdfe pusht"/>
+		    
+		    <TextView
+		        android:id="@+id/track_list_duration"
+		        android:gravity="right"
+		        style="@style/ListItemPlaytime"
+		        android:ellipsize="none"
+		        android:paddingLeft="@dimen/list_item_padding"
+		        android:text="5:23" />
+	    
+	    </LinearLayout>
+	    	 
 	    <TextView
 	        android:id="@+id/track_list_artist"
-	        android:layout_below="@id/track_list_title"
-	        style="@style/ListItemSecondaryText" />
+	        style="@style/ListItemSecondaryText"
+	        android:text="blabla" />
 	    
-	    <TextView
-	        android:id="@+id/track_list_duration"
-	        android:layout_alignParentRight="true"
-	        android:layout_alignTop="@id/track_list_title"
-	        style="@style/ListItemPlaytime" />
-	    
-	</RelativeLayout>
+	</LinearLayout>
 
 
 	<LinearLayout

@@ -28,8 +28,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.MeasureSpec;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SimpleCursorAdapter.ViewBinder;
@@ -96,8 +96,8 @@ public class TrackListFragment extends ListFragment
 			{
 				ListItemState state = new ListItemState(position);
 				int spec = MeasureSpec.makeMeasureSpec(4096, MeasureSpec.AT_MOST);			
-				RelativeLayout texts =
-						(RelativeLayout) ret.findViewById(R.id.track_list_texts);
+				LinearLayout texts =
+						(LinearLayout) ret.findViewById(R.id.track_list_texts);
 				ViewGroup.LayoutParams params = ret.getLayoutParams();
 				
 				ret.measure(spec, spec);
