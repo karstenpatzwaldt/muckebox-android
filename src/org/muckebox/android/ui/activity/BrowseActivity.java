@@ -8,15 +8,15 @@ import org.muckebox.android.ui.fragment.ArtistListFragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.support.v13.app.FragmentPagerAdapter;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class BrowseActivity extends FragmentActivity {
+public class BrowseActivity extends Activity {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
 

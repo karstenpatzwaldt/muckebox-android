@@ -40,7 +40,7 @@
     <style name="ListItemText" parent="@android:style/TextAppearance">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item> 
-        <item name="android:ellipsize">end</item>
+        <item name="android:ellipsize">marquee</item>
         <item name="android:singleLine">true</item>  
     </style>
     
@@ -88,6 +88,24 @@
     	<item name="android:paddingRight">@dimen/activity_horizontal_margin</item>
     	<item name="android:paddingTop">@dimen/activity_vertical_margin</item>
     	<item name="android:background">@android:color/background_light</item>
+    </style>
+    
+    <style name="ButtonList">
+	    <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:divider">@android:drawable/divider_horizontal_bright</item>
+		<item name="android:dividerPadding">4dip</item>
+		<item name="android:showDividers">middle</item>
+		<item name="android:background">@android:color/background_light</item>
+    </style>
+    
+    <style name="TransparentButtonList" parent="ButtonList">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+    
+    <style name="ClosedButtonList" parent="@style/ButtonList">
+        <item name="android:showDividers">middle|end|beginning</item>
     </style>
     
     <style name="TrackListButton">

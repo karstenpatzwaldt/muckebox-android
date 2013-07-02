@@ -30,7 +30,6 @@
 		        android:id="@+id/track_list_duration"
 		        android:gravity="right"
 		        style="@style/ListItemPlaytime"
-		        android:ellipsize="none"
 		        android:paddingLeft="@dimen/list_item_padding" />
 	    
 	    </LinearLayout>
@@ -50,13 +49,7 @@
    	    android:background="@color/very_light_gray" >
 	    
 	   	<LinearLayout
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:orientation="horizontal"
-	        android:divider="@android:drawable/divider_horizontal_bright"
-			android:dividerPadding="4dip"
-			android:showDividers="middle|end|beginning"
-			android:background="@android:color/background_light">
+	   	    style="@style/ClosedButtonList" >
 	        
 	        <ImageButton 
 	            android:src="@drawable/av_play"

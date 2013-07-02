@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/player_container"
+    style="@style/FullWidth"
+    android:orientation="vertical"
+    android:background="@color/title_gray"
+    android:layout_gravity="bottom" >
+    
+    <LinearLayout
+        style="@style/FullWidth"
+        android:orientation="horizontal"
+        android:id="@+id/player_title_line"
+        android:paddingTop="@dimen/list_item_padding"
+        android:paddingBottom="@dimen/list_item_padding">
+        
+        <ImageView
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:src="@drawable/av_pause"
+            android:contentDescription="@string/paused" />
+         
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="match_parent"
+	        android:paddingRight="@dimen/list_item_padding"
+	        android:text="@string/null_null"
+	        android:textColor="@android:color/darker_gray" />
+        
+        <TextView
+            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="4"
+            android:text="@string/no_track"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:textColor="@android:color/darker_gray" />
+        
+        <ImageButton
+            android:id="@+id/player_collapse_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@drawable/navigation_collapse"
+            android:contentDescription="@string/collapse" 
+            android:gravity="right"
+            android:background="@color/blue_transparent"/>
+    </LinearLayout>
+    
+    <SeekBar
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:enabled="false"
+        android:layout_marginLeft="@dimen/list_item_padding"
+        android:layout_marginRight="@dimen/list_item_padding"/>
+    
+    <LinearLayout
+        style="@style/TransparentButtonList"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="@dimen/list_item_padding">
+        
+        <ImageButton 
+            style="@style/TrackListButton"
+            android:src="@drawable/av_previous"
+            android:contentDescription="@string/previous"
+            android:enabled="false"/>
+        
+        <ImageButton
+            style="@style/TrackListButton"
+            android:src="@drawable/av_play"
+            android:contentDescription="@string/play"
+            android:enabled="false" />
+        
+        <ImageButton
+            style="@style/TrackListButton"
+            android:src="@drawable/av_next"
+            android:contentDescription="@string/next"
+            android:enabled="false" />
+    </LinearLayout>
+
+</LinearLayout>

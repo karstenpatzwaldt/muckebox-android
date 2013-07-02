@@ -7,6 +7,7 @@ import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.net.RefreshTask;
+import org.muckebox.android.ui.utils.HeightEvaluator;
 import org.muckebox.android.ui.widgets.ImageViewRotater;
 
 import android.database.Cursor;
@@ -59,26 +60,7 @@ public class TrackListFragment extends ListFragment
 			index = newIndex;
 		}
 	}
-	
-	private class HeightEvaluator extends IntEvaluator {
-		private View mView;
-		
-		public HeightEvaluator(View view) {
-			mView = view;
-		}
-		
-		@Override
-		public Integer evaluate(float fraction, Integer startValue, Integer endValue)
-		{
-			int num = super.evaluate(fraction, startValue, endValue);
-			
-			ViewGroup.LayoutParams p = mView.getLayoutParams();
-			p.height = num;
-			mView.setLayoutParams(p);
-			
-			return num;
-		}
-	}
+
 	
 	private class ContextCursorAdapter extends SimpleCursorAdapter {
 
