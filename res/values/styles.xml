@@ -1,15 +1,6 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-        Base application theme, dependent on API level. This theme is replaced
-        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
-    -->
     <style name="AppBaseTheme" parent="android:Theme.Light">
-        <!--
-            Theme customizations available in newer API levels can go in
-            res/values-vXX/styles.xml, while customizations related to
-            backward-compatibility can go here.
-        -->
     </style>
 
     <!-- Application theme. -->
@@ -22,11 +13,24 @@
         <item name="android:layout_height">match_parent</item> 
     </style>
     
+    <style name="FullWidth">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+    
     <style name="ListItem">
         <item name="android:layout_width">match_parent</item>
     	<item name="android:layout_height">wrap_content</item>
     	<item name="android:orientation">horizontal</item>
     	<item name="android:padding">@dimen/list_item_padding</item>
+    	<item name="android:background">@android:color/background_light</item>
+    </style>
+    
+    <style name="DividedListItem" parent="ListItem">
+        <item name="android:divider">@android:drawable/divider_horizontal_bright</item>
+		<item name="android:dividerPadding">4dip</item>
+		<item name="android:dividerHeight">2dip</item>
+		<item name="android:showDividers">middle</item>
     </style>
     
     <style name="ClickableListItem" parent="ListItem">
@@ -86,7 +90,7 @@
     </style>
     
     <style name="TrackListButton">
-        <item name="android:layout_width">100dp</item>
+        <item name="android:layout_width">75dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
         <item name="android:background">@color/blue_transparent</item>

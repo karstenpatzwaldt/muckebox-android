@@ -2,4 +2,6 @@
 <resources>
     <drawable name="background_blue">@android:color/holo_blue_light</drawable>
     <drawable name="background_transparent">@android:color/transparent</drawable>
+    <color name="title_gray">#ffdddddd</color>
+    <color name="very_light_gray">#ffededed</color>
 </resources>
