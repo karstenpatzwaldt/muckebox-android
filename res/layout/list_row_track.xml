@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
- <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
        	android:layout_width="fill_parent"
        	android:layout_height="wrap_content"
        	android:orientation="vertical"
@@ -12,7 +12,6 @@
         
 	<LinearLayout
 	    android:id="@+id/track_list_texts"
-	    android:onClick="toggleButtons"
 	    style="@style/ClickableListItem"
 	    android:orientation="vertical">
 	
@@ -40,35 +39,26 @@
 	    
 	</LinearLayout>
 
-
-	<LinearLayout
-   	    android:id="@+id/track_list_buttons"
-   	    android:layout_width="fill_parent"
-   	    android:layout_height="wrap_content"
-   	    android:paddingLeft="15sp"
-   	    android:background="@color/very_light_gray" >
-	    
-	   	<LinearLayout
-	   	    style="@style/ClosedButtonList" >
-	        
-	        <ImageButton 
-	            android:src="@drawable/av_play"
-	            android:contentDescription="@string/play"
-	            style="@style/TrackListButton" />
-	        
-	        <ImageButton
-	            android:src="@drawable/av_add_to_queue"
-	            android:contentDescription="@string/add_to_queue"
-	            style="@style/TrackListButton" />
-	        
-	        <ImageButton
-	            android:src="@drawable/av_download"
-	            android:contentDescription="@string/download"
-	            style="@style/TrackListButton" />
-	        
-	    </LinearLayout>
-	    
-   	</LinearLayout>
+   	<LinearLayout
+   	    style="@style/ClosedButtonList"
+   	    android:paddingLeft="@dimen/activity_horizontal_margin" >
+        
+        <ImageButton 
+            android:src="@drawable/av_play"
+            android:contentDescription="@string/play"
+            style="@style/TrackListButton" />
+        
+        <ImageButton
+            android:src="@drawable/av_add_to_queue"
+            android:contentDescription="@string/add_to_queue"
+            style="@style/TrackListButton" />
+        
+        <ImageButton
+            android:src="@drawable/av_download"
+            android:contentDescription="@string/download"
+            style="@style/TrackListButton" />
+        
+    </LinearLayout>
     
 </LinearLayout>
 

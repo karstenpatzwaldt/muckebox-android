@@ -2,7 +2,7 @@
     style="@style/LinearVerticalFullsize" >
 
     <ListView
-        android:id="@+id/artist_list"
+        android:id="@android:id/list"
         style="@style/ListFullsize" />
 
 </LinearLayout>

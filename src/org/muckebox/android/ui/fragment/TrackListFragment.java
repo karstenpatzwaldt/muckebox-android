@@ -13,7 +13,6 @@ import org.muckebox.android.ui.widgets.ImageViewRotater;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.animation.IntEvaluator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.ListFragment;
@@ -22,6 +21,7 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -43,6 +43,7 @@ public class TrackListFragment extends ListFragment
 	private static final String LOG_TAG = "TrackListFragment";
 	
 	private static final String ALBUM_ID_ARG = "album_id";
+	private static final String ALBUM_TITLE_ARG = "album_title";
 	
 	SimpleCursorAdapter mAdapter;
 	MenuItem mRefreshItem;
@@ -60,10 +61,8 @@ public class TrackListFragment extends ListFragment
 			index = newIndex;
 		}
 	}
-
 	
 	private class ContextCursorAdapter extends SimpleCursorAdapter {
-
 		public ContextCursorAdapter(Context context, int layout, Cursor c,
 				String[] from, int[] to, int flags) {
 			super(context, layout, c, from, to, flags);
@@ -93,6 +92,12 @@ public class TrackListFragment extends ListFragment
 				
 				ret.setLayoutParams(params);
 				ret.setTag(state);
+				
+				texts.setOnClickListener(new View.OnClickListener() {
+					public void onClick(View v) {
+						toggleButtons(v);
+					}
+				});
 			}
 			
 			return ret;
@@ -127,11 +132,12 @@ public class TrackListFragment extends ListFragment
     	}
 	}
 	
-	public static TrackListFragment newInstanceFromAlbum(long artist_id) {
+	public static TrackListFragment newInstanceFromAlbum(long album_id, String title) {
 		TrackListFragment f = new TrackListFragment();
 		Bundle args = new Bundle();
 		
-		args.putLong(ALBUM_ID_ARG, artist_id);
+		args.putLong(ALBUM_ID_ARG, album_id);
+		args.putString(ALBUM_TITLE_ARG, title);
 		f.setArguments(args);
 		
 		return f;
@@ -150,15 +156,24 @@ public class TrackListFragment extends ListFragment
 		return getAlbumId() != -1;
 	}
 	
-	@Override public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        
-        setEmptyText("No Tracks");
+	public String getAlbumTitle() {
+		Bundle args = getArguments();
+		
+		return args.getString(ALBUM_TITLE_ARG, "");
+	}
+	
+	@Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_track_browse, container, false);
+	}
 
-        // We have a menu item to show in action bar.
+	@Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+
         setHasOptionsMenu(true);
 
-        // Create an empty adapter we will use to display the loaded data.
         mAdapter = new ContextCursorAdapter(getActivity(),
                 R.layout.list_row_track, null,
                 new String[] {
@@ -173,22 +188,35 @@ public class TrackListFragment extends ListFragment
         			}, 0);
         
         mAdapter.setViewBinder(new DurationViewBinder());
+        
+        TextView header = (TextView) getActivity().findViewById(R.id.track_list_title_strip);
+        
+        header.setText(getAlbumTitle());
  
         setListAdapter(mAdapter);
-        setListShown(false);
         getLoaderManager().initLoader(0, null, this);
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    	super.onCreateOptionsMenu(menu, inflater);
+    	
         mRefreshItem = menu.add("Refresh");
-        mRefreshItem.setIcon(R.drawable.ic_menu_refresh);
+        mRefreshItem.setIcon(R.drawable.navigation_refresh);
         mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         
         if (! mListLoaded) {
         	new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
         	mListLoaded = true;
         }
+    }
+    
+    @Override
+    public void onDestroyOptionsMenu() {
+    	super.onDestroyOptionsMenu();
+    	
+    	onRefreshFinished(false);
+	    mRefreshItem = null;
     }
     
     @Override
@@ -276,10 +304,6 @@ public class TrackListFragment extends ListFragment
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        // This is called when a new Loader needs to be created.  This
-        // sample only has one Loader, so we don't care about the ID.
-        // First, pick the base URI to use depending on whether we are
-        // currently filtering.
         Uri baseUri;
         if (hasAlbumId()) {
         	baseUri = Uri.parse(Provider.TRACK_ALBUM_BASE + Long.toString(getAlbumId()));
@@ -293,22 +317,10 @@ public class TrackListFragment extends ListFragment
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        // Swap the new cursor in.  (The framework will take care of closing the
-        // old cursor once we return.)
         mAdapter.swapCursor(data);
-
-        // The list should now be shown.
-        if (isResumed()) {
-            setListShown(true);
-        } else {
-            setListShownNoAnimation(true);
-        }
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
-        // This is called when the last Cursor provided to onLoadFinished()
-        // above is about to be closed.  We need to make sure we are no
-        // longer using it.
         mAdapter.swapCursor(null);
     }
     
@@ -321,7 +333,10 @@ public class TrackListFragment extends ListFragment
 
 	@Override
 	public void onRefreshFinished(boolean success) {
-		mRefreshItem.getActionView().clearAnimation();
-		mRefreshItem.setActionView(null);
+		if (mRefreshItem != null && mRefreshItem.getActionView() != null)
+		{
+			mRefreshItem.getActionView().clearAnimation();
+			mRefreshItem.setActionView(null);
+		}
 	}
 }
