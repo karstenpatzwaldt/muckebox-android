@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.muckebox.android.Muckebox;
 
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -27,21 +28,7 @@ public class NetHelper {
 	}
 	
 	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
-		String str_url = getApiUrl(query, id);
-
-		if ((keys != null) && (values != null) && (keys.length > 0))
-		{
-			if (keys.length != values.length)
-				throw new IOException();
-			
-			str_url += "?";
-
-			for (int i = 0; i < keys.length; ++i)
-			{
-				str_url += URLEncoder.encode(keys[i], "UTF-8") + "=" +
-						URLEncoder.encode(values[i], "UTF-8");
-			}
-		}
+		String str_url = getApiUrl(query, id, keys, values);
 		
 		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
@@ -61,22 +48,30 @@ public class NetHelper {
 		return callApi(query, null, null, null);
 	}
 	
-	public static String getApiUrl(String query, String extra) throws IOException {
-		String str_url;
+	public static String getApiUrl(String query, String extra,
+			String[] keys, String[] values) throws IOException {
+		Uri.Builder builder = Uri.parse(
+				String.format("http://%s:%s",
+						getSharedPref().getString("server_address", ""),
+						getSharedPref().getString("server_port", "2342"))).buildUpon();
 		
-		str_url = "http://";
-		str_url += getSharedPref().getString("server_address", "");
-		str_url += ":";
-		str_url += getSharedPref().getString("server_port", "2342");
-		str_url += "/api/";
-		str_url += query;
+		builder.path(String.format("/api/%s", query));
 		
 		if (extra != null)
+			builder.appendPath("/" + extra);
+		
+		if ((keys != null) && (values != null) && (keys.length > 0))
 		{
-			str_url += "/" + extra;
+			if (keys.length != values.length)
+				throw new IOException();
+			
+			for (int i = 0; i < keys.length; ++i)
+			{
+				builder.appendQueryParameter(keys[i], values[i]);
+			}
 		}
 		
-		return str_url;
+		return builder.build().toString();
 	}
 	
 	public static HttpURLConnection getDefaultConnection(URL url) throws IOException {

@@ -27,7 +27,7 @@ public class RefreshTracksTask extends RefreshTask<Long> {
 			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 
 			for (int i = 0; i < album_ids.length; ++i) {
-				JSONArray json = NetHelper.callApi("tracks", "",
+				JSONArray json = NetHelper.callApi("tracks", null,
 						new String[] { "album" },
 						new String[] { album_ids[i].toString() });
 
