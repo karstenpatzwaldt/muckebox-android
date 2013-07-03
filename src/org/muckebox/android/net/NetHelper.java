@@ -104,8 +104,10 @@ public class NetHelper {
         StringBuilder str = new StringBuilder();
         char[] charBuf = new char[1024];
         
-        while (reader.read(charBuf) != -1)
-        	str.append(charBuf);
+        int bytes_read;
+        
+        while ((bytes_read = reader.read(charBuf)) != -1)
+        	str.append(charBuf, 0, bytes_read);
         
         return str.toString();
 	}
