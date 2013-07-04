@@ -22,7 +22,6 @@ public class RefreshArtistsTask extends RefreshTask<Void> {
 	@Override
 	protected Integer doInBackground(Void... nothing)
 	{
-
 		try {
 			Context c = Muckebox.getAppContext();
 			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
@@ -53,7 +52,7 @@ public class RefreshArtistsTask extends RefreshTask<Void> {
 				db.endTransaction();
 			}
 		} catch (IOException e) {
-			Log.d(LOG_TAG, e.getMessage());
+			Log.d(LOG_TAG, "IOException: " + e.getMessage());
 			return R.string.error_reload_artists;
 		} catch (JSONException e) {
 			return R.string.error_json;

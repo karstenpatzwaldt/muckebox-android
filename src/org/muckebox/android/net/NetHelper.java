@@ -32,9 +32,15 @@ public class NetHelper {
 		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
 		HttpURLConnection conn = getDefaultConnection(new URL(str_url));
-		String response = getResponseAsString(conn);
 		
-		return new JSONArray(response);
+		try
+		{
+			String response = getResponseAsString(conn);
+			
+			return new JSONArray(response);
+		} finally {
+			conn.disconnect();
+		}
 	}
 	
 	public static JSONArray callApi(String query, String id) throws IOException, JSONException

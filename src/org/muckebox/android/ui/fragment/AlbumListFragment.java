@@ -5,8 +5,7 @@ import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshAlbumsTask;
-import org.muckebox.android.net.RefreshTask;
-import org.muckebox.android.ui.widgets.ImageViewRotater;
+import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -14,7 +13,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
@@ -33,10 +31,9 @@ import android.widget.TextView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 
-public class AlbumListFragment extends ListFragment
+public class AlbumListFragment extends RefreshableListFragment
 	implements OnQueryTextListener, OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor>,
-	RefreshTask.Callbacks {
+	LoaderManager.LoaderCallbacks<Cursor> {
 	private final static String LOG_TAG = "AlbumListFragment";
 	
 	private final static String ARTIST_ID_ARG = "artist_id";
@@ -45,7 +42,6 @@ public class AlbumListFragment extends ListFragment
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
-	MenuItem mRefreshItem;
 	
 	boolean mListLoaded = false;
 
@@ -115,6 +111,9 @@ public class AlbumListFragment extends ListFragment
 	        else
 	        	titleStrip.setVisibility(View.GONE);
         }
+        
+        if (! mListLoaded)
+        	onRefreshRequested();
     }
 
     public static class MySearchView extends SearchView {
@@ -132,51 +131,38 @@ public class AlbumListFragment extends ListFragment
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	super.onCreateOptionsMenu(menu, inflater);
- 
-    	if (! hasArtistId())
+    	
+    	inflater.inflate(R.menu.album_list, menu);
+    	
+    	MenuItem searchItem = menu.findItem(R.id.album_list_action_search);
+    	
+    	if (hasArtistId())
     	{
-	        // Place an action bar item for searching.
-	        MenuItem item = menu.add("Search");
-	        item.setIcon(R.drawable.action_search);
-	        item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM
-	                | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-	        
+    		searchItem.setVisible(false);
+    	} else
+    	{
 	        mSearchView = new MySearchView(getActivity());
 	        mSearchView.setOnQueryTextListener(this);
 	        mSearchView.setOnCloseListener(this);
 	        mSearchView.setIconifiedByDefault(true);
 	        
-	        item.setActionView(mSearchView);
+	        searchItem.setActionView(mSearchView);
     	}
-        
-        mRefreshItem = menu.add("Refresh");
-        mRefreshItem.setIcon(R.drawable.navigation_refresh);
-        mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        
-        if (! mListLoaded) {
-        	new RefreshAlbumsTask().setCallbacks(this).execute();
-        	mListLoaded = true;
-        }
     }
-    
+   
     @Override
-    public void onDestroyOptionsMenu() {
+    public void onDestroyOptionsMenu()
+    {
+    	if (mSearchView != null)
+    		mSearchView.setQuery(null, true);
+
     	super.onDestroyOptionsMenu();
-    	
-		onRefreshFinished(false);
-		
-    	mRefreshItem = null;
     }
-    
+
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	if (item == mRefreshItem)
-    	{
-    		new RefreshAlbumsTask().setCallbacks(this).execute();
-    		return true;
-    	}
-    	
-    	return false;
+    protected void onRefreshRequested() {
+  		new RefreshAlbumsTask().setCallbacks(this).execute();
+  		mListLoaded = true;
     }
 
     public boolean onQueryTextChange(String newText) {
@@ -195,20 +181,13 @@ public class AlbumListFragment extends ListFragment
         return true;
     }
 
-    @Override public boolean onQueryTextSubmit(String query) {
-        // Don't care about this.
+    @Override
+    public boolean onQueryTextSubmit(String query) {
         return true;
     }
 
     @Override
-    public boolean onClose() {
-        if (!TextUtils.isEmpty(mSearchView.getQuery())) {
-            mSearchView.setQuery(null, true);
-        }
-        return true;
-    }
-
-    @Override public void onListItemClick(ListView l, View v, int position, long id) {
+    public void onListItemClick(ListView l, View v, int position, long id) {
     	Cursor c = (Cursor) l.getItemAtPosition(position);
     	
     	int artist_name_index = c.getColumnIndex(ArtistEntry.ALIAS_NAME);
@@ -253,20 +232,13 @@ public class AlbumListFragment extends ListFragment
     public void onLoaderReset(Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
     }
-    
-	@Override
-	public void onRefreshStarted() {
-		mRefreshItem.setActionView(
-				ImageViewRotater.getRotatingImageView(
-						getActivity(), R.layout.action_view_refresh));
-	}
 
 	@Override
-	public void onRefreshFinished(boolean success) {
-		if (mRefreshItem != null && mRefreshItem.getActionView() != null)
-		{
-			mRefreshItem.getActionView().clearAnimation();
-			mRefreshItem.setActionView(null);
-		}
+	public boolean onClose() {
+        if (!TextUtils.isEmpty(mSearchView.getQuery())) {
+            mSearchView.setQuery(null, true);
+        }
+
+        return true;
 	}
 }

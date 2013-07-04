@@ -62,8 +62,7 @@ public class RefreshTracksTask extends RefreshTask<Long> {
 						
 						db.insert(TrackEntry.TABLE_NAME, null, values);
 					}
-		
-	
+
 					Log.d(LOG_TAG, "Got " + json.length() + " Tracks");
 					db.setTransactionSuccessful();
 					
@@ -73,7 +72,7 @@ public class RefreshTracksTask extends RefreshTask<Long> {
 				}
 			}
 		} catch (IOException e) {
-			Log.d(LOG_TAG, e.getMessage());
+			Log.d(LOG_TAG, "IOException: " + e.getMessage());
 			return R.string.error_reload_tracks;
 		} catch (JSONException e) {
 			return R.string.error_json;

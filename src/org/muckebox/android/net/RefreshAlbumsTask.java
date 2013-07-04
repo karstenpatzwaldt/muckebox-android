@@ -53,7 +53,7 @@ public class RefreshAlbumsTask extends RefreshTask<Void> {
 				db.endTransaction();				
 			}
 		} catch (IOException e) {
-			Log.d(LOG_TAG, e.getMessage());
+			Log.d(LOG_TAG, "IOException: " + e.getMessage());
 			return R.string.error_reload_albums;
 		} catch (JSONException e) {
 			return R.string.error_json;

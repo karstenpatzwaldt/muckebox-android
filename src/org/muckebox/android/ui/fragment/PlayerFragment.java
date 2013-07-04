@@ -29,7 +29,6 @@ public class PlayerFragment extends Fragment {
 
         measureView();
         attachButtonListeners();
-//        simpleCollapse();
         
         return mView;
     }

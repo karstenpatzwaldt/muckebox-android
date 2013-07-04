@@ -6,16 +6,14 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.net.RefreshTracksTask;
-import org.muckebox.android.net.RefreshTask;
 import org.muckebox.android.ui.utils.HeightEvaluator;
-import org.muckebox.android.ui.widgets.ImageViewRotater;
+import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
@@ -24,7 +22,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.MeasureSpec;
@@ -36,17 +33,16 @@ import android.widget.SearchView.OnCloseListener;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
 
-public class TrackListFragment extends ListFragment
+public class TrackListFragment extends RefreshableListFragment
 	implements OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor>,
-	RefreshTask.Callbacks {
+	LoaderManager.LoaderCallbacks<Cursor> {
 	private static final String LOG_TAG = "TrackListFragment";
 	
 	private static final String ALBUM_ID_ARG = "album_id";
 	private static final String ALBUM_TITLE_ARG = "album_title";
 	
 	SimpleCursorAdapter mAdapter;
-	MenuItem mRefreshItem;
+	
 	boolean mListLoaded = false;
 	
 	private class ListItemState {
@@ -195,39 +191,21 @@ public class TrackListFragment extends ListFragment
  
         setListAdapter(mAdapter);
         getLoaderManager().initLoader(0, null, this);
+        
+        if (! mListLoaded)
+        	onRefreshRequested();
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	super.onCreateOptionsMenu(menu, inflater);
     	
-        mRefreshItem = menu.add("Refresh");
-        mRefreshItem.setIcon(R.drawable.navigation_refresh);
-        mRefreshItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        
-        if (! mListLoaded) {
-        	new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
-        	mListLoaded = true;
-        }
+    	inflater.inflate(R.menu.track_list, menu);
     }
-    
-    @Override
-    public void onDestroyOptionsMenu() {
-    	super.onDestroyOptionsMenu();
-    	
-    	onRefreshFinished(false);
-	    mRefreshItem = null;
-    }
-    
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	if (item == mRefreshItem)
-    	{
-    		new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
-    		return true;
-    	}
-    	
-    	return false;
+
+    protected void onRefreshRequested() {
+		new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
+		mListLoaded = true;
     }
 
     @Override
@@ -323,20 +301,4 @@ public class TrackListFragment extends ListFragment
     public void onLoaderReset(Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
     }
-    
-	@Override
-	public void onRefreshStarted() {
-		mRefreshItem.setActionView(
-				ImageViewRotater.getRotatingImageView(
-						getActivity(), R.layout.action_view_refresh));
-	}
-
-	@Override
-	public void onRefreshFinished(boolean success) {
-		if (mRefreshItem != null && mRefreshItem.getActionView() != null)
-		{
-			mRefreshItem.getActionView().clearAnimation();
-			mRefreshItem.setActionView(null);
-		}
-	}
 }

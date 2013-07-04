@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <item
+        android:id="@+id/album_list_action_search"
+        android:showAsAction="ifRoom|collapseActionView"
+        android:icon="@drawable/action_search"
+        android:title="@string/search"
+        android:actionViewClass="org.muckebox.android.ui.widgets.LiveSearchView" />
+
+</menu>
