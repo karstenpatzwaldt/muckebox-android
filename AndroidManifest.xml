@@ -39,6 +39,12 @@
             android:enabled="true"
             android:exported="false" >
         </provider>
+        
+        <service
+            android:name="org.muckebox.android.services.PlayerService"
+            android:icon="@drawable/av_play">
+            
+        </service>
 
     </application>
 

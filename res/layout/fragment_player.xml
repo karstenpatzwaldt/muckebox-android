@@ -15,12 +15,14 @@
         android:paddingBottom="@dimen/list_item_padding">
         
         <ImageView
+            android:id="@+id/player_play_indicator"
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:src="@drawable/av_pause"
             android:contentDescription="@string/paused" />
          
 	    <TextView
+	        android:id="@+id/player_play_time"
 	        android:layout_width="wrap_content"
 	        android:layout_height="match_parent"
 	        android:paddingRight="@dimen/list_item_padding"
@@ -28,6 +30,7 @@
 	        android:textColor="@android:color/darker_gray" />
         
         <TextView
+            android:id="@+id/player_title_text"
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="4"
@@ -60,18 +63,21 @@
         
         <ImageButton 
             style="@style/TrackListButton"
+            android:id="@+id/player_previous_button"
             android:src="@drawable/av_previous"
             android:contentDescription="@string/previous"
             android:enabled="false"/>
         
         <ImageButton
             style="@style/TrackListButton"
+            android:id="@+id/player_play_pause_button"
             android:src="@drawable/av_play"
             android:contentDescription="@string/play"
             android:enabled="false" />
         
         <ImageButton
             style="@style/TrackListButton"
+            android:id="@+id/player_next_button"
             android:src="@drawable/av_next"
             android:contentDescription="@string/next"
             android:enabled="false" />

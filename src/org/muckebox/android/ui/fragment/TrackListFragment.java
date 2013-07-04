@@ -6,6 +6,7 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.Provider;
 import org.muckebox.android.net.RefreshTracksTask;
+import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
@@ -17,15 +18,18 @@ import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.View.MeasureSpec;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -41,9 +45,8 @@ public class TrackListFragment extends RefreshableListFragment
 	private static final String ALBUM_ID_ARG = "album_id";
 	private static final String ALBUM_TITLE_ARG = "album_title";
 	
-	SimpleCursorAdapter mAdapter;
-	
-	boolean mListLoaded = false;
+	private SimpleCursorAdapter mAdapter;
+	private boolean mListLoaded = false;
 	
 	private class ListItemState {
 		public int index = 0;
@@ -91,6 +94,17 @@ public class TrackListFragment extends RefreshableListFragment
 				
 				texts.setOnClickListener(new View.OnClickListener() {
 					public void onClick(View v) {
+						toggleButtons(v);
+					}
+				});
+				
+				ImageButton playButton =
+						(ImageButton) ret.findViewById(R.id.track_list_play);
+				playButton.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						Intent intent = new Intent(getActivity(), PlayerService.class);
+						getActivity().startService(intent);
+						
 						toggleButtons(v);
 					}
 				});
@@ -269,7 +283,12 @@ public class TrackListFragment extends RefreshableListFragment
     
     public void toggleButtons(View item)
     {
-    	View parent = (View) item.getParent();
+    	View parent = item;
+    	
+    	do {
+        	parent = (View) parent.getParent();
+    	} while (parent.getId() != R.id.track_list_top);
+
     	ListItemState state = (ListItemState) parent.getTag();
     	
     	if (state.extended)
