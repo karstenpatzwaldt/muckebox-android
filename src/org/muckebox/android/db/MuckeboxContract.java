@@ -119,6 +119,73 @@ public final class MuckeboxContract {
 				FULL_TRACKNUMBER + ") ASC ";
 	}
 	
+	public static abstract class DownloadEntry implements BaseColumns {
+		public static final String TABLE_NAME = "downloads";
+		
+		public static final String SHORT_ID						= _ID;
+		
+		public static final String SHORT_TIMESTAMP				= "timestamp";
+		
+		public static final String SHORT_TRACK_ID				= "track_id";
+		public static final String SHORT_TRANSCODIG_TYPE		= "transcoding_type";
+		public static final String SHORT_TRANSCODING_QUALITY	= "transcoding_quality";
+		
+		public static final String SHORT_PIN_RESULT				= "pin_result";
+		
+		// this is effectively an enum
+		public static final String SHORT_STATUS					= "status";
+		public static final String STATUS_VALUE_QUEUED			= "status_queued";
+		public static final String STATUS_VALUE_DOWNLOADING		= "status_downloading";
+		
+		public static final String SHORT_BYTES_DOWNLOADED		= "bytes_downloaded";
+		
+		public static final String FULL_ID					= TABLE_NAME + "." + SHORT_ID;
+		
+		public static final String FULL_TIMESTAMP			= TABLE_NAME + "." + SHORT_TIMESTAMP;
+
+		public static final String FULL_TRACK_ID			= TABLE_NAME + "." + SHORT_TRACK_ID;
+		public static final String FULL_TRANSCODING_TYPE	= TABLE_NAME + "." + SHORT_TRANSCODIG_TYPE;
+		public static final String FULL_TRANSCODING_QUALITY	= TABLE_NAME + "." + SHORT_TRANSCODING_QUALITY;
+
+		public static final String FULL_PIN_RESULT			= TABLE_NAME + "." + SHORT_PIN_RESULT;
+		
+		public static final String FULL_STATUS				= TABLE_NAME + "." + SHORT_STATUS;
+		
+		public static final String FULL_BYTES_DOWNLOADED	= TABLE_NAME + "." + SHORT_BYTES_DOWNLOADED;
+		
+		public static final String ALIAS_ID						= TABLE_NAME + "_" + SHORT_ID;
+		
+		public static final String ALIAS_TIMESTAMP				= TABLE_NAME + "_" + SHORT_TIMESTAMP;
+
+		public static final String ALIAS_TRACK_ID				= TABLE_NAME + "_" + SHORT_TRACK_ID;
+		public static final String ALIAS_TRANSCODING_TYPE		= TABLE_NAME + "_" + SHORT_TRANSCODIG_TYPE;
+		public static final String ALIAS_TRANSCODING_QUALITY	= TABLE_NAME + "_" + SHORT_TRANSCODING_QUALITY;
+
+		public static final String ALIAS_PIN_RESULT				= TABLE_NAME + "_" + SHORT_PIN_RESULT;
+		
+		public static final String ALIAS_STATUS					= TABLE_NAME + "_" + SHORT_STATUS;
+		
+		public static final String ALIAS_BYTES_DOWNLOADED		= TABLE_NAME + "_" + SHORT_BYTES_DOWNLOADED;
+		
+		public static final String[] PROJECTION = {
+			FULL_ID,
+			
+			FULL_TIMESTAMP + AS + ALIAS_TIMESTAMP,
+			
+			FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
+			FULL_TRANSCODING_TYPE + AS + ALIAS_TRANSCODING_TYPE,
+			FULL_TRANSCODING_QUALITY + AS + ALIAS_TRANSCODING_QUALITY,
+
+			FULL_PIN_RESULT + AS + ALIAS_PIN_RESULT,
+
+			FULL_STATUS + AS + ALIAS_STATUS,
+
+			FULL_BYTES_DOWNLOADED + AS + ALIAS_BYTES_DOWNLOADED
+		};
+		
+		public static final String SORT_ORDER = FULL_TIMESTAMP + " ASC";
+}
+	
 	public static abstract class AlbumArtistJoin implements BaseColumns {
 		public static final String TABLE_NAME = AlbumEntry.TABLE_NAME + " LEFT OUTER JOIN " +
 				ArtistEntry.TABLE_NAME + " ON (" + AlbumEntry.FULL_ARTIST_ID + " = " +

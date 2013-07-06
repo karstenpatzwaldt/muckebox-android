@@ -2,6 +2,7 @@ package org.muckebox.android.db;
 
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.Context;
@@ -48,7 +49,21 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_TRACK_TABLE =
 			"DROP TABLE IF EXISTS " + TrackEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 1;
+	private static final String SQL_CREATE_DOWNLOAD_TABLE =
+			"CREATE TABLE " + DownloadEntry.TABLE_NAME + " (" +
+			DownloadEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
+			DownloadEntry.SHORT_TIMESTAMP + INT_TYPE + SEP +
+			DownloadEntry.SHORT_TRACK_ID + INT_TYPE + SEP +
+			DownloadEntry.SHORT_TRANSCODIG_TYPE + TEXT_TYPE + SEP +
+			DownloadEntry.SHORT_TRANSCODING_QUALITY + TEXT_TYPE + SEP +
+			DownloadEntry.SHORT_PIN_RESULT + INT_TYPE + SEP +
+			DownloadEntry.SHORT_STATUS + TEXT_TYPE + SEP +
+			DownloadEntry.SHORT_BYTES_DOWNLOADED + INT_TYPE +
+			")";
+	private static final String SQL_DROP_DOWNLOAD_TABLE =
+			"DROP TABLE IF EXISTS " + DownloadEntry.TABLE_NAME;
+	
+	private static final int DB_VERSION = 2;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {
@@ -60,6 +75,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 		db.execSQL(SQL_CREATE_ARTIST_TABLE);
 		db.execSQL(SQL_CREATE_ALBUM_TABLE);
 		db.execSQL(SQL_CREATE_TRACK_TABLE);
+		db.execSQL(SQL_CREATE_DOWNLOAD_TABLE);
 	}
 
 	@Override
@@ -67,6 +83,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 		db.execSQL(SQL_DROP_ARTIST_TABLE);
 		db.execSQL(SQL_DROP_ALBUM_TABLE);
 		db.execSQL(SQL_DROP_TRACK_TABLE);
+		db.execSQL(SQL_DROP_DOWNLOAD_TABLE);
 		
 		onCreate(db);
 	}

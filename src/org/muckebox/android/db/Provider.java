@@ -5,6 +5,7 @@ import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.ContentProvider;
@@ -13,6 +14,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class Provider extends ContentProvider {
@@ -39,29 +41,66 @@ public class Provider extends ContentProvider {
 	public static final String TRACK_ALBUM_BASE = TRACKS + "/album=";
 	public static final String TRACK_ARTIST_BASE = TRACKS + "/artist=";
 	
+	public static final String DOWNLOADS = SCHEME + AUTHORITY + "/downloads";
+	public static final Uri URI_DOWNLOADS = Uri.parse(DOWNLOADS);
+	public static final String DOWNLOAD_ID_BASE = DOWNLOADS + "/id=";
+	
 	private static MuckeboxDbHelper mDbHelper = null;
-	private static SQLiteDatabase mReadableDb = null;
 	
 	public Provider() {
 	}
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		// Implement this to handle requests to delete one or more rows.
-		throw new UnsupportedOperationException("Not yet implemented");
+		SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
+		int ret;
+		
+		if (URI_DOWNLOADS.equals(uri))
+		{
+			ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
+			
+			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null);
+		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
+		{
+			final long id = Long.parseLong(uri.toString().substring(DOWNLOAD_ID_BASE.length()));
+			String whereClause = DownloadEntry.FULL_ID + " = " + Long.toString(id);
+			
+			if (! TextUtils.isEmpty(selection))
+			{
+				whereClause += " AND " + selection;
+			}
+			
+			ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
+			
+			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null);
+		} else {
+			throw new UnsupportedOperationException("Not yet implemented");
+		}
+		
+		return ret;
 	}
 
 	@Override
 	public String getType(Uri uri) {
-		// TODO: Implement this to handle requests for the MIME type of the data
-		// at the given URI.
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		// TODO: Implement this to handle requests to insert a new row.
-		throw new UnsupportedOperationException("Not yet implemented");
+		SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
+		
+		if (URI_DOWNLOADS.equals(uri))
+		{
+			long id = db.insert(DownloadEntry.TABLE_NAME, null, values);
+			
+			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null, false);
+			
+			return Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
+			
+		} else 
+		{
+			throw new UnsupportedOperationException("Unknown URI");
+		}
 	}
 
 	@Override
@@ -75,34 +114,29 @@ public class Provider extends ContentProvider {
 		
 		return mDbHelper;
 	}
-	
-	private static SQLiteDatabase getReadableDatabase(final Context context) {
-		if (mReadableDb == null)
-			mReadableDb = getDbHelper(context).getReadableDatabase();
-		
-		return mReadableDb;
-	}
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
+		SQLiteDatabase db = getDbHelper(getContext()).getReadableDatabase();
 		Cursor result = null;
 		
 		if (URI_ARTISTS.equals(uri))
 		{
 			Log.d(LOG_TAG, "Query all artists");
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
 					null, null, ArtistAlbumJoin.GROUP_BY, null,
 					ArtistAlbumJoin.SORT_ORDER, null);
+			
 			result.setNotificationUri(getContext().getContentResolver(), URI_ARTISTS);
 		} else if (uri.toString().startsWith(ARTIST_ID_BASE)) {
 			final long id = Long.parseLong(uri.toString().substring(ARTIST_ID_BASE.length()));
 			
 			Log.d(LOG_TAG, "Query artist id = " + id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
 					ArtistEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, ArtistAlbumJoin.GROUP_BY, null,
@@ -114,7 +148,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query artist name = " + name);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
 					"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, ArtistAlbumJoin.GROUP_BY, null,
@@ -125,7 +159,7 @@ public class Provider extends ContentProvider {
 		{
 			Log.d(LOG_TAG, "Query all albums");
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
 					null, null, null, null, AlbumArtistJoin.SORT_ORDER, null);
 			
@@ -135,7 +169,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album id = " + id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
 					AlbumEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
@@ -147,7 +181,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album name = " + name);
 
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
 					"LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
@@ -160,7 +194,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query album artist = " + id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
 					AlbumEntry.FULL_ARTIST_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
@@ -170,7 +204,7 @@ public class Provider extends ContentProvider {
 		} else if (URI_TRACKS.equals(uri)) {
 			Log.d(LOG_TAG, "Query all tracks");
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					null, null, null, null, TrackEntry.SORT_ORDER, null);
 			
@@ -180,7 +214,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track id = " + id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					TrackEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
@@ -192,7 +226,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track name = " + name);
 
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
@@ -204,7 +238,7 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track album = " + album_id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					TrackEntry.FULL_ALBUM_ID + " IS ?",
 					new String[] { album_id }, null, null,
@@ -216,13 +250,34 @@ public class Provider extends ContentProvider {
 			
 			Log.d(LOG_TAG, "Query track artist = " + artist_id);
 			
-			result = getReadableDatabase(getContext()).query(
+			result = db.query(
 					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
 					TrackEntry.FULL_ARTIST_ID + " IS ?",
 					new String[] { artist_id }, null, null,
 					TrackEntry.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_TRACKS);
+		} else if (URI_DOWNLOADS.equals(uri))
+		{
+			Log.d(LOG_TAG, "Query all downloads");
+			
+			result = db.query(
+					DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
+					null, null, null, null, DownloadEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_DOWNLOADS);
+		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE)) {
+			String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
+			
+			Log.d(LOG_TAG, "Query download id = " + download_id);
+			
+			result = db.query(
+					DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
+					DownloadEntry.FULL_ID + " IS ?",
+					new String[] { download_id }, null, null,
+					DownloadEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_DOWNLOADS);
 		} else {
 	        throw new UnsupportedOperationException("Unknown URI");
 	    }
@@ -233,7 +288,27 @@ public class Provider extends ContentProvider {
 	@Override
 	public int update(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
-		// TODO: Implement this to handle requests to update one or more rows.
-		throw new UnsupportedOperationException("Not yet implemented");
+		if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
+		{
+			String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
+			String whereString = DownloadEntry.FULL_ID + " IS " + download_id;
+			
+			if (! TextUtils.isEmpty(selection))
+			{
+				whereString += " AND (" + selection + ")";
+			}
+			
+			Log.d(LOG_TAG, "Updating download " + download_id);
+			
+			int ret = getDbHelper(getContext()).getWritableDatabase().update(
+					DownloadEntry.TABLE_NAME, values, whereString, selectionArgs);
+			
+			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null);
+			
+			return ret;
+		} else
+		{
+			throw new UnsupportedOperationException("Not yet implemented");
+		}
 	}
 }
