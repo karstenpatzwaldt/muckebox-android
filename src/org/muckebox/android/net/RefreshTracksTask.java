@@ -9,7 +9,7 @@ import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxDbHelper;
-import org.muckebox.android.db.Provider;
+import org.muckebox.android.db.MuckeboxProvider;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -66,7 +66,7 @@ public class RefreshTracksTask extends RefreshTask<Long> {
 					Log.d(LOG_TAG, "Got " + json.length() + " Tracks");
 					db.setTransactionSuccessful();
 					
-					c.getContentResolver().notifyChange(Provider.URI_TRACKS, null, false);
+					c.getContentResolver().notifyChange(MuckeboxProvider.URI_TRACKS, null, false);
 				} finally {
 					db.endTransaction();
 				}

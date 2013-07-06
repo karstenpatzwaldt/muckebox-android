@@ -8,23 +8,14 @@ import java.net.URL;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.muckebox.android.Muckebox;
+import org.muckebox.android.ui.utils.Preferences;
 
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class NetHelper {
 	private static final String LOG_TAG = "NetHelper";
-	static SharedPreferences mSharedPref = null;
-	
-	public static SharedPreferences getSharedPref() {
-		if (mSharedPref == null)
-			mSharedPref = PreferenceManager.getDefaultSharedPreferences(Muckebox.getAppContext());
-
-		return mSharedPref;
-	}
 	
 	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
 		String str_url = getApiUrl(query, id, keys, values);
@@ -55,10 +46,12 @@ public class NetHelper {
 	
 	public static String getApiUrl(String query, String extra,
 			String[] keys, String[] values) throws IOException {
+		SharedPreferences prefs = Preferences.getPreferences();
+		
 		Uri.Builder builder = Uri.parse(
 				String.format("http://%s:%s",
-						getSharedPref().getString("server_address", ""),
-						getSharedPref().getString("server_port", "2342"))).buildUpon();
+						prefs.getString("server_address", ""),
+						prefs.getString("server_port", "2342"))).buildUpon();
 		
 		builder.path(String.format("/api/%s", query));
 		

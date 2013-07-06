@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
-import org.muckebox.android.db.Provider;
+import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
@@ -303,9 +303,9 @@ public class TrackListFragment extends RefreshableListFragment
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
         if (hasAlbumId()) {
-        	baseUri = Uri.parse(Provider.TRACK_ALBUM_BASE + Long.toString(getAlbumId()));
+        	baseUri = Uri.parse(MuckeboxProvider.TRACK_ALBUM_BASE + Long.toString(getAlbumId()));
         } else {
-            baseUri = Provider.URI_TRACKS;
+            baseUri = MuckeboxProvider.URI_TRACKS;
         }
 
         return new CursorLoader(getActivity(), baseUri,

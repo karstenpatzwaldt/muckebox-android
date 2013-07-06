@@ -9,7 +9,7 @@ import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxDbHelper;
-import org.muckebox.android.db.Provider;
+import org.muckebox.android.db.MuckeboxProvider;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -46,7 +46,7 @@ public class RefreshArtistsTask extends RefreshTask<Void> {
 				
 				Log.d(LOG_TAG, "Got " + json.length() + " artists");
 				
-				c.getContentResolver().notifyChange(Provider.URI_ARTISTS, null, false);
+				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ARTISTS, null, false);
 			}  finally
 			{
 				db.endTransaction();

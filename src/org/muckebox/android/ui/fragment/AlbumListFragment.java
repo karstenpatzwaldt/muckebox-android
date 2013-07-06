@@ -2,7 +2,7 @@ package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
-import org.muckebox.android.db.Provider;
+import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshAlbumsTask;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
@@ -213,11 +213,11 @@ public class AlbumListFragment extends RefreshableListFragment
         Uri baseUri;
         
         if (hasArtistId()) {
-        	baseUri = Uri.parse(Provider.ALBUM_ARTIST_BASE + Long.toString(getArtistId()));
+        	baseUri = Uri.parse(MuckeboxProvider.ALBUM_ARTIST_BASE + Long.toString(getArtistId()));
         } else if (mCurFilter != null) {
-            baseUri = Uri.parse(Provider.ALBUM_TITLE_BASE + mCurFilter);
+            baseUri = Uri.parse(MuckeboxProvider.ALBUM_TITLE_BASE + mCurFilter);
         } else {
-            baseUri = Provider.URI_ALBUMS;
+            baseUri = MuckeboxProvider.URI_ALBUMS;
         }
 
         return new CursorLoader(getActivity(), baseUri,

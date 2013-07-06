@@ -17,7 +17,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-public class Provider extends ContentProvider {
+public class MuckeboxProvider extends ContentProvider {
 	private final static String LOG_TAG = "Provider";
 	
 	public final static String AUTHORITY = "org.muckebox.android.provider";
@@ -47,7 +47,7 @@ public class Provider extends ContentProvider {
 	
 	private static MuckeboxDbHelper mDbHelper = null;
 	
-	public Provider() {
+	public MuckeboxProvider() {
 	}
 
 	@Override
@@ -262,8 +262,11 @@ public class Provider extends ContentProvider {
 			Log.d(LOG_TAG, "Query all downloads");
 			
 			result = db.query(
-					DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
-					null, null, null, null, DownloadEntry.SORT_ORDER, null);
+					DownloadEntry.TABLE_NAME,
+					(projection == null) ? DownloadEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder,
+					null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_DOWNLOADS);
 		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE)) {

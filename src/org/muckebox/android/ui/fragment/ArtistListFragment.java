@@ -1,7 +1,7 @@
 package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
-import org.muckebox.android.db.Provider;
+import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.net.RefreshArtistsTask;
@@ -133,9 +133,9 @@ public class ArtistListFragment extends RefreshableListFragment
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
         if (mCurFilter != null) {
-            baseUri = Uri.parse(Provider.ARTIST_NAME_BASE + mCurFilter);
+            baseUri = Uri.parse(MuckeboxProvider.ARTIST_NAME_BASE + mCurFilter);
         } else {
-            baseUri = Provider.URI_ARTISTS;
+            baseUri = MuckeboxProvider.URI_ARTISTS;
         }
 
         return new CursorLoader(getActivity(), baseUri,
