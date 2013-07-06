@@ -52,7 +52,6 @@
             android:id="@+id/track_list_play"
             style="@style/TrackListButton" />
         
-        <!-- 
         <ImageButton
             android:id="@+id/track_list_add_to_queue"
             android:src="@drawable/av_add_to_queue"
@@ -64,7 +63,12 @@
             android:src="@drawable/av_download"
             android:contentDescription="@string/download"
             style="@style/TrackListButton" />
-        -->
+        
+        <ImageButton
+            android:id="@+id/track_list_pin"
+            android:src="@drawable/av_make_available_offline"
+            android:contentDescription="@string/pin_to_device"
+            style="@style/TrackListButton" />
         
     </LinearLayout>
     

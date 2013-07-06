@@ -66,6 +66,7 @@
     <string name="error_json">An error occurred while parsing the JSON response.</string>
     <string name="error_reload_albums">An error occurred while refreshing the album list.</string>
     <string name="error_reload_tracks">An error occurred while refreshing the track list.</string>
+    <string name="error_download">An error occurred while downloading a track.</string>
     
     <!--  TITLES -->
     <string name="title_activity_artist_album_browse_activiy">Albums</string>
@@ -79,7 +80,8 @@
     <string name="download">Download</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
-    <string name="add_to_queue">Add to Queue</string>
+    <string name="add_to_queue">Add to queue</string>
+    <string name="pin_to_device">Pin to device</string>
     
     <string name="search">Search</string>
     
