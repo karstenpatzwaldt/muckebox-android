@@ -89,7 +89,8 @@ public class DownloadService
 				{
 					mCurrentUri = getQueueEntryUri(trackId, doPin);
 					mCurrentThread = new Thread(
-						new DownloadRunnable(trackId,
+						new DownloadRunnable(
+								trackId,
 								new Handler(DownloadService.this),
 								getDownloadPath(mCurrentUri)));
 					mCurrentThread.start();
@@ -129,11 +130,11 @@ public class DownloadService
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						getContentResolver().delete(mCurrentUri, null, null);		
+						getContentResolver().delete(mCurrentUri, null, null);
+						
+						// mark as downloaded
 					}
 				}).start();
-
-				// mark as downloaded
 				
 				break;
 			case DownloadRunnable.MESSAGE_DOWNLOAD_CANCELED:

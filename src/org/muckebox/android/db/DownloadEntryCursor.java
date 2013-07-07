@@ -14,28 +14,28 @@ public class DownloadEntryCursor {
 	
 	public int getTrackId()
 	{
-		return mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.SHORT_TRACK_ID));
+		return mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.ALIAS_TRACK_ID));
 	}
 	
 	public boolean isTranscodingEnabled()
 	{
-		return (mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.SHORT_TRANSCODE)) == 0) ?
+		return (mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.ALIAS_TRANSCODE)) == 0) ?
 				false : true;
 	}
 	
 	public String getTranscodingType()
 	{
-		return mCursor.getString(mCursor.getColumnIndex(DownloadEntry.SHORT_TRANSCODING_TYPE));
+		return mCursor.getString(mCursor.getColumnIndex(DownloadEntry.ALIAS_TRANSCODING_TYPE));
 	}
 	
 	public String getTranscodingQuality()
 	{
-		return mCursor.getString(mCursor.getColumnIndex(DownloadEntry.SHORT_TRANSCODING_QUALITY));
+		return mCursor.getString(mCursor.getColumnIndex(DownloadEntry.ALIAS_TRANSCODING_QUALITY));
 	}
 	
 	public boolean doPin()
 	{
-		return (mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.SHORT_PIN_RESULT)) == 0) ?
+		return (mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.ALIAS_PIN_RESULT)) == 0) ?
 				false : true;
 	}
 }
