@@ -97,10 +97,12 @@ public class DownloadService
 			switch (msg.what)
 			{
 			case DownloadRunnable.MESSAGE_DOWNLOAD_STARTED:
-				l.onDownloadStarted(msg.arg1);
+				l.onDownloadStarted(msg.arg1, (String) msg.obj);
+				
 				ContentValues values = new ContentValues();
 				values.put(DownloadEntry.SHORT_STATUS, DownloadEntry.STATUS_VALUE_DOWNLOADING);
 				getContentResolver().update(mCurrentUri, values, null, null);
+				
 				break;
 			case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 				l.onDataReceived(msg.arg1, (ByteBuffer) msg.obj);
