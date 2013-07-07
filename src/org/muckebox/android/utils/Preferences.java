@@ -26,4 +26,8 @@ public class Preferences {
 	public static String getTranscodingQuality() {
 		return getPreferences().getString("transcoding_quality", "high");
 	}
+	
+	public static boolean isCachingEnabled() {
+		return getPreferences().getBoolean("caching_enable", true);
+	}
 }

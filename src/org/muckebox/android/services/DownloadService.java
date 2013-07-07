@@ -5,10 +5,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.muckebox.android.Muckebox;
+import org.muckebox.android.db.DownloadEntryCursor;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.utils.Preferences;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -64,28 +66,37 @@ public class DownloadService
 		final boolean doPin = intent.getBooleanExtra(EXTRA_PIN, false);
 		final boolean startNow = intent.getBooleanExtra(EXTRA_START_NOW, false);
 		
-		if (startNow)
-		{
-			if (mCurrentThread != null)
-			{
-				try
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				if (startNow)
 				{
-					mCurrentThread.interrupt();
-					mCurrentThread.join();
-					mCurrentThread = null;
-				} catch (InterruptedException e)
-				{
-					Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
+					if (mCurrentThread != null)
+					{
+						try
+						{
+							mCurrentThread.interrupt();
+							mCurrentThread.join();
+							mCurrentThread = null;
+						} catch (InterruptedException e)
+						{
+							Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
+						}
+					}
 				}
+				
+				if (mCurrentThread == null)
+				{
+					mCurrentUri = getQueueEntryUri(trackId, doPin);
+					mCurrentThread = new Thread(
+						new DownloadRunnable(trackId,
+								new Handler(DownloadService.this),
+								getDownloadPath(mCurrentUri)));
+					mCurrentThread.start();
+				}
+
 			}
-		}
-		
-		if (mCurrentThread == null)
-		{
-			mCurrentUri = getQueueEntryUri(trackId, doPin);
-			mCurrentThread = new Thread(
-				new DownloadRunnable(trackId, new Handler(this)));
-		}
+		}).start();
 		
 		return Service.START_STICKY;
 	}
@@ -99,21 +110,42 @@ public class DownloadService
 			case DownloadRunnable.MESSAGE_DOWNLOAD_STARTED:
 				l.onDownloadStarted(msg.arg1, (String) msg.obj);
 				
-				ContentValues values = new ContentValues();
-				values.put(DownloadEntry.SHORT_STATUS, DownloadEntry.STATUS_VALUE_DOWNLOADING);
-				getContentResolver().update(mCurrentUri, values, null, null);
-				
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						ContentValues values = new ContentValues();
+						values.put(DownloadEntry.SHORT_STATUS, DownloadEntry.STATUS_VALUE_DOWNLOADING);
+						getContentResolver().update(mCurrentUri, values, null, null);					
+					}
+				}).start();
+
 				break;
 			case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 				l.onDataReceived(msg.arg1, (ByteBuffer) msg.obj);
 				break;
 			case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
 				l.onDownloadStopped(msg.arg1);
-				getContentResolver().delete(mCurrentUri, null, null);
+				
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						getContentResolver().delete(mCurrentUri, null, null);		
+					}
+				}).start();
+
+				// mark as downloaded
+				
 				break;
 			case DownloadRunnable.MESSAGE_DOWNLOAD_CANCELED:
 				l.onDownloadCanceled(msg.arg1);
-				getContentResolver().delete(mCurrentUri, null, null);
+				
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						getContentResolver().delete(mCurrentUri, null, null);
+					}
+				}).start();
+				
 				break;
 			default:
 				return false;
@@ -169,6 +201,25 @@ public class DownloadService
 			
 			return Uri.parse(MuckeboxProvider.DOWNLOAD_ID_BASE +
 					Integer.toString(result.getInt(idIndex)));
+		}
+	}
+	
+	@SuppressLint("DefaultLocale")
+	private String getDownloadPath(Uri queueEntryUri)
+	{
+		DownloadEntryCursor entry = new DownloadEntryCursor(
+				getContentResolver().query(queueEntryUri, null, null, null, null));
+		
+		if (Preferences.isCachingEnabled() || entry.doPin())
+		{
+			return String.format("track_%d_%d_%s.%s",
+					entry.getTrackId(),
+					entry.isTranscodingEnabled() ? 1 : 0,
+					entry.getTranscodingQuality(),
+					entry.getTranscodingType());
+		} else
+		{
+			return null;
 		}
 	}
 }
