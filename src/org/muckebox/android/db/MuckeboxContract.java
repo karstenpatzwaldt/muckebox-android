@@ -186,6 +186,76 @@ public final class MuckeboxContract {
 		};
 		
 		public static final String SORT_ORDER = FULL_TIMESTAMP + " ASC";
+	}
+	
+	public static abstract class CacheEntry implements BaseColumns {
+		public static final String TABLE_NAME = "cache";
+		
+		public static final String SHORT_ID = _ID;
+		
+		public static final String SHORT_TRACK_ID				= "track_id";
+		
+		public static final String SHORT_FILENAME				= "filename";
+		public static final String SHORT_MIME_TYPE				= "mime_type";
+		public static final String SHORT_SIZE					= "size";
+		public static final String SHORT_TIMESTAMP				= "timestamp";
+		
+		public static final String SHORT_TRANSCODED				= "transcoded";
+		public static final String SHORT_TRANCODING_TYPE		= "transcoding_type";
+		public static final String SHORT_TRANSCODING_QUALITY	= "transcoding_quality";
+		
+		public static final String SHORT_PINNED					= "pinned";
+		
+		public static final String FULL_ID					= TABLE_NAME + "." + SHORT_ID;
+
+		public static final String FULL_TRACK_ID			= TABLE_NAME + "." + SHORT_TRACK_ID;
+
+		public static final String FULL_FILENAME			= TABLE_NAME + "." + SHORT_FILENAME;
+		public static final String FULL_MIME_TYPE			= TABLE_NAME + "." + SHORT_MIME_TYPE;
+		public static final String FULL_SIZE				= TABLE_NAME + "." + SHORT_SIZE;
+		public static final String FULL_TIMESTAMP			= TABLE_NAME + "." + SHORT_TIMESTAMP;
+
+		public static final String FULL_TRANSCODED			= TABLE_NAME + "." + SHORT_TRANSCODED;
+		public static final String FULL_TRANSCODING_TYPE	= TABLE_NAME + "." + SHORT_TRANCODING_TYPE;
+		public static final String FULL_TRANSCODING_QUALITY	= TABLE_NAME + "." + SHORT_TRANSCODING_QUALITY;
+
+		public static final String FULL_PINNED				= TABLE_NAME + "." + SHORT_PINNED;
+
+		public static final String ALIAS_ID						= TABLE_NAME + "_" + SHORT_ID;
+
+		public static final String ALIAS_TRACK_ID				= TABLE_NAME + "_" + SHORT_TRACK_ID;
+
+		public static final String ALIAS_FILENAME				= TABLE_NAME + "_" + SHORT_FILENAME;
+		public static final String ALIAS_MIME_TYPE				= TABLE_NAME + "_" + SHORT_MIME_TYPE;
+		public static final String ALIAS_SIZE					= TABLE_NAME + "_" + SHORT_SIZE;
+		public static final String ALIAS_TIMESTAMP				= TABLE_NAME + "_" + SHORT_TIMESTAMP;
+
+		public static final String ALIAS_TRANSCODED				= TABLE_NAME + "_" + SHORT_TRANSCODED;
+		public static final String ALIAS_TRANSCODING_TYPE		= TABLE_NAME + "_" + SHORT_TRANCODING_TYPE;
+		public static final String ALIAS_TRANSCODING_QUALITY	= TABLE_NAME + "_" + SHORT_TRANSCODING_QUALITY;
+
+		public static final String ALIAS_PINNED					= TABLE_NAME + "_" + SHORT_PINNED;
+		
+		public static final String[] PROJECTION =
+			{
+				FULL_ID,
+				
+				FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
+				
+				FULL_FILENAME + AS + ALIAS_FILENAME,
+				FULL_MIME_TYPE + AS + ALIAS_MIME_TYPE,
+				FULL_SIZE + AS + ALIAS_SIZE,
+				FULL_TIMESTAMP + AS + ALIAS_TIMESTAMP,
+				
+				FULL_TRANSCODED + AS + ALIAS_TRANSCODED,
+				FULL_TRANSCODING_TYPE + AS + ALIAS_TRANSCODING_TYPE,
+				FULL_TRANSCODING_QUALITY + AS + ALIAS_TRANSCODING_QUALITY,
+				
+				FULL_PINNED + AS + ALIAS_PINNED
+			};
+		
+		// we probably don't need to sort those
+		public static final String SORT_ORDER = null;
 }
 	
 	public static abstract class AlbumArtistJoin implements BaseColumns {

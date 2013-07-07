@@ -5,6 +5,7 @@ import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
+import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
@@ -45,6 +46,10 @@ public class MuckeboxProvider extends ContentProvider {
 	public static final Uri URI_DOWNLOADS = Uri.parse(DOWNLOADS);
 	public static final String DOWNLOAD_ID_BASE = DOWNLOADS + "/id=";
 	
+	public static final String CACHE = SCHEME + AUTHORITY + "/cache";
+	public static final Uri URI_CACHE = Uri.parse(CACHE);
+	public static final String CACHE_ID_BASE = CACHE + "/id=";
+	
 	private static MuckeboxDbHelper mDbHelper = null;
 	
 	public MuckeboxProvider() {
@@ -73,6 +78,24 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
 			
 			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null);
+		} else if (URI_CACHE.equals(uri))
+		{
+			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
+			
+			getContext().getContentResolver().notifyChange(URI_CACHE, null);
+		} else if (uri.toString().startsWith(CACHE_ID_BASE))
+		{
+			final long id = Long.parseLong(uri.toString().substring(CACHE_ID_BASE.length()));
+			String whereClause = CacheEntry.FULL_ID + " = " + Long.toString(id);
+			
+			if (! TextUtils.isEmpty(selection))
+			{
+				whereClause += " AND " + selection;
+			}
+			
+			ret = db.delete(CacheEntry.TABLE_NAME, whereClause, selectionArgs);
+			
+			getContext().getContentResolver().notifyChange(URI_CACHE, null);
 		} else {
 			throw new UnsupportedOperationException("Not yet implemented");
 		}
@@ -96,7 +119,13 @@ public class MuckeboxProvider extends ContentProvider {
 			getContext().getContentResolver().notifyChange(URI_DOWNLOADS, null, false);
 			
 			return Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
+		} else if (URI_CACHE.equals(uri))
+		{
+			long id = db.insert(CacheEntry.TABLE_NAME, null, values);
 			
+			getContext().getContentResolver().notifyChange(URI_CACHE, null);
+			
+			return Uri.parse(CACHE_ID_BASE + Long.toString(id));
 		} else 
 		{
 			throw new UnsupportedOperationException("Unknown URI");
@@ -281,6 +310,24 @@ public class MuckeboxProvider extends ContentProvider {
 					DownloadEntry.SORT_ORDER, null);
 			
 			result.setNotificationUri(getContext().getContentResolver(), URI_DOWNLOADS);
+		} else if (URI_CACHE.equals(uri))
+		{
+			result = db.query(CacheEntry.TABLE_NAME,
+					(projection == null) ? CacheEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_CACHE);
+		} else if (uri.toString().startsWith(CACHE_ID_BASE)) {
+			String cache_id = uri.toString().substring(CACHE_ID_BASE.length());
+			
+			result = db.query(CacheEntry.TABLE_NAME,
+					(projection == null) ? CacheEntry.PROJECTION : projection,
+					CacheEntry.FULL_ID + " IS ?",
+					new String[] { cache_id }, null, null,
+					CacheEntry.SORT_ORDER, null);
+			
+			result.setNotificationUri(getContext().getContentResolver(), URI_CACHE);
 		} else {
 	        throw new UnsupportedOperationException("Unknown URI");
 	    }
