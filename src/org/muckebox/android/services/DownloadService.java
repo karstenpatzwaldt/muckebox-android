@@ -7,6 +7,7 @@ import java.util.Set;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.db.DownloadEntryCursor;
 import org.muckebox.android.db.MuckeboxProvider;
+import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.utils.Preferences;
 
@@ -103,7 +104,7 @@ public class DownloadService
 	}
 
 	@Override
-	public boolean handleMessage(Message msg) {
+	public boolean handleMessage(final Message msg) {
 		for (DownloadListener l: mListeners)
 		{
 			switch (msg.what)
@@ -130,9 +131,7 @@ public class DownloadService
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						getContentResolver().delete(mCurrentUri, null, null);
-						
-						// mark as downloaded
+						moveToCache(mCurrentUri, (DownloadRunnable.Result) msg.obj);
 					}
 				}).start();
 				
@@ -222,5 +221,27 @@ public class DownloadService
 		{
 			return null;
 		}
+	}
+	
+	private void moveToCache(Uri queueEntryUri, DownloadRunnable.Result res)
+	{
+		DownloadEntryCursor entry = new DownloadEntryCursor(
+				getContentResolver().query(queueEntryUri, null, null, null, null));
+		
+		ContentValues values = new ContentValues();
+		
+		values.put(CacheEntry.SHORT_TRACK_ID, res.trackId);
+		values.put(CacheEntry.SHORT_FILENAME, res.path);
+		values.put(CacheEntry.SHORT_MIME_TYPE, res.mimeType);
+		values.put(CacheEntry.SHORT_SIZE, res.size);
+		
+		values.put(CacheEntry.SHORT_TRANSCODED, res.transcodingEnabled ? 1 : 0);
+		values.put(CacheEntry.SHORT_TRANCODING_TYPE, res.transcodingType);
+		values.put(CacheEntry.SHORT_TRANSCODING_QUALITY, res.transcodingQuality);
+		
+		values.put(CacheEntry.SHORT_PINNED, entry.doPin() ? 1 : 0);
+		
+		getContentResolver().insert(MuckeboxProvider.URI_CACHE, values);
+		getContentResolver().delete(mCurrentUri, null, null);
 	}
 }

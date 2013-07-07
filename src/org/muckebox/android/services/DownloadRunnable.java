@@ -37,6 +37,18 @@ public class DownloadRunnable implements Runnable
 	public static final int MESSAGE_DOWNLOAD_FINISHED = 3;
 	public static final int MESSAGE_DOWNLOAD_CANCELED = 4;
 	
+	public static class Result {
+		public long trackId;
+		
+		public String path;
+		public String mimeType;
+		public int size;
+		
+		public boolean transcodingEnabled;
+		public String transcodingType;
+		public String transcodingQuality;
+	}
+	
 	DownloadRunnable(long trackId, Handler resultHandler)
 	{
 		init(trackId, resultHandler, null);
@@ -79,7 +91,7 @@ public class DownloadRunnable implements Runnable
 		return url;
 	}
 	
-	private void handleReceivedData(ByteBuffer data) throws IOException
+	private int handleReceivedData(ByteBuffer data) throws IOException
 	{
 		if (! isEmpty(data))
 		{
@@ -90,7 +102,11 @@ public class DownloadRunnable implements Runnable
 			{
 				mOutputStream.write(data.array(), 0, data.position());
 			}
+			
+			return data.position();
 		}
+		
+		return 0;
 	}
 	
 	private int bytesRemaining(ByteBuffer buf)
@@ -143,6 +159,22 @@ public class DownloadRunnable implements Runnable
 		}
 	}
 	
+	private Result makeResult(String mimeType, int bytesTotal) {
+		Result res = new Result();
+		
+		res.trackId = mTrackId;
+		
+		res.path = mOutputPath;
+		res.mimeType = mimeType;
+		res.size = bytesTotal;
+		
+		res.transcodingEnabled = mTranscodingEnabled;
+		res.transcodingType = mTranscodingType;
+		res.transcodingQuality = mTranscodingQuality;
+		
+		return res;
+	}
+	
 	public void run()
 	{
 		HttpURLConnection conn = null;
@@ -151,7 +183,9 @@ public class DownloadRunnable implements Runnable
 		{
 			String downloadUrl = getDownloadUrl();
 			conn = NetHelper.getDefaultConnection(new URL(downloadUrl));
+			String mimeType = conn.getContentType();
 			InputStream is = conn.getInputStream();
+			int bytesTotal = 0;
 			
 			Log.d(LOG_TAG, "Downloading from " + downloadUrl);
 			
@@ -163,22 +197,22 @@ public class DownloadRunnable implements Runnable
 			}
 
 			mHandler.sendMessage(mHandler.obtainMessage(
-					MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0,
-					conn.getContentType()));
+					MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, mimeType));
 
 			while (true)
 			{
 				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
 				boolean eosReached = readIntoBuffer(is, buf);
 				
-				handleReceivedData(buf);
+				bytesTotal += handleReceivedData(buf);
 				
 				if (eosReached)
 				{
 					Log.v(LOG_TAG, "Download finished!");
 					
 					mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DOWNLOAD_FINISHED, mTrackId));
+						MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0,
+						makeResult(mimeType, bytesTotal)));
 					return;
 				}
 				
