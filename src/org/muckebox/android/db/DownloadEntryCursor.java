@@ -9,7 +9,15 @@ public class DownloadEntryCursor {
 	
 	public DownloadEntryCursor(Cursor cursor)
 	{
+		assert(cursor.getCount() > 0);
+		
 		mCursor = cursor;
+		mCursor.moveToFirst();
+	}
+	
+	public int getId()
+	{
+		return mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.SHORT_ID));
 	}
 	
 	public int getTrackId()

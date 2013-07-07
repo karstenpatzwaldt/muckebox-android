@@ -56,7 +56,7 @@ public class NetHelper {
 		builder.path(String.format("/api/%s", query));
 		
 		if (extra != null)
-			builder.appendPath("/" + extra);
+			builder.appendPath(extra);
 		
 		if ((keys != null) && (values != null) && (keys.length > 0))
 		{

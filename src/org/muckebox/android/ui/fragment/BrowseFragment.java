@@ -42,9 +42,12 @@ public class BrowseFragment extends Fragment {
         	
         	switch (position) {
         	case 0:
-        		ret = new ArtistListFragment();
+        		ret = new DownloadListFragment();
         		break;
         	case 1:
+        		ret = new ArtistListFragment();
+        		break;
+        	case 2:
         		ret = new AlbumListFragment();
         		break;
         	default:
@@ -57,7 +60,7 @@ public class BrowseFragment extends Fragment {
 
         @Override
         public int getCount() {
-            return 2;
+            return 3;
         }
 
         @Override
@@ -66,10 +69,12 @@ public class BrowseFragment extends Fragment {
         	{
 	            Locale l = Locale.getDefault();
 	            switch (position) {
-	                case 0:
-	                    return getString(R.string.title_section1).toUpperCase(l);
-	                case 1:
-	                    return getString(R.string.title_section2).toUpperCase(l);
+	            case 0:
+	            	return getString(R.string.download_list_title).toUpperCase(l);
+                case 1:
+                    return getString(R.string.title_section1).toUpperCase(l);
+                case 2:
+                    return getString(R.string.title_section2).toUpperCase(l);
 	            }
         	}
         	

@@ -16,7 +16,6 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String PRIMARY_KEY = " PRIMARY KEY ";
 	private static final String SEP = ",";
 	private static final String DEFAULT_NOW = " DEFAULT CURRENT_TIMESTAMP";
-	private static final String DEFAULT_ZERO = " DEFAULT 0";
 	
 	private static final String SQL_CREATE_ARTIST_TABLE = 
 			"CREATE TABLE " + ArtistEntry.TABLE_NAME + " (" +
@@ -64,10 +63,10 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 			DownloadEntry.SHORT_TRANSCODING_QUALITY + TEXT_TYPE + SEP +
 			
 			DownloadEntry.SHORT_PIN_RESULT + INT_TYPE + SEP +
+			DownloadEntry.SHORT_START_NOW + INT_TYPE + SEP +
 			
-			DownloadEntry.SHORT_STATUS + TEXT_TYPE + " DEFAULT '" +
-				DownloadEntry.STATUS_VALUE_QUEUED + "'" + SEP +
-			DownloadEntry.SHORT_BYTES_DOWNLOADED + INT_TYPE + DEFAULT_ZERO +
+			DownloadEntry.SHORT_STATUS + INT_TYPE + " DEFAULT '" +
+				DownloadEntry.STATUS_VALUE_QUEUED + "'" +
 			")";
 	private static final String SQL_DROP_DOWNLOAD_TABLE =
 			"DROP TABLE IF EXISTS " + DownloadEntry.TABLE_NAME;
@@ -92,7 +91,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_CACHE_TABLE =
 			"DROP TABLE IF EXISTS " + CacheEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 3;
+	private static final int DB_VERSION = 1;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {

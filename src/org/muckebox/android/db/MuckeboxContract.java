@@ -132,13 +132,12 @@ public final class MuckeboxContract {
 		public static final String SHORT_TRANSCODING_QUALITY	= "transcoding_quality";
 		
 		public static final String SHORT_PIN_RESULT				= "pin_result";
+		public static final String SHORT_START_NOW				= "start_now";
 		
 		// this is effectively an enum
 		public static final String SHORT_STATUS					= "status";
-		public static final String STATUS_VALUE_QUEUED			= "status_queued";
-		public static final String STATUS_VALUE_DOWNLOADING		= "status_downloading";
-		
-		public static final String SHORT_BYTES_DOWNLOADED		= "bytes_downloaded";
+		public static final int STATUS_VALUE_QUEUED				= 1;
+		public static final int STATUS_VALUE_DOWNLOADING		= 2;
 		
 		public static final String FULL_ID					= TABLE_NAME + "." + SHORT_ID;
 		
@@ -150,11 +149,10 @@ public final class MuckeboxContract {
 		public static final String FULL_TRANSCODING_QUALITY	= TABLE_NAME + "." + SHORT_TRANSCODING_QUALITY;
 
 		public static final String FULL_PIN_RESULT			= TABLE_NAME + "." + SHORT_PIN_RESULT;
+		public static final String FULL_START_NOW			= TABLE_NAME + "." + SHORT_START_NOW;
 		
 		public static final String FULL_STATUS				= TABLE_NAME + "." + SHORT_STATUS;
-		
-		public static final String FULL_BYTES_DOWNLOADED	= TABLE_NAME + "." + SHORT_BYTES_DOWNLOADED;
-		
+
 		public static final String ALIAS_ID						= TABLE_NAME + "_" + SHORT_ID;
 		
 		public static final String ALIAS_TIMESTAMP				= TABLE_NAME + "_" + SHORT_TIMESTAMP;
@@ -165,10 +163,10 @@ public final class MuckeboxContract {
 		public static final String ALIAS_TRANSCODING_QUALITY	= TABLE_NAME + "_" + SHORT_TRANSCODING_QUALITY;
 
 		public static final String ALIAS_PIN_RESULT				= TABLE_NAME + "_" + SHORT_PIN_RESULT;
+		public static final String ALIAS_START_NOW				= TABLE_NAME + "_" + SHORT_START_NOW;
 		
 		public static final String ALIAS_STATUS					= TABLE_NAME + "_" + SHORT_STATUS;
-		public static final String ALIAS_BYTES_DOWNLOADED		= TABLE_NAME + "_" + SHORT_BYTES_DOWNLOADED;
-		
+
 		public static final String[] PROJECTION = {
 			FULL_ID,
 			
@@ -180,12 +178,15 @@ public final class MuckeboxContract {
 			FULL_TRANSCODING_QUALITY + AS + ALIAS_TRANSCODING_QUALITY,
 
 			FULL_PIN_RESULT + AS + ALIAS_PIN_RESULT,
+			FULL_START_NOW + AS + ALIAS_START_NOW,
 
 			FULL_STATUS + AS + ALIAS_STATUS,
-			FULL_BYTES_DOWNLOADED + AS + ALIAS_BYTES_DOWNLOADED
 		};
 		
-		public static final String SORT_ORDER = FULL_TIMESTAMP + " ASC";
+		public static final String SORT_ORDER = 
+				FULL_STATUS + " DESC, " +
+				FULL_START_NOW + " DESC, " + 
+				FULL_TIMESTAMP + " ASC";
 	}
 	
 	public static abstract class CacheEntry implements BaseColumns {

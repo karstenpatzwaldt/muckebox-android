@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/ListItem" >
+
+    <TextView
+        android:id="@+id/download_list_row_title"
+        style="@style/ListItemPrimaryText" />
+ 
+    <TextView
+        android:id="@+id/download_list_row_status"
+        android:layout_below="@id/download_list_row_title"
+        style="@style/ListItemSecondaryText" />
+
+</RelativeLayout>

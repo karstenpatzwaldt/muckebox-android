@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.net.NetHelper;
@@ -30,13 +31,16 @@ public class DownloadRunnable implements Runnable
 	private Handler mHandler;
 	private String mOutputPath;
 	
+	private int mBytesTotal = 0;
+	
 	private FileOutputStream mOutputStream = null;
 	
 	public static final int MESSAGE_DOWNLOAD_STARTED = 1;
 	public static final int MESSAGE_DATA_RECEIVED = 2;
 	public static final int MESSAGE_DOWNLOAD_FINISHED = 3;
-	public static final int MESSAGE_DOWNLOAD_CANCELED = 4;
-	
+	public static final int MESSAGE_DOWNLOAD_FAILED = 4;
+	public static final int MESSAGE_DOWNLOAD_INTERRUPTED = 5;
+
 	public static class Result {
 		public long trackId;
 		
@@ -47,6 +51,11 @@ public class DownloadRunnable implements Runnable
 		public boolean transcodingEnabled;
 		public String transcodingType;
 		public String transcodingQuality;
+	}
+	
+	public static class Chunk {
+		public long bytesTotal;
+		public ByteBuffer buffer;
 	}
 	
 	DownloadRunnable(long trackId, Handler resultHandler)
@@ -95,8 +104,15 @@ public class DownloadRunnable implements Runnable
 	{
 		if (! isEmpty(data))
 		{
+			Log.d(LOG_TAG, "Sending message for " + data.position() + " bytes");
+			
+			Chunk chunk = new Chunk();
+			
+			chunk.bytesTotal = mBytesTotal;
+			chunk.buffer = data;
+			
 			mHandler.sendMessage(mHandler.obtainMessage(
-					MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, data));
+					MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, chunk));
 			
 			if (mOutputStream != null)
 			{
@@ -185,7 +201,6 @@ public class DownloadRunnable implements Runnable
 			conn = NetHelper.getDefaultConnection(new URL(downloadUrl));
 			String mimeType = conn.getContentType();
 			InputStream is = conn.getInputStream();
-			int bytesTotal = 0;
 			
 			Log.d(LOG_TAG, "Downloading from " + downloadUrl);
 			
@@ -204,32 +219,34 @@ public class DownloadRunnable implements Runnable
 				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
 				boolean eosReached = readIntoBuffer(is, buf);
 				
-				bytesTotal += handleReceivedData(buf);
+				mBytesTotal += handleReceivedData(buf);
 				
 				if (eosReached)
 				{
 					Log.v(LOG_TAG, "Download finished!");
 					
+					Result res = makeResult(mimeType, mBytesTotal);
+					
 					mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0,
-						makeResult(mimeType, bytesTotal)));
+						MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0, res));
+					
 					return;
 				}
 				
 				if (Thread.interrupted())
 				{
-					throw new IOException("interrupted");
+					throw new ClosedByInterruptException();
 				}
 			}
+		} catch (ClosedByInterruptException e)
+		{
+			handleFailure(MESSAGE_DOWNLOAD_INTERRUPTED);
 		} catch (IOException e)
 		{
 			Log.d(LOG_TAG, "Error downloading");
-			
-			closeOutputStream();
-			Muckebox.getAppContext().deleteFile(mOutputPath);
+			e.printStackTrace();
 
-			mHandler.sendMessage(mHandler.obtainMessage(
-					MESSAGE_DOWNLOAD_CANCELED, mTrackId));
+			handleFailure(MESSAGE_DOWNLOAD_FAILED);
 		} finally
 		{
 			if (conn != null)
@@ -237,5 +254,13 @@ public class DownloadRunnable implements Runnable
 			
 			closeOutputStream();
 		}
+	}
+	
+	void handleFailure(int messageType) {
+		closeOutputStream();
+		Muckebox.getAppContext().deleteFile(mOutputPath);
+
+		mHandler.sendMessage(mHandler.obtainMessage(
+				messageType, mTrackId));
 	}
 }

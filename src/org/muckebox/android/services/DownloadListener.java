@@ -9,5 +9,7 @@ public interface DownloadListener {
 	
 	void onDownloadCanceled(long trackId);
 	
-	void onDownloadStopped(long trackId);
+	void onDownloadFinished(long trackId);
+	
+	void onDownloadFailed(long trackId);
 }
