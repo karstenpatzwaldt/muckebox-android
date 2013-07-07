@@ -1,4 +1,4 @@
-package org.muckebox.android.ui.utils;
+package org.muckebox.android.utils;
 
 import org.muckebox.android.Muckebox;
 

@@ -7,7 +7,7 @@ import java.util.Set;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.ui.utils.Preferences;
+import org.muckebox.android.utils.Preferences;
 
 import android.app.Service;
 import android.content.ContentValues;

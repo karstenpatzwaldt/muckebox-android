@@ -8,7 +8,7 @@ import java.net.URL;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.muckebox.android.ui.utils.Preferences;
+import org.muckebox.android.utils.Preferences;
 
 import android.content.SharedPreferences;
 import android.net.Uri;

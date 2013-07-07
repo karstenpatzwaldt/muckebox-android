@@ -7,7 +7,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 
 import org.muckebox.android.net.NetHelper;
-import org.muckebox.android.ui.utils.Preferences;
+import org.muckebox.android.utils.Preferences;
 
 import android.os.Handler;
 import android.util.Log;
@@ -61,6 +61,51 @@ public class DownloadRunnable implements Runnable
 		return url;
 	}
 	
+	private void handleReceivedData(ByteBuffer data)
+	{
+		if (! isEmpty(data))
+		{
+			mHandler.sendMessage(mHandler.obtainMessage(
+					MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, data));
+		}
+	}
+	
+	private int bytesRemaining(ByteBuffer buf)
+	{
+		return buf.capacity() - buf.position();
+	}
+	
+	private boolean isFull(ByteBuffer buf)
+	{
+		return (buf.position() + 1) >= buf.capacity();
+	}
+	
+	private boolean isEmpty(ByteBuffer buf)
+	{
+		return buf.position() == 0;
+	}
+	
+	private void increasePosition(ByteBuffer buf, int delta)
+	{
+		buf.position(buf.position() + delta);
+	}
+	
+	private boolean readIntoBuffer(InputStream is, ByteBuffer buf) throws IOException
+	{
+		while (! isFull(buf))
+		{
+			int bytes_read = is.read(buf.array(),
+					buf.position(), bytesRemaining(buf));
+			
+			if (bytes_read == -1)
+				return true;
+			
+			increasePosition(buf, bytes_read);
+		}
+		
+		return false;
+	}
+	
 	public void run()
 	{
 		HttpURLConnection conn = null;
@@ -72,28 +117,19 @@ public class DownloadRunnable implements Runnable
 		{
 			conn = NetHelper.getDefaultConnection(new URL(getDownloadUrl()));
 			InputStream is = conn.getInputStream();
-			ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
-			
+
 			while (true)
 			{
-				int bytes_read = is.read(buf.array(),
-						buf.position(), buf.capacity() - buf.position());
+				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
+				boolean eosReached = readIntoBuffer(is, buf);
 				
-				if (bytes_read == -1)
+				handleReceivedData(buf);
+				
+				if (eosReached)
 				{
 					mHandler.sendMessage(mHandler.obtainMessage(
 						MESSAGE_DOWNLOAD_FINISHED, mTrackId));
 					return;
-				}
-				
-				buf.position(buf.position() + bytes_read);
-				
-				if (buf.position() + 1 == buf.capacity())
-				{
-					mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, buf));
-					
-					buf = ByteBuffer.allocate(BUFFER_SIZE);
 				}
 				
 				if (Thread.interrupted())
