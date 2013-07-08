@@ -45,53 +45,54 @@ public class TrackListFragment extends RefreshableListFragment
 	private static final String ALBUM_ID_ARG = "album_id";
 	private static final String ALBUM_TITLE_ARG = "album_title";
 	
-	private SimpleCursorAdapter mAdapter;
+	private ContextCursorAdapter mAdapter;
 	private boolean mListLoaded = false;
 	
 	private class ListItemState {
 		public int index = 0;
-		public boolean extended = false;
-		public int texts_height = 0;
-		public int total_height = 0;
+		public int textsHeight = 0;
+		public int totalHeight = 0;
 		public ListView list = null;
-		
-		public ListItemState(int newIndex)
-		{
-			index = newIndex;
-		}
 	}
 	
 	private class ContextCursorAdapter extends SimpleCursorAdapter {
+		int mIndexExtended = -1;
+		final int mSpec = MeasureSpec.makeMeasureSpec(4096, MeasureSpec.AT_MOST);			
+		
 		public ContextCursorAdapter(Context context, int layout, Cursor c,
 				String[] from, int[] to, int flags) {
 			super(context, layout, c, from, to, flags);
+		}
+		
+		public void setIndexExtended(int index) {
+			mIndexExtended = index;
+		}
+		
+		public int getIndexExtended() {
+			return mIndexExtended;
 		}
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
 			View ret = super.getView(position, convertView, parent);
-			
-			if (ret.getTag() == null)
+			ListItemState state = (ListItemState) ret.getTag();
+			ViewGroup.LayoutParams params = ret.getLayoutParams();
+					
+			if (state == null)
 			{
-				ListItemState state = new ListItemState(position);
-				int spec = MeasureSpec.makeMeasureSpec(4096, MeasureSpec.AT_MOST);			
 				LinearLayout texts =
 						(LinearLayout) ret.findViewById(R.id.track_list_texts);
-				ViewGroup.LayoutParams params = ret.getLayoutParams();
-				
-				ret.measure(spec, spec);
-				texts.measure(spec, spec);
+
+				ret.measure(mSpec, mSpec);
+				texts.measure(mSpec, mSpec);
 	
-				state.texts_height = texts.getMeasuredHeight();
-				state.total_height = ret.getMeasuredHeight();
+				state = new ListItemState();
+				
+				state.textsHeight = texts.getMeasuredHeight();
+				state.totalHeight = ret.getMeasuredHeight();
 				state.list = (ListView) parent;
 	
-				params.height = state.texts_height;
-				
-				ret.setLayoutParams(params);
-				ret.setTag(state);
-				
 				texts.setOnClickListener(new View.OnClickListener() {
 					public void onClick(View v) {
 						toggleButtons(v);
@@ -109,6 +110,14 @@ public class TrackListFragment extends RefreshableListFragment
 					}
 				});
 			}
+			
+			state.index = position;
+			
+			params.height = (position == mIndexExtended) ?
+					state.totalHeight : state.textsHeight;
+			
+			ret.setLayoutParams(params);
+			ret.setTag(state);
 			
 			return ret;
 		}
@@ -231,54 +240,28 @@ public class TrackListFragment extends RefreshableListFragment
     {
     	ListItemState state = (ListItemState) item.getTag();
     	
-    	if (state.extended)
-    	{
-			ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-					state.total_height, state.texts_height);
-			
-			Log.d(LOG_TAG, "animate " + state.total_height + " -> " + state.texts_height);
-			
-			anim.setInterpolator(new AccelerateDecelerateInterpolator());
-			anim.start();
-			
-			state.extended = false;
-			item.setTag(state);   	
-    	}
+		ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
+				state.totalHeight, state.textsHeight);
+		
+		Log.d(LOG_TAG, "animate " + state.totalHeight + " -> " + state.textsHeight);
+		
+		anim.setInterpolator(new AccelerateDecelerateInterpolator());
+		anim.start();
+
+		item.setTag(state);
     }
     
     private void showItem(View item)
     {
     	ListItemState state = (ListItemState) item.getTag();
 
-    	for (int i = 0; i < state.list.getCount(); ++i)
-    	{
-    		View child = state.list.getChildAt(i);
-    		
-    		if (child != null)
-    		{
-	    		if (i != state.index)
-	    		{
-	    			hideItem(child);
-	    		} else
-	    		{
+    	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
+				state.textsHeight, state.totalHeight);
 
-	    	    	if (! state.extended)
-	    	    	{
-		    	    	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-		        				state.texts_height, state.total_height);
+		anim.setInterpolator(new AccelerateDecelerateInterpolator());
+		anim.start();
 		
-		        		Log.d(LOG_TAG, "animate " + state.texts_height + " -> " + state.total_height);
-		
-		        		anim.setInterpolator(new AccelerateDecelerateInterpolator());
-		        		anim.start();
-		        		
-		        		state.extended = true;
-		        		
-		        		item.setTag(state);  	
-	    	    	}
-	    		}
-    		}
-    	}
+		item.setTag(state);
     }
     
     public void toggleButtons(View item)
@@ -290,12 +273,26 @@ public class TrackListFragment extends RefreshableListFragment
     	} while (parent.getId() != R.id.track_list_top);
 
     	ListItemState state = (ListItemState) parent.getTag();
+    	int indexExtended = mAdapter.getIndexExtended();
     	
-    	if (state.extended)
+    	if (state.index == indexExtended)
     	{
+    		mAdapter.setIndexExtended(-1);
     		hideItem(parent);
     	} else
     	{
+    		int first = state.list.getFirstVisiblePosition();
+    		int end = first + state.list.getChildCount();
+    		
+    		if (indexExtended != -1 && indexExtended >= first && indexExtended < end)
+    		{
+    			View extendedItem = state.list.getChildAt(indexExtended - first);
+    			
+    			if (extendedItem != null)
+    				hideItem(extendedItem);
+    		}
+
+    		mAdapter.setIndexExtended(state.index);
     		showItem(parent);
     	}
     }
