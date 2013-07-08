@@ -60,6 +60,14 @@
         <item name="android:textSize">@dimen/list_primary_text_size</item>
         <item name="android:textColor">@android:color/darker_gray</item>
     </style>
+    
+    <style name="ListItemStatusIcon">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_gravity">right</item>
+        <item name="android:paddingRight">0dp</item>
+        <item name="android:paddingLeft">@dimen/list_item_padding</item>
+    </style>
 
     <style name="TitleStrip">
         <item name="android:layout_width">match_parent</item>

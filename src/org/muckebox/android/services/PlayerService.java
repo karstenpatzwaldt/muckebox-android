@@ -12,6 +12,8 @@ import android.util.Log;
 public class PlayerService extends Service {
 	private final static String LOG_TAG = "PlayerService";
 	
+	public final static String EXTRA_TRACK_ID = "track_id";
+	
 	private enum State {
 		STOPPED, 
 		PAUSED,
@@ -36,6 +38,7 @@ public class PlayerService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		int trackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
 		mState = State.PLAYING;
 
 		Log.d(LOG_TAG, "Start playing");
@@ -44,7 +47,7 @@ public class PlayerService extends Service {
 		{
 			if (l != null)
 			{
-				l.onNewTrack(23, "Mordsmaessiger Track", 423);
+				l.onNewTrack(trackId, "Mordsmaessiger Track", 423);
 				l.onStartPlaying();
 			}
 		}

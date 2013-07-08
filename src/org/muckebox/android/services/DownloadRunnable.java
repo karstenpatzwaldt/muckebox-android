@@ -211,8 +211,9 @@ public class DownloadRunnable implements Runnable
 				Log.d(LOG_TAG, "Saving to " + mOutputPath);
 			}
 
-			mHandler.sendMessage(mHandler.obtainMessage(
-					MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, mimeType));
+			if (mHandler != null)
+				mHandler.sendMessage(mHandler.obtainMessage(
+						MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, mimeType));
 
 			while (true)
 			{
@@ -227,8 +228,9 @@ public class DownloadRunnable implements Runnable
 					
 					Result res = makeResult(mimeType, mBytesTotal);
 					
-					mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0, res));
+					if (mHandler != null)
+						mHandler.sendMessage(mHandler.obtainMessage(
+							MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0, res));
 					
 					return;
 				}

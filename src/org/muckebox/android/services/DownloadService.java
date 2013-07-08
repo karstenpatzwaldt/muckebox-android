@@ -1,9 +1,11 @@
 package org.muckebox.android.services;
 
+import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.muckebox.android.Muckebox;
+import org.muckebox.android.R;
 import org.muckebox.android.db.DownloadEntryCursor;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
@@ -11,10 +13,14 @@ import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.utils.Preferences;
 
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
@@ -33,6 +39,9 @@ public class DownloadService
 	public static final int COMMAND_DOWNLOAD = 1;
 	public static final int COMMAND_CHECK_QUEUE = 2;
 	public static final int COMMAND_CLEAR = 3;
+	public static final int COMMAND_DISCARD = 4;
+	
+	private static final int NOTIFICATION_ID = 1;
 	
 	private final static String LOG_TAG = "DownloadService";
 	private final IBinder mBinder = new DownloadBinder();
@@ -43,6 +52,13 @@ public class DownloadService
 	private Uri mCurrentUri = null;
 	
 	private Handler mHandler = null;
+	
+	private NotificationManager mNotificationManager;
+	private Notification.Builder mNotificationBuilder;
+	private NumberFormat mNumberFormatter;
+	
+	private long mLastTotal;
+	private long mLastTime;
 
 	public void registerListener(DownloadListener listener)
 	{
@@ -59,6 +75,21 @@ public class DownloadService
 		public DownloadService getService() {
 			return DownloadService.this;
 		}
+	}
+	
+	@SuppressWarnings("static-access")
+	@Override
+	public void onCreate() {
+		mNotificationManager =
+			    (NotificationManager) getSystemService(this.NOTIFICATION_SERVICE);
+		Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+		mNotificationBuilder =
+				new Notification.Builder(this).
+					setSmallIcon(android.R.drawable.stat_sys_download).
+					setLargeIcon(bm).
+					setContentTitle(getText(R.string.downloading)).
+					setContentText("0 kB");
+		mNumberFormatter = NumberFormat.getInstance();
 	}
 
 	@Override
@@ -78,6 +109,35 @@ public class DownloadService
 		
 		switch (command)
 		{
+		case COMMAND_DISCARD:
+			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
+			
+			new Thread(new Runnable() {
+				public void run() {
+					Cursor c = getContentResolver().query(mCurrentUri, null, null, null, null);
+					
+					try
+					{
+						DownloadEntryCursor entry = new DownloadEntryCursor(c);
+						
+						int currentTrackId = entry.getTrackId();
+						
+						getContentResolver().delete(
+								MuckeboxProvider.URI_DOWNLOADS,
+								DownloadEntry.FULL_TRACK_ID + " IS ?",
+								new String[] { Integer.toString(discardTrackId) });
+						
+						if (currentTrackId == discardTrackId)
+							stopCurrentDownload();
+					} finally
+					{
+						c.close();
+					}
+				}
+			}).start();
+			
+			return Service.START_NOT_STICKY;
+			
 		case COMMAND_CLEAR:
 			new Thread(new Runnable() {
 				@Override
@@ -99,13 +159,13 @@ public class DownloadService
 			
 			if (mHandler == null)
 				mHandler = new Handler(this);
-			
-			if (startNow)
-				stopCurrentDownload();
-				
+
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
+					if (startNow)
+						stopCurrentDownload();
+
 					addToQueue(trackId, doPin);
 					downloadNextOrStop();
 				}
@@ -169,6 +229,8 @@ public class DownloadService
 			break;
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
+			
+			updateNotification(chunk.bytesTotal);
 
 			for (DownloadListener l: mListeners)
 				l.onDataReceived(msg.arg1, chunk.buffer);
@@ -235,6 +297,8 @@ public class DownloadService
 	}
 	
 	public void onDownloadFinished() {
+		mNotificationManager.cancelAll();
+		
 		mCurrentThread = null;
 		mCurrentUri = null;
 		
@@ -243,6 +307,25 @@ public class DownloadService
 				downloadNextOrStop();
 			}
 		}).start();
+	}
+	
+	private void updateNotification(long bytesTotal) {
+		String totalStr = mNumberFormatter.format((int) bytesTotal / 1024);
+		long timeNow = System.nanoTime();
+		
+		if (timeNow - mLastTime > 1000000000)
+		{
+			int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
+					((float) (timeNow - mLastTime) / 1000000000.0f));
+			
+			mLastTotal = bytesTotal;
+			mLastTime = timeNow;
+	
+			String speedStr = mNumberFormatter.format((int) speed / 1024);
+			
+			mNotificationBuilder.setContentText(totalStr + " kB (" + speedStr + " kB/s)");
+			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+		}
 	}
 	
 	void addToQueue(long trackId, boolean doPin)
@@ -358,6 +441,12 @@ public class DownloadService
 				if (c.getCount() > 0)
 				{
 					DownloadEntryCursor entry = new DownloadEntryCursor(c);
+					
+					mLastTotal = 0;
+					mLastTime = System.nanoTime();
+					
+					mNotificationBuilder.setContentText("0 kB");
+					mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 					
 					mCurrentThread = new Thread(new DownloadRunnable(
 							entry.getTrackId(), mHandler, getDownloadPath(entry)));

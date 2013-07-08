@@ -36,13 +36,33 @@
 	    
 	    </LinearLayout>
 	    	 
-	    <TextView
-	        android:id="@+id/track_list_artist"
-	        style="@style/ListItemSecondaryText" />
-	    
+	    <LinearLayout
+	        style="@style/FullWidth"
+	        android:orientation="horizontal">
+		    
+		    <TextView
+		        android:id="@+id/track_list_artist"
+		        style="@style/ListItemSecondaryText"
+		        android:layout_width="0dp"
+		        android:layout_weight="1" />
+		    
+		    <ImageView 
+		        android:id="@+id/track_list_download_status"
+		        android:src="@drawable/device_access_time"
+		        android:contentDescription="@string/download_status"
+		        style="@style/ListItemStatusIcon" />
+		    
+		    <ImageView
+		        android:id="@+id/track_list_cache_status"
+		        android:src="@drawable/av_download"
+		        android:contentDescription="@string/cache_status"
+		        style="@style/ListItemStatusIcon" />
+		        	        
+	    </LinearLayout>
 	</LinearLayout>
 
    	<LinearLayout
+   	    android:id="@+id/track_list_buttons"
    	    style="@style/ClosedButtonList"
    	    android:paddingLeft="@dimen/activity_horizontal_margin" >
         
@@ -52,11 +72,13 @@
             android:id="@+id/track_list_play"
             style="@style/TrackListButton" />
         
+        <!--  
         <ImageButton
             android:id="@+id/track_list_add_to_queue"
             android:src="@drawable/av_add_to_queue"
             android:contentDescription="@string/add_to_queue"
             style="@style/TrackListButton" />
+            -->
         
         <ImageButton
             android:id="@+id/track_list_download"
@@ -68,6 +90,12 @@
             android:id="@+id/track_list_pin"
             android:src="@drawable/av_make_available_offline"
             android:contentDescription="@string/pin_to_device"
+            style="@style/TrackListButton" />
+        
+        <ImageButton
+            android:id="@+id/track_list_discard"
+            android:src="@drawable/content_discard"
+            android:contentDescription="@string/discard"
             style="@style/TrackListButton" />
         
     </LinearLayout>

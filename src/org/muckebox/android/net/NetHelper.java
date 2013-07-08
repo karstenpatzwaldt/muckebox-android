@@ -17,6 +17,8 @@ import android.util.Log;
 public class NetHelper {
 	private static final String LOG_TAG = "NetHelper";
 	
+	private static final int TIMEOUT = 15 * 1000;
+	
 	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
 		String str_url = getApiUrl(query, id, keys, values);
 		
@@ -75,8 +77,8 @@ public class NetHelper {
 	public static HttpURLConnection getDefaultConnection(URL url) throws IOException {
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		
-		conn.setReadTimeout(10000);
-		conn.setConnectTimeout(1000);
+		conn.setReadTimeout(TIMEOUT);
+		conn.setConnectTimeout(TIMEOUT);
 		conn.setRequestMethod("GET");
 		conn.setDoInput(true);
 		conn.connect();

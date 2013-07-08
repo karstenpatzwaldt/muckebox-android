@@ -289,4 +289,31 @@ public final class MuckeboxContract {
 		public static final String SORT_ORDER = ArtistEntry.SORT_ORDER;
 		public static final String GROUP_BY = ArtistEntry.FULL_ID;
 	}
+	
+	public static abstract class TrackDownloadCacheJoin implements BaseColumns {
+		public static final String TABLE_NAME = TrackEntry.TABLE_NAME + " LEFT OUTER JOIN " +
+				DownloadEntry.TABLE_NAME + " ON (" + TrackEntry.FULL_ID + " = " +
+				DownloadEntry.FULL_TRACK_ID + ") LEFT OUTER JOIN " +
+				CacheEntry.TABLE_NAME + " ON (" + TrackEntry.FULL_ID + " = " +
+				CacheEntry.FULL_TRACK_ID + ")";
+		
+		public static final String ALIAS_CANCELABLE = "cancelable";
+		
+		public static final String[] PROJECTION = {
+			TrackEntry.FULL_ID,
+			
+			TrackEntry.FULL_TITLE + AS + TrackEntry.ALIAS_TITLE,
+			TrackEntry.FULL_DISPLAY_ARTIST + AS + TrackEntry.ALIAS_DISPLAY_ARTIST,
+			TrackEntry.FULL_LENGTH + AS +TrackEntry.ALIAS_LENGTH,
+			
+			DownloadEntry.FULL_STATUS + AS + DownloadEntry.ALIAS_STATUS,
+			
+			CacheEntry.FULL_PINNED + AS + CacheEntry.ALIAS_PINNED,
+			
+			"IFNULL(" + DownloadEntry.FULL_STATUS + ", " + CacheEntry.FULL_PINNED + ") "+
+				AS + TrackDownloadCacheJoin.ALIAS_CANCELABLE
+		};
+		
+		public static final String SORT_ORDER = TrackEntry.SORT_ORDER;
+	}
 }

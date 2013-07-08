@@ -3,9 +3,13 @@ package org.muckebox.android.ui.fragment;
 import java.util.concurrent.TimeUnit;
 
 import org.muckebox.android.R;
+import org.muckebox.android.db.MuckeboxContract.CacheEntry;
+import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
+import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.net.RefreshTracksTask;
+import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
@@ -30,6 +34,7 @@ import android.view.ViewGroup;
 import android.view.View.MeasureSpec;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -71,9 +76,17 @@ public class TrackListFragment extends RefreshableListFragment
 		public int getIndexExtended() {
 			return mIndexExtended;
 		}
+		
+		public int getTrackId(int position) {
+			Cursor c = getCursor();
+			
+			c.moveToPosition(position);
+			
+			return c.getInt(c.getColumnIndex(TrackEntry.SHORT_ID));
+		}
 
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent)
+		public View getView(final int position, View convertView, ViewGroup parent)
 		{
 			View ret = super.getView(position, convertView, parent);
 			ListItemState state = (ListItemState) ret.getTag();
@@ -99,13 +112,60 @@ public class TrackListFragment extends RefreshableListFragment
 					}
 				});
 				
-				ImageButton playButton =
-						(ImageButton) ret.findViewById(R.id.track_list_play);
+				ImageView playButton = (ImageButton) ret.findViewById(R.id.track_list_play);
 				playButton.setOnClickListener(new OnClickListener() {
 					public void onClick(View v) {
 						Intent intent = new Intent(getActivity(), PlayerService.class);
-						getActivity().startService(intent);
 						
+						intent.putExtra(PlayerService.EXTRA_TRACK_ID,
+								mAdapter.getTrackId(getItemState(v).index));
+						
+						getActivity().startService(intent);
+						toggleButtons(v);
+					}
+				});
+				
+				ImageView downloadButton =
+						(ImageButton) ret.findViewById(R.id.track_list_download);
+				downloadButton.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						Intent intent = new Intent(getActivity(), DownloadService.class);
+						
+						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
+								mAdapter.getTrackId(getItemState(v).index));
+						
+						getActivity().startService(intent);
+						toggleButtons(v);
+					}
+				});
+				
+				ImageButton pinButton =
+						(ImageButton) ret.findViewById(R.id.track_list_pin);
+				pinButton.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						Intent intent = new Intent(getActivity(), DownloadService.class);
+						
+						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
+								mAdapter.getTrackId(getItemState(v).index));
+						intent.putExtra(DownloadService.EXTRA_PIN, true);
+						
+						getActivity().startService(intent);
+						toggleButtons(v);
+					}
+				});
+				
+				ImageButton discardButton =
+						(ImageButton) ret.findViewById(R.id.track_list_discard);
+				discardButton.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						Intent intent = new Intent(getActivity(), DownloadService.class);
+						
+						intent.putExtra(DownloadService.EXTRA_COMMAND,
+								DownloadService.COMMAND_DISCARD);
+						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
+								mAdapter.getTrackId(getItemState(v).index));
+						
+						getActivity().startService(intent);
 						toggleButtons(v);
 					}
 				});
@@ -123,7 +183,7 @@ public class TrackListFragment extends RefreshableListFragment
 		}
 	}
 	
-	private class DurationViewBinder implements ViewBinder {
+	private class TracklistViewBinder implements ViewBinder {
         @SuppressLint("DefaultLocale")
 		public boolean setViewValue(View view, Cursor cursor, int columnIndex)
         {
@@ -145,7 +205,77 @@ public class TrackListFragment extends RefreshableListFragment
 				textview.setText(text);
 				
 				return true;
-    		}
+    		} else if (columnIndex == cursor.getColumnIndex(DownloadEntry.ALIAS_STATUS))
+			{
+    			ImageView icon = (ImageView) view;
+    			
+    			if (cursor.isNull(columnIndex))
+    			{
+    				icon.setVisibility(View.GONE);
+    			} else
+    			{
+    				icon.setVisibility(View.VISIBLE);
+    				
+	    			switch (cursor.getInt(columnIndex))
+	    			{
+	    			case DownloadEntry.STATUS_VALUE_QUEUED:
+	    				icon.setImageResource(R.drawable.device_access_time);
+	    				break;
+	    			case DownloadEntry.STATUS_VALUE_DOWNLOADING:
+	    				// XXX add download animation
+	    				icon.setImageResource(R.drawable.device_access_time);
+	    				break;
+	    			}
+    			}
+	    			
+    			return true;
+			} else if (columnIndex == cursor.getColumnIndex(CacheEntry.ALIAS_PINNED))
+			{
+				ImageView icon = (ImageView) view;
+				
+				if (cursor.isNull(columnIndex))
+				{
+					icon.setVisibility(View.GONE);
+				} else
+				{
+					icon.setVisibility(View.VISIBLE);
+					
+					switch (cursor.getInt(columnIndex))
+					{
+					case 0:
+						icon.setImageResource(R.drawable.av_download);
+						break;
+					case 1:
+						icon.setImageResource(R.drawable.av_make_available_offline);
+						break;
+					}
+				}
+				
+				return true;
+			} else if (columnIndex ==
+					cursor.getColumnIndex(TrackDownloadCacheJoin.ALIAS_CANCELABLE))
+			{
+				ImageButton downloadButton =
+						(ImageButton) view.findViewById(R.id.track_list_download);
+				ImageButton pinButton =
+						(ImageButton) view.findViewById(R.id.track_list_pin);
+				ImageButton discardButton =
+						(ImageButton) view.findViewById(R.id.track_list_discard);
+
+				if (cursor.isNull(columnIndex))
+				{
+					downloadButton.setVisibility(View.VISIBLE);
+					pinButton.setVisibility(View.VISIBLE);
+					discardButton.setVisibility(View.GONE);
+				} else
+				{
+					downloadButton.setVisibility(View.GONE);
+					pinButton.setVisibility(View.GONE);
+					discardButton.setVisibility(View.VISIBLE);
+				}
+				
+				return true;
+			}
 			
 			return false;
     	}
@@ -198,15 +328,21 @@ public class TrackListFragment extends RefreshableListFragment
                 new String[] {
         			TrackEntry.ALIAS_TITLE,
         			TrackEntry.ALIAS_DISPLAY_ARTIST,
-        			TrackEntry.ALIAS_LENGTH
+        			TrackEntry.ALIAS_LENGTH,
+        			DownloadEntry.ALIAS_STATUS,
+        			CacheEntry.ALIAS_PINNED,
+        			TrackDownloadCacheJoin.ALIAS_CANCELABLE
         			},
                 new int[] {
         			R.id.track_list_title,
         			R.id.track_list_artist,
-        			R.id.track_list_duration
+        			R.id.track_list_duration,
+        			R.id.track_list_download_status,
+        			R.id.track_list_cache_status,
+        			R.id.track_list_buttons,
         			}, 0);
         
-        mAdapter.setViewBinder(new DurationViewBinder());
+        mAdapter.setViewBinder(new TracklistViewBinder());
         
         TextView header = (TextView) getActivity().findViewById(R.id.track_list_title_strip);
         
@@ -264,14 +400,23 @@ public class TrackListFragment extends RefreshableListFragment
 		item.setTag(state);
     }
     
-    public void toggleButtons(View item)
-    {
-    	View parent = item;
+    private View getListItem(View view) {
+    	View parent = view;
     	
     	do {
         	parent = (View) parent.getParent();
     	} while (parent.getId() != R.id.track_list_top);
-
+    	
+    	return parent;
+    }
+    
+    private ListItemState getItemState(View view) {
+    	return (ListItemState) getListItem(view).getTag();
+    }
+    
+    public void toggleButtons(View item)
+    {
+    	View parent = getListItem(item);
     	ListItemState state = (ListItemState) parent.getTag();
     	int indexExtended = mAdapter.getIndexExtended();
     	

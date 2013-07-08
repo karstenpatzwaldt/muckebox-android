@@ -7,6 +7,7 @@ import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
+import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.ContentProvider;
@@ -74,6 +75,7 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
 			
 			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
 		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
 		{
 			final long id = Long.parseLong(uri.toString().substring(DOWNLOAD_ID_BASE.length()));
@@ -87,6 +89,7 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
 			
 			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
 		} else if (URI_CACHE.equals(uri))
 		{
 			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
@@ -105,6 +108,7 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = db.delete(CacheEntry.TABLE_NAME, whereClause, selectionArgs);
 			
 			resolver.notifyChange(URI_CACHE, null);
+			resolver.notifyChange(URI_TRACKS, null);
 		} else {
 			throw new UnsupportedOperationException("Not yet implemented");
 		}
@@ -127,7 +131,8 @@ public class MuckeboxProvider extends ContentProvider {
 		{
 			long id = db.insert(DownloadEntry.TABLE_NAME, null, values);
 			
-			resolver.notifyChange(URI_DOWNLOADS, null, false);
+			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
 			
 			ret = Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
 		} else if (URI_CACHE.equals(uri))
@@ -135,6 +140,7 @@ public class MuckeboxProvider extends ContentProvider {
 			long id = db.insert(CacheEntry.TABLE_NAME, null, values);
 			
 			resolver.notifyChange(URI_CACHE, null);
+			resolver.notifyChange(URI_TRACKS, null);
 			
 			ret = Uri.parse(CACHE_ID_BASE + Long.toString(id));
 		} else 
@@ -241,8 +247,10 @@ public class MuckeboxProvider extends ContentProvider {
 			Log.d(LOG_TAG, "Query all tracks");
 			
 			result = db.query(
-					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
-					null, null, null, null, TrackEntry.SORT_ORDER, null);
+					TrackDownloadCacheJoin.TABLE_NAME,
+					TrackDownloadCacheJoin.PROJECTION,
+					null, null, null, null, 
+					TrackDownloadCacheJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 		} else if (uri.toString().startsWith(TRACK_ID_BASE)) {
@@ -251,10 +259,11 @@ public class MuckeboxProvider extends ContentProvider {
 			Log.d(LOG_TAG, "Query track id = " + id);
 			
 			result = db.query(
-					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackDownloadCacheJoin.TABLE_NAME,
+					TrackDownloadCacheJoin.PROJECTION,
 					TrackEntry.FULL_ID + " IS ?",
 					new String[] { String.valueOf(id) }, null, null,
-					TrackEntry.SORT_ORDER, null);
+					TrackDownloadCacheJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 		} else if (uri.toString().startsWith(TRACK_TITLE_BASE)) {
@@ -263,10 +272,11 @@ public class MuckeboxProvider extends ContentProvider {
 			Log.d(LOG_TAG, "Query track name = " + name);
 
 			result = db.query(
-					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackDownloadCacheJoin.TABLE_NAME,
+					TrackDownloadCacheJoin.PROJECTION,
 					"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
 					new String[] { "%" + name + "%" }, null, null,
-					TrackEntry.SORT_ORDER, null);
+					TrackDownloadCacheJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 		} else if (uri.toString().startsWith(TRACK_ALBUM_BASE)) {
@@ -275,10 +285,11 @@ public class MuckeboxProvider extends ContentProvider {
 			Log.d(LOG_TAG, "Query track album = " + album_id);
 			
 			result = db.query(
-					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackDownloadCacheJoin.TABLE_NAME,
+					TrackDownloadCacheJoin.PROJECTION,
 					TrackEntry.FULL_ALBUM_ID + " IS ?",
 					new String[] { album_id }, null, null,
-					TrackEntry.SORT_ORDER, null);
+					TrackDownloadCacheJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 		} else if (uri.toString().startsWith(TRACK_ARTIST_BASE)) {
@@ -287,10 +298,11 @@ public class MuckeboxProvider extends ContentProvider {
 			Log.d(LOG_TAG, "Query track artist = " + artist_id);
 			
 			result = db.query(
-					TrackEntry.TABLE_NAME, TrackEntry.PROJECTION,
+					TrackDownloadCacheJoin.TABLE_NAME,
+					TrackDownloadCacheJoin.PROJECTION,
 					TrackEntry.FULL_ARTIST_ID + " IS ?",
 					new String[] { artist_id }, null, null,
-					TrackEntry.SORT_ORDER, null);
+					TrackDownloadCacheJoin.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 		} else if (URI_DOWNLOADS.equals(uri))
@@ -364,6 +376,7 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = db.update(DownloadEntry.TABLE_NAME, values, whereString, selectionArgs);
 			
 			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
 		} else
 		{
 			throw new UnsupportedOperationException("Not yet implemented");
