@@ -49,6 +49,7 @@ public class RefreshAlbumsTask extends RefreshTask<Void> {
 				Log.d(LOG_TAG, "Got " + json.length() + " albums");
 				
 				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ALBUMS, null, false);
+				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ARTISTS, null, false);
 			} finally {
 				db.endTransaction();				
 			}

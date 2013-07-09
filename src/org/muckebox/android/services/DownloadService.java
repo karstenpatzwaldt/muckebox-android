@@ -27,6 +27,7 @@ import android.os.IBinder;
 import android.os.Binder;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 public class DownloadService
 	extends Service
@@ -87,8 +88,9 @@ public class DownloadService
 				new Notification.Builder(this).
 					setSmallIcon(android.R.drawable.stat_sys_download).
 					setLargeIcon(bm).
-					setContentTitle(getText(R.string.downloading)).
-					setContentText("0 kB");
+					setContentTitle("").
+					setContentText("0 kB").
+					setOngoing(true);
 		mNumberFormatter = NumberFormat.getInstance();
 	}
 
@@ -112,29 +114,35 @@ public class DownloadService
 		case COMMAND_DISCARD:
 			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
 			
-			new Thread(new Runnable() {
-				public void run() {
-					Cursor c = getContentResolver().query(mCurrentUri, null, null, null, null);
-					
-					try
-					{
-						DownloadEntryCursor entry = new DownloadEntryCursor(c);
+			if (mCurrentUri != null)
+			{
+				new Thread(new Runnable() {
+					public void run() {
+						Cursor c = getContentResolver().query(mCurrentUri, null, null, null, null);
 						
-						int currentTrackId = entry.getTrackId();
-						
-						getContentResolver().delete(
-								MuckeboxProvider.URI_DOWNLOADS,
-								DownloadEntry.FULL_TRACK_ID + " IS ?",
-								new String[] { Integer.toString(discardTrackId) });
-						
-						if (currentTrackId == discardTrackId)
-							stopCurrentDownload();
-					} finally
-					{
-						c.close();
+						try
+						{
+							if (c.getCount() > 0)
+							{
+								DownloadEntryCursor entry = new DownloadEntryCursor(c);
+								
+								int currentTrackId = entry.getTrackId();
+								
+								getContentResolver().delete(
+										MuckeboxProvider.URI_DOWNLOADS,
+										DownloadEntry.FULL_TRACK_ID + " IS ?",
+										new String[] { Integer.toString(discardTrackId) });
+								
+								if (currentTrackId == discardTrackId)
+									stopCurrentDownload();
+							}
+						} finally
+						{
+							c.close();
+						}
 					}
-				}
-			}).start();
+				}).start();
+			}
 			
 			return Service.START_NOT_STICKY;
 			
@@ -279,6 +287,9 @@ public class DownloadService
 			
 			Log.d(LOG_TAG, "Download failed!");
 			
+			Toast.makeText(getApplicationContext(), 
+					getResources().getString(R.string.download_failed), Toast.LENGTH_SHORT).show();
+			
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -372,6 +383,8 @@ public class DownloadService
 				
 				Muckebox.getAppContext().getContentResolver().insert(
 						MuckeboxProvider.URI_DOWNLOADS, values);
+				
+				updateNotificationCount();
 			}
 		} finally
 		{
@@ -448,6 +461,8 @@ public class DownloadService
 					mNotificationBuilder.setContentText("0 kB");
 					mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 					
+					updateNotificationCount();
+					
 					mCurrentThread = new Thread(new DownloadRunnable(
 							entry.getTrackId(), mHandler, getDownloadPath(entry)));
 					mCurrentUri = Uri.parse(MuckeboxProvider.DOWNLOAD_ID_BASE +
@@ -463,5 +478,15 @@ public class DownloadService
 				c.close();
 			}
 		}
+	}
+	
+	void updateNotificationCount()
+	{
+		int count = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS,
+				null, null, null, null, null).getCount();
+		
+		mNotificationBuilder.setContentTitle(
+				getResources().getQuantityString(R.plurals.downloading, count, count));
+		mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 	}
 }
