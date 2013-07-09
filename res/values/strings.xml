@@ -13,6 +13,8 @@
     <!-- SETTINGS -->
     
     <string name="title_activity_settings">Settings</string>
+    <string name="title_activity_downloads">Downloads</string>
+    
     <string name="server_settings_title">Server</string>
     <string name="server_address_setting_title">Server</string>
     <string name="server_address_setting_summary">Hostname or IP of your server</string>
@@ -92,9 +94,15 @@
     	<item quantity="other">Downloading %d songs&#8230;</item>
     </plurals>
     
+    <string name="status_downloading">Downloading&#8230;</string>
+    <string name="status_queued">Queued</string>
+    
     <string name="download_started">Download started</string>
     
     <string name="download_failed">Download failed, check your network connection.</string>
+    <string name="download_failed_short">Download failed!</string>
+    <string name="download_canceled">Download canceled.</string>
+    <string name="download_finished">Download finished.</string>
     
     <string name="download_status">Download status</string>
     <string name="cache_status">Cache status</string>

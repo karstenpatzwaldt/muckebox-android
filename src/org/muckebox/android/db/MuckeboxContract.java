@@ -316,4 +316,19 @@ public final class MuckeboxContract {
 		
 		public static final String SORT_ORDER = TrackEntry.SORT_ORDER;
 	}
+	
+	public static abstract class DownloadTrackEntry implements BaseColumns {
+		public static final String TABLE_NAME = DownloadEntry.TABLE_NAME + " JOIN " +
+				TrackEntry.TABLE_NAME + " ON (" + DownloadEntry.FULL_TRACK_ID + " = " +
+				TrackEntry.FULL_ID + ")";
+		
+		public static final String[] PROJECTION = {
+			DownloadEntry.FULL_ID,
+			
+			DownloadEntry.FULL_STATUS + AS + DownloadEntry.ALIAS_STATUS,
+			
+			TrackEntry.FULL_ID + AS + TrackEntry.ALIAS_ID,
+			TrackEntry.FULL_TITLE + AS + TrackEntry.ALIAS_TITLE,
+		};
+	}
 }

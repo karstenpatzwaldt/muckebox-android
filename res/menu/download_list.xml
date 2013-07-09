@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    
-    <item
-        android:id="@+id/download_list_action_add"
-        android:showAsAction="ifRoom"
-        android:icon="@drawable/av_add_to_queue"
-        android:title="@string/search" />
-    
+
     <item
         android:id="@+id/download_list_action_clear"
         android:showAsAction="always"
-        android:icon="@drawable/content_discard"
+        android:icon="@drawable/navigation_cancel"
         android:title="@string/search" />
 
 </menu>

@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/ListItem" >
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/download_list_top"
+    style="@style/ListItem"
+    android:orientation="horizontal"
+    android:divider="@android:drawable/divider_horizontal_bright"
+    android:dividerPadding="4dip"
+	android:showDividers="middle" >
+    
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+	
+	    <TextView
+	        android:id="@+id/download_list_row_title"
+	        style="@style/ListItemPrimaryText" />
+	 
+	    <TextView
+	        android:id="@+id/download_list_row_status"
+	        style="@style/ListItemSecondaryText" />
+	    
+    </LinearLayout>
+    
+    <ImageButton 
+        android:id="@+id/download_list_row_discard"
+        android:src="@drawable/navigation_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:contentDescription="@string/discard"
+        android:adjustViewBounds="true"
+        android:background="@color/blue_transparent"/>
 
-    <TextView
-        android:id="@+id/download_list_row_title"
-        style="@style/ListItemPrimaryText" />
- 
-    <TextView
-        android:id="@+id/download_list_row_status"
-        android:layout_below="@id/download_list_row_title"
-        style="@style/ListItemSecondaryText" />
-
-</RelativeLayout>
+</LinearLayout>

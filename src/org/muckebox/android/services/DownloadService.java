@@ -10,11 +10,13 @@ import org.muckebox.android.db.DownloadEntryCursor;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
+import org.muckebox.android.ui.activity.DownloadListActivity;
 import org.muckebox.android.utils.Preferences;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -91,7 +93,23 @@ public class DownloadService
 					setContentTitle("").
 					setContentText("0 kB").
 					setOngoing(true);
+		
+		Intent notifyIntent = new Intent(this, DownloadListActivity.class);
+		notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		PendingIntent pendingNotifyIntent = PendingIntent.getActivity(
+				        this,
+				        0,
+				        notifyIntent,
+				        PendingIntent.FLAG_UPDATE_CURRENT);
+		
+		mNotificationBuilder.setContentIntent(pendingNotifyIntent);
+		
 		mNumberFormatter = NumberFormat.getInstance();
+	}
+	
+	@Override
+	public void onDestroy() {
+		mNotificationManager.cancel(NOTIFICATION_ID);
 	}
 
 	@Override
@@ -132,6 +150,8 @@ public class DownloadService
 										MuckeboxProvider.URI_DOWNLOADS,
 										DownloadEntry.FULL_TRACK_ID + " IS ?",
 										new String[] { Integer.toString(discardTrackId) });
+								
+								updateNotificationCount();
 								
 								if (currentTrackId == discardTrackId)
 									stopCurrentDownload();
@@ -248,7 +268,10 @@ public class DownloadService
 			for (DownloadListener l: mListeners)
 				l.onDownloadFinished(msg.arg1);
 			
-			onDownloadFinished();
+			onDownloadFinished(null);
+			
+			Toast.makeText(getApplicationContext(),
+					getResources().getString(R.string.download_finished), Toast.LENGTH_SHORT).show();
 			
 			final DownloadRunnable.Result res = (DownloadRunnable.Result) msg.obj;
 			
@@ -269,7 +292,7 @@ public class DownloadService
 			
 			Log.d(LOG_TAG, "Download interrupted, re-enqueueing");
 			
-			onDownloadFinished();
+			onDownloadFinished(null);
 			
 			new Thread(new Runnable() {
 				@Override public void run() {
@@ -294,7 +317,7 @@ public class DownloadService
 				@Override
 				public void run() {
 					getContentResolver().delete(currentUri, null, null);
-					onDownloadFinished();	
+					onDownloadFinished(R.string.download_failed_short);	
 				}
 			}).start();
 			
@@ -307,8 +330,19 @@ public class DownloadService
 		return true;
 	}
 	
-	public void onDownloadFinished() {
-		mNotificationManager.cancelAll();
+	public void onDownloadFinished(Integer stringId) {
+		if (stringId == null)
+		{
+			mNotificationManager.cancel(NOTIFICATION_ID);
+		} else
+		{
+			mNotificationBuilder
+				.setProgress(0,  0, false)
+				.setContentTitle(getResources().getText(stringId))
+				.setContentText("")
+				.setOngoing(false);
+			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+		}
 		
 		mCurrentThread = null;
 		mCurrentUri = null;
@@ -458,7 +492,10 @@ public class DownloadService
 					mLastTotal = 0;
 					mLastTime = System.nanoTime();
 					
-					mNotificationBuilder.setContentText("0 kB");
+					mNotificationBuilder
+						.setContentText("0 kB")
+						.setProgress(0,  0, true)
+						.setOngoing(true);
 					mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 					
 					updateNotificationCount();

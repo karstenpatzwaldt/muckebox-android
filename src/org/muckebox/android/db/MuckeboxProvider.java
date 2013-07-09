@@ -7,6 +7,7 @@ import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
+import org.muckebox.android.db.MuckeboxContract.DownloadTrackEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
@@ -51,6 +52,9 @@ public class MuckeboxProvider extends ContentProvider {
 	public static final String CACHE = SCHEME + AUTHORITY + "/cache";
 	public static final Uri URI_CACHE = Uri.parse(CACHE);
 	public static final String CACHE_ID_BASE = CACHE + "/id=";
+	
+	public static final String DOWNLOADDETAILS = SCHEME + AUTHORITY + "/downloaddetails";
+	public static final Uri URI_DOWNLOADDETAILS = Uri.parse(DOWNLOADDETAILS);
 	
 	private static MuckeboxDbHelper mDbHelper = null;
 	
@@ -347,6 +351,14 @@ public class MuckeboxProvider extends ContentProvider {
 					CacheEntry.SORT_ORDER, null);
 			
 			result.setNotificationUri(resolver, URI_CACHE);
+		} else if (URI_DOWNLOADDETAILS.equals(uri))
+		{
+			result = db.query(DownloadTrackEntry.TABLE_NAME, 
+					(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
+			
+			result.setNotificationUri(resolver, URI_DOWNLOADS);
 		} else {
 	        throw new UnsupportedOperationException("Unknown URI");
 	    }

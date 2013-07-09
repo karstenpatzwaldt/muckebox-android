@@ -84,6 +84,76 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			return c.getInt(c.getColumnIndex(TrackEntry.SHORT_ID));
 		}
+		
+	    private void hideItem(View item)
+	    {
+	    	ListItemState state = (ListItemState) item.getTag();
+	    	
+			ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
+					state.totalHeight, state.textsHeight);
+			
+			Log.d(LOG_TAG, "animate " + state.totalHeight + " -> " + state.textsHeight);
+			
+			anim.setInterpolator(new AccelerateDecelerateInterpolator());
+			anim.start();
+
+			item.setTag(state);
+	    }
+	    
+	    private void showItem(View item)
+	    {
+	    	ListItemState state = (ListItemState) item.getTag();
+
+	    	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
+					state.textsHeight, state.totalHeight);
+
+			anim.setInterpolator(new AccelerateDecelerateInterpolator());
+			anim.start();
+			
+			item.setTag(state);
+	    }
+	    
+	    private View getListItem(View view) {
+	    	View parent = view;
+	    	
+	    	do {
+	        	parent = (View) parent.getParent();
+	    	} while (parent.getId() != R.id.track_list_top);
+	    	
+	    	return parent;
+	    }
+	    
+	    private ListItemState getItemState(View view) {
+	    	return (ListItemState) getListItem(view).getTag();
+	    }
+	    
+	    public void toggleButtons(View item)
+	    {
+	    	View parent = getListItem(item);
+	    	ListItemState state = (ListItemState) parent.getTag();
+	    	int indexExtended = mAdapter.getIndexExtended();
+	    	
+	    	if (state.index == indexExtended)
+	    	{
+	    		mAdapter.setIndexExtended(-1);
+	    		hideItem(parent);
+	    	} else
+	    	{
+	    		int first = state.list.getFirstVisiblePosition();
+	    		int end = first + state.list.getChildCount();
+	    		
+	    		if (indexExtended != -1 && indexExtended >= first && indexExtended < end)
+	    		{
+	    			View extendedItem = state.list.getChildAt(indexExtended - first);
+	    			
+	    			if (extendedItem != null)
+	    				hideItem(extendedItem);
+	    		}
+
+	    		mAdapter.setIndexExtended(state.index);
+	    		showItem(parent);
+	    	}
+	    }
 
 		@Override
 		public View getView(final int position, View convertView, ViewGroup parent)
@@ -370,76 +440,6 @@ public class TrackListFragment extends RefreshableListFragment
     @Override
     public boolean onClose() {
         return true;
-    }
-    
-    private void hideItem(View item)
-    {
-    	ListItemState state = (ListItemState) item.getTag();
-    	
-		ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-				state.totalHeight, state.textsHeight);
-		
-		Log.d(LOG_TAG, "animate " + state.totalHeight + " -> " + state.textsHeight);
-		
-		anim.setInterpolator(new AccelerateDecelerateInterpolator());
-		anim.start();
-
-		item.setTag(state);
-    }
-    
-    private void showItem(View item)
-    {
-    	ListItemState state = (ListItemState) item.getTag();
-
-    	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-				state.textsHeight, state.totalHeight);
-
-		anim.setInterpolator(new AccelerateDecelerateInterpolator());
-		anim.start();
-		
-		item.setTag(state);
-    }
-    
-    private View getListItem(View view) {
-    	View parent = view;
-    	
-    	do {
-        	parent = (View) parent.getParent();
-    	} while (parent.getId() != R.id.track_list_top);
-    	
-    	return parent;
-    }
-    
-    private ListItemState getItemState(View view) {
-    	return (ListItemState) getListItem(view).getTag();
-    }
-    
-    public void toggleButtons(View item)
-    {
-    	View parent = getListItem(item);
-    	ListItemState state = (ListItemState) parent.getTag();
-    	int indexExtended = mAdapter.getIndexExtended();
-    	
-    	if (state.index == indexExtended)
-    	{
-    		mAdapter.setIndexExtended(-1);
-    		hideItem(parent);
-    	} else
-    	{
-    		int first = state.list.getFirstVisiblePosition();
-    		int end = first + state.list.getChildCount();
-    		
-    		if (indexExtended != -1 && indexExtended >= first && indexExtended < end)
-    		{
-    			View extendedItem = state.list.getChildAt(indexExtended - first);
-    			
-    			if (extendedItem != null)
-    				hideItem(extendedItem);
-    		}
-
-    		mAdapter.setIndexExtended(state.index);
-    		showItem(parent);
-    	}
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
