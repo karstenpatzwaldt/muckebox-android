@@ -74,47 +74,49 @@ public class MuckeboxProvider extends ContentProvider {
 		ContentResolver resolver = getContext().getContentResolver();
 		int ret;
 		
-		if (URI_DOWNLOADS.equals(uri))
-		{
-			ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
-			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
-		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
-		{
-			final long id = Long.parseLong(uri.toString().substring(DOWNLOAD_ID_BASE.length()));
-			String whereClause = DownloadEntry.FULL_ID + " = " + Long.toString(id);
-			
-			if (! TextUtils.isEmpty(selection))
+		synchronized(this) {
+			if (URI_DOWNLOADS.equals(uri))
 			{
-				whereClause += " AND " + selection;
-			}
-			
-			ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
-			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
-		} else if (URI_CACHE.equals(uri))
-		{
-			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
-			
-			resolver.notifyChange(URI_CACHE, null);
-		} else if (uri.toString().startsWith(CACHE_ID_BASE))
-		{
-			final long id = Long.parseLong(uri.toString().substring(CACHE_ID_BASE.length()));
-			String whereClause = CacheEntry.FULL_ID + " = " + Long.toString(id);
-			
-			if (! TextUtils.isEmpty(selection))
+				ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
+				
+				resolver.notifyChange(URI_DOWNLOADS, null);
+				resolver.notifyChange(URI_TRACKS, null);
+			} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
 			{
-				whereClause += " AND " + selection;
+				final long id = Long.parseLong(uri.toString().substring(DOWNLOAD_ID_BASE.length()));
+				String whereClause = DownloadEntry.FULL_ID + " = " + Long.toString(id);
+				
+				if (! TextUtils.isEmpty(selection))
+				{
+					whereClause += " AND " + selection;
+				}
+				
+				ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
+				
+				resolver.notifyChange(URI_DOWNLOADS, null);
+				resolver.notifyChange(URI_TRACKS, null);
+			} else if (URI_CACHE.equals(uri))
+			{
+				ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
+				
+				resolver.notifyChange(URI_CACHE, null);
+			} else if (uri.toString().startsWith(CACHE_ID_BASE))
+			{
+				final long id = Long.parseLong(uri.toString().substring(CACHE_ID_BASE.length()));
+				String whereClause = CacheEntry.FULL_ID + " = " + Long.toString(id);
+				
+				if (! TextUtils.isEmpty(selection))
+				{
+					whereClause += " AND " + selection;
+				}
+				
+				ret = db.delete(CacheEntry.TABLE_NAME, whereClause, selectionArgs);
+				
+				resolver.notifyChange(URI_CACHE, null);
+				resolver.notifyChange(URI_TRACKS, null);
+			} else {
+				throw new UnsupportedOperationException("Not yet implemented");
 			}
-			
-			ret = db.delete(CacheEntry.TABLE_NAME, whereClause, selectionArgs);
-			
-			resolver.notifyChange(URI_CACHE, null);
-			resolver.notifyChange(URI_TRACKS, null);
-		} else {
-			throw new UnsupportedOperationException("Not yet implemented");
 		}
 		
 		return ret;
@@ -127,32 +129,34 @@ public class MuckeboxProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
-		ContentResolver resolver = getContext().getContentResolver();
-		Uri ret;
-
-		if (URI_DOWNLOADS.equals(uri))
-		{
-			long id = db.insert(DownloadEntry.TABLE_NAME, null, values);
+		synchronized(this) {
+			SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
+			ContentResolver resolver = getContext().getContentResolver();
+			Uri ret;
+	
+			if (URI_DOWNLOADS.equals(uri))
+			{
+				long id = db.insert(DownloadEntry.TABLE_NAME, null, values);
+				
+				resolver.notifyChange(URI_DOWNLOADS, null);
+				resolver.notifyChange(URI_TRACKS, null);
+				
+				ret = Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
+			} else if (URI_CACHE.equals(uri))
+			{
+				long id = db.insert(CacheEntry.TABLE_NAME, null, values);
+				
+				resolver.notifyChange(URI_CACHE, null);
+				resolver.notifyChange(URI_TRACKS, null);
+				
+				ret = Uri.parse(CACHE_ID_BASE + Long.toString(id));
+			} else 
+			{
+				throw new UnsupportedOperationException("Unknown URI");
+			}
 			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
-			
-			ret = Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
-		} else if (URI_CACHE.equals(uri))
-		{
-			long id = db.insert(CacheEntry.TABLE_NAME, null, values);
-			
-			resolver.notifyChange(URI_CACHE, null);
-			resolver.notifyChange(URI_TRACKS, null);
-			
-			ret = Uri.parse(CACHE_ID_BASE + Long.toString(id));
-		} else 
-		{
-			throw new UnsupportedOperationException("Unknown URI");
+			return ret;
 		}
-		
-		return ret;
 	}
 
 	@Override
@@ -167,201 +171,203 @@ public class MuckeboxProvider extends ContentProvider {
 		ContentResolver resolver = getContext().getContentResolver();
 		Cursor result = null;
 		
-		if (URI_ARTISTS.equals(uri))
-		{
-			Log.d(LOG_TAG, "Query all artists");
-			
-			result = db.query(
-					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-					null, null, ArtistAlbumJoin.GROUP_BY, null,
-					ArtistAlbumJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ARTISTS);
-		} else if (uri.toString().startsWith(ARTIST_ID_BASE)) {
-			final long id = Long.parseLong(uri.toString().substring(ARTIST_ID_BASE.length()));
-			
-			Log.d(LOG_TAG, "Query artist id = " + id);
-			
-			result = db.query(
-					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-					ArtistEntry.FULL_ID + " IS ?",
-					new String[] { String.valueOf(id) }, ArtistAlbumJoin.GROUP_BY, null,
-					ArtistAlbumJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ARTISTS);
-		} else if (uri.toString().startsWith(ARTIST_NAME_BASE)) {
-			String name = uri.toString().substring(ARTIST_NAME_BASE.length());
-			
-			Log.d(LOG_TAG, "Query artist name = " + name);
-			
-			result = db.query(
-					ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-					"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
-					new String[] { "%" + name + "%" }, ArtistAlbumJoin.GROUP_BY, null,
-					ArtistAlbumJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ARTISTS);
-		} else if (URI_ALBUMS.equals(uri))
-		{
-			Log.d(LOG_TAG, "Query all albums");
-			
-			result = db.query(
-					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-					null, null, null, null, AlbumArtistJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ALBUMS);
-		} else if (uri.toString().startsWith(ALBUM_ID_BASE)) {
-			final long id = Long.parseLong(uri.toString().substring(ALBUM_ID_BASE.length()));
-			
-			Log.d(LOG_TAG, "Query album id = " + id);
-			
-			result = db.query(
-					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-					AlbumEntry.FULL_ID + " IS ?",
-					new String[] { String.valueOf(id) }, null, null,
-					AlbumArtistJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ALBUMS);
-		} else if (uri.toString().startsWith(ALBUM_TITLE_BASE)) {
-			String name = uri.toString().substring(ALBUM_TITLE_BASE.length());
-			
-			Log.d(LOG_TAG, "Query album name = " + name);
-
-			result = db.query(
-					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-					"LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)",
-					new String[] { "%" + name + "%" }, null, null,
-					AlbumArtistJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ALBUMS);
-		} else if (uri.toString().startsWith(ALBUM_ARTIST_BASE))
-		{
-			final long id = Long.parseLong(uri.toString().substring(ALBUM_ARTIST_BASE.length()));
-			
-			Log.d(LOG_TAG, "Query album artist = " + id);
-			
-			result = db.query(
-					AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-					AlbumEntry.FULL_ARTIST_ID + " IS ?",
-					new String[] { String.valueOf(id) }, null, null,
-					AlbumArtistJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_ALBUMS);
-		} else if (URI_TRACKS.equals(uri)) {
-			Log.d(LOG_TAG, "Query all tracks");
-			
-			result = db.query(
-					TrackDownloadCacheJoin.TABLE_NAME,
-					TrackDownloadCacheJoin.PROJECTION,
-					null, null, null, null, 
-					TrackDownloadCacheJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_TRACKS);
-		} else if (uri.toString().startsWith(TRACK_ID_BASE)) {
-			final long id = Long.parseLong(uri.toString().substring(TRACK_ID_BASE.length()));
-			
-			Log.d(LOG_TAG, "Query track id = " + id);
-			
-			result = db.query(
-					TrackDownloadCacheJoin.TABLE_NAME,
-					TrackDownloadCacheJoin.PROJECTION,
-					TrackEntry.FULL_ID + " IS ?",
-					new String[] { String.valueOf(id) }, null, null,
-					TrackDownloadCacheJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_TRACKS);
-		} else if (uri.toString().startsWith(TRACK_TITLE_BASE)) {
-			String name = uri.toString().substring(TRACK_TITLE_BASE.length());
-			
-			Log.d(LOG_TAG, "Query track name = " + name);
-
-			result = db.query(
-					TrackDownloadCacheJoin.TABLE_NAME,
-					TrackDownloadCacheJoin.PROJECTION,
-					"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
-					new String[] { "%" + name + "%" }, null, null,
-					TrackDownloadCacheJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_TRACKS);
-		} else if (uri.toString().startsWith(TRACK_ALBUM_BASE)) {
-			String album_id = uri.toString().substring(TRACK_ALBUM_BASE.length());
-			
-			Log.d(LOG_TAG, "Query track album = " + album_id);
-			
-			result = db.query(
-					TrackDownloadCacheJoin.TABLE_NAME,
-					TrackDownloadCacheJoin.PROJECTION,
-					TrackEntry.FULL_ALBUM_ID + " IS ?",
-					new String[] { album_id }, null, null,
-					TrackDownloadCacheJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_TRACKS);
-		} else if (uri.toString().startsWith(TRACK_ARTIST_BASE)) {
-			String artist_id = uri.toString().substring(TRACK_ARTIST_BASE.length());
-			
-			Log.d(LOG_TAG, "Query track artist = " + artist_id);
-			
-			result = db.query(
-					TrackDownloadCacheJoin.TABLE_NAME,
-					TrackDownloadCacheJoin.PROJECTION,
-					TrackEntry.FULL_ARTIST_ID + " IS ?",
-					new String[] { artist_id }, null, null,
-					TrackDownloadCacheJoin.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_TRACKS);
-		} else if (URI_DOWNLOADS.equals(uri))
-		{
-			Log.d(LOG_TAG, "Query all downloads");
-			
-			result = db.query(
-					DownloadEntry.TABLE_NAME,
-					(projection == null) ? DownloadEntry.PROJECTION : projection,
-					selection, selectionArgs, null, null,
-					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder,
-					null);
-			
-			result.setNotificationUri(resolver, URI_DOWNLOADS);
-		} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE)) {
-			String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
-			
-			Log.d(LOG_TAG, "Query download id = " + download_id);
-			
-			result = db.query(
-					DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
-					DownloadEntry.FULL_ID + " IS ?",
-					new String[] { download_id }, null, null,
-					DownloadEntry.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_DOWNLOADS);
-		} else if (URI_CACHE.equals(uri))
-		{
-			result = db.query(CacheEntry.TABLE_NAME,
-					(projection == null) ? CacheEntry.PROJECTION : projection,
-					selection, selectionArgs, null, null,
-					(sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
-			
-			result.setNotificationUri(resolver, URI_CACHE);
-		} else if (uri.toString().startsWith(CACHE_ID_BASE)) {
-			String cache_id = uri.toString().substring(CACHE_ID_BASE.length());
-			
-			result = db.query(CacheEntry.TABLE_NAME,
-					(projection == null) ? CacheEntry.PROJECTION : projection,
-					CacheEntry.FULL_ID + " IS ?",
-					new String[] { cache_id }, null, null,
-					CacheEntry.SORT_ORDER, null);
-			
-			result.setNotificationUri(resolver, URI_CACHE);
-		} else if (URI_DOWNLOADDETAILS.equals(uri))
-		{
-			result = db.query(DownloadTrackEntry.TABLE_NAME, 
-					(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
-					selection, selectionArgs, null, null,
-					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
-			
-			result.setNotificationUri(resolver, URI_DOWNLOADS);
-		} else {
-	        throw new UnsupportedOperationException("Unknown URI");
-	    }
+		synchronized(this) {
+			if (URI_ARTISTS.equals(uri))
+			{
+				Log.d(LOG_TAG, "Query all artists");
+				
+				result = db.query(
+						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
+						null, null, ArtistAlbumJoin.GROUP_BY, null,
+						ArtistAlbumJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ARTISTS);
+			} else if (uri.toString().startsWith(ARTIST_ID_BASE)) {
+				final long id = Long.parseLong(uri.toString().substring(ARTIST_ID_BASE.length()));
+				
+				Log.d(LOG_TAG, "Query artist id = " + id);
+				
+				result = db.query(
+						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
+						ArtistEntry.FULL_ID + " IS ?",
+						new String[] { String.valueOf(id) }, ArtistAlbumJoin.GROUP_BY, null,
+						ArtistAlbumJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ARTISTS);
+			} else if (uri.toString().startsWith(ARTIST_NAME_BASE)) {
+				String name = uri.toString().substring(ARTIST_NAME_BASE.length());
+				
+				Log.d(LOG_TAG, "Query artist name = " + name);
+				
+				result = db.query(
+						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
+						"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
+						new String[] { "%" + name + "%" }, ArtistAlbumJoin.GROUP_BY, null,
+						ArtistAlbumJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ARTISTS);
+			} else if (URI_ALBUMS.equals(uri))
+			{
+				Log.d(LOG_TAG, "Query all albums");
+				
+				result = db.query(
+						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+						null, null, null, null, AlbumArtistJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ALBUMS);
+			} else if (uri.toString().startsWith(ALBUM_ID_BASE)) {
+				final long id = Long.parseLong(uri.toString().substring(ALBUM_ID_BASE.length()));
+				
+				Log.d(LOG_TAG, "Query album id = " + id);
+				
+				result = db.query(
+						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+						AlbumEntry.FULL_ID + " IS ?",
+						new String[] { String.valueOf(id) }, null, null,
+						AlbumArtistJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ALBUMS);
+			} else if (uri.toString().startsWith(ALBUM_TITLE_BASE)) {
+				String name = uri.toString().substring(ALBUM_TITLE_BASE.length());
+				
+				Log.d(LOG_TAG, "Query album name = " + name);
+	
+				result = db.query(
+						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+						"LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)",
+						new String[] { "%" + name + "%" }, null, null,
+						AlbumArtistJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ALBUMS);
+			} else if (uri.toString().startsWith(ALBUM_ARTIST_BASE))
+			{
+				final long id = Long.parseLong(uri.toString().substring(ALBUM_ARTIST_BASE.length()));
+				
+				Log.d(LOG_TAG, "Query album artist = " + id);
+				
+				result = db.query(
+						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
+						AlbumEntry.FULL_ARTIST_ID + " IS ?",
+						new String[] { String.valueOf(id) }, null, null,
+						AlbumArtistJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_ALBUMS);
+			} else if (URI_TRACKS.equals(uri)) {
+				Log.d(LOG_TAG, "Query all tracks");
+				
+				result = db.query(
+						TrackDownloadCacheJoin.TABLE_NAME,
+						TrackDownloadCacheJoin.PROJECTION,
+						null, null, null, null, 
+						TrackDownloadCacheJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_TRACKS);
+			} else if (uri.toString().startsWith(TRACK_ID_BASE)) {
+				final long id = Long.parseLong(uri.toString().substring(TRACK_ID_BASE.length()));
+				
+				Log.d(LOG_TAG, "Query track id = " + id);
+				
+				result = db.query(
+						TrackDownloadCacheJoin.TABLE_NAME,
+						TrackDownloadCacheJoin.PROJECTION,
+						TrackEntry.FULL_ID + " IS ?",
+						new String[] { String.valueOf(id) }, null, null,
+						TrackDownloadCacheJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_TRACKS);
+			} else if (uri.toString().startsWith(TRACK_TITLE_BASE)) {
+				String name = uri.toString().substring(TRACK_TITLE_BASE.length());
+				
+				Log.d(LOG_TAG, "Query track name = " + name);
+	
+				result = db.query(
+						TrackDownloadCacheJoin.TABLE_NAME,
+						TrackDownloadCacheJoin.PROJECTION,
+						"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
+						new String[] { "%" + name + "%" }, null, null,
+						TrackDownloadCacheJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_TRACKS);
+			} else if (uri.toString().startsWith(TRACK_ALBUM_BASE)) {
+				String album_id = uri.toString().substring(TRACK_ALBUM_BASE.length());
+				
+				Log.d(LOG_TAG, "Query track album = " + album_id);
+				
+				result = db.query(
+						TrackDownloadCacheJoin.TABLE_NAME,
+						TrackDownloadCacheJoin.PROJECTION,
+						TrackEntry.FULL_ALBUM_ID + " IS ?",
+						new String[] { album_id }, null, null,
+						TrackDownloadCacheJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_TRACKS);
+			} else if (uri.toString().startsWith(TRACK_ARTIST_BASE)) {
+				String artist_id = uri.toString().substring(TRACK_ARTIST_BASE.length());
+				
+				Log.d(LOG_TAG, "Query track artist = " + artist_id);
+				
+				result = db.query(
+						TrackDownloadCacheJoin.TABLE_NAME,
+						TrackDownloadCacheJoin.PROJECTION,
+						TrackEntry.FULL_ARTIST_ID + " IS ?",
+						new String[] { artist_id }, null, null,
+						TrackDownloadCacheJoin.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_TRACKS);
+			} else if (URI_DOWNLOADS.equals(uri))
+			{
+				Log.d(LOG_TAG, "Query all downloads");
+				
+				result = db.query(
+						DownloadEntry.TABLE_NAME,
+						(projection == null) ? DownloadEntry.PROJECTION : projection,
+						selection, selectionArgs, null, null,
+						(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder,
+						null);
+				
+				result.setNotificationUri(resolver, URI_DOWNLOADS);
+			} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE)) {
+				String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
+				
+				Log.d(LOG_TAG, "Query download id = " + download_id);
+				
+				result = db.query(
+						DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
+						DownloadEntry.FULL_ID + " IS ?",
+						new String[] { download_id }, null, null,
+						DownloadEntry.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_DOWNLOADS);
+			} else if (URI_CACHE.equals(uri))
+			{
+				result = db.query(CacheEntry.TABLE_NAME,
+						(projection == null) ? CacheEntry.PROJECTION : projection,
+						selection, selectionArgs, null, null,
+						(sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
+				
+				result.setNotificationUri(resolver, URI_CACHE);
+			} else if (uri.toString().startsWith(CACHE_ID_BASE)) {
+				String cache_id = uri.toString().substring(CACHE_ID_BASE.length());
+				
+				result = db.query(CacheEntry.TABLE_NAME,
+						(projection == null) ? CacheEntry.PROJECTION : projection,
+						CacheEntry.FULL_ID + " IS ?",
+						new String[] { cache_id }, null, null,
+						CacheEntry.SORT_ORDER, null);
+				
+				result.setNotificationUri(resolver, URI_CACHE);
+			} else if (URI_DOWNLOADDETAILS.equals(uri))
+			{
+				result = db.query(DownloadTrackEntry.TABLE_NAME, 
+						(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
+						selection, selectionArgs, null, null,
+						(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
+				
+				result.setNotificationUri(resolver, URI_DOWNLOADS);
+			} else {
+		        throw new UnsupportedOperationException("Unknown URI");
+		    }
+		}
 		
 		return result;
 	}
@@ -369,31 +375,39 @@ public class MuckeboxProvider extends ContentProvider {
 	@Override
 	public int update(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
-		SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
-		ContentResolver resolver = getContext().getContentResolver();
-		int ret;
-		
-		if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
-		{
-			String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
-			String whereString = DownloadEntry.FULL_ID + " IS " + download_id;
+		synchronized(this) {
+			SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
+			ContentResolver resolver = getContext().getContentResolver();
+			int ret;
 			
-			if (! TextUtils.isEmpty(selection))
+			if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
 			{
-				whereString += " AND (" + selection + ")";
+				String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
+				String whereString = DownloadEntry.FULL_ID + " IS " + download_id;
+				
+				if (! TextUtils.isEmpty(selection))
+				{
+					whereString += " AND (" + selection + ")";
+				}
+				
+				Log.d(LOG_TAG, "Updating download " + download_id);
+				
+				ret = db.update(DownloadEntry.TABLE_NAME, values, whereString, selectionArgs);
+				
+				resolver.notifyChange(URI_DOWNLOADS, null);
+				resolver.notifyChange(URI_TRACKS, null);
+			} else if (URI_CACHE.equals(uri))
+			{
+				ret = db.update(CacheEntry.TABLE_NAME, values, selection, selectionArgs);
+				
+				resolver.notifyChange(URI_CACHE, null);
+				resolver.notifyChange(URI_TRACKS, null);
+			} else
+			{
+				throw new UnsupportedOperationException("Not yet implemented");
 			}
 			
-			Log.d(LOG_TAG, "Updating download " + download_id);
-			
-			ret = db.update(DownloadEntry.TABLE_NAME, values, whereString, selectionArgs);
-			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
-		} else
-		{
-			throw new UnsupportedOperationException("Not yet implemented");
+			return ret;
 		}
-		
-		return ret;
 	}
 }

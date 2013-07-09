@@ -111,8 +111,9 @@ public class DownloadRunnable implements Runnable
 			chunk.bytesTotal = mBytesTotal;
 			chunk.buffer = data;
 			
-			mHandler.sendMessage(mHandler.obtainMessage(
-					MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, chunk));
+			if (mHandler != null)
+				mHandler.sendMessage(mHandler.obtainMessage(
+						MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, chunk));
 			
 			if (mOutputStream != null)
 			{
@@ -262,7 +263,8 @@ public class DownloadRunnable implements Runnable
 		closeOutputStream();
 		Muckebox.getAppContext().deleteFile(mOutputPath);
 
-		mHandler.sendMessage(mHandler.obtainMessage(
-				messageType, mTrackId));
+		if (mHandler != null)
+			mHandler.sendMessage(mHandler.obtainMessage(
+					messageType, mTrackId));
 	}
 }

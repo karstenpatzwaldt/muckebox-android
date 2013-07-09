@@ -105,6 +105,7 @@ public class DownloadService
 		mNotificationBuilder.setContentIntent(pendingNotifyIntent);
 		
 		mNumberFormatter = NumberFormat.getInstance();
+		mHandler = new Handler(this);
 	}
 	
 	@Override
@@ -132,10 +133,12 @@ public class DownloadService
 		case COMMAND_DISCARD:
 			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
 			
-			if (mCurrentUri != null)
-			{
-				new Thread(new Runnable() {
-					public void run() {
+			new Thread(new Runnable() {
+				public void run() {
+					removeFromCache(discardTrackId);
+			
+					if (mCurrentUri != null)
+					{
 						Cursor c = getContentResolver().query(mCurrentUri, null, null, null, null);
 						
 						try
@@ -150,7 +153,7 @@ public class DownloadService
 										MuckeboxProvider.URI_DOWNLOADS,
 										DownloadEntry.FULL_TRACK_ID + " IS ?",
 										new String[] { Integer.toString(discardTrackId) });
-								
+
 								updateNotificationCount();
 								
 								if (currentTrackId == discardTrackId)
@@ -161,8 +164,8 @@ public class DownloadService
 							c.close();
 						}
 					}
-				}).start();
-			}
+				}
+			}).start();
 			
 			return Service.START_NOT_STICKY;
 			
@@ -184,18 +187,21 @@ public class DownloadService
 			final int trackId = intent.getIntExtra(EXTRA_TRACK_ID, 0);
 			final boolean doPin = intent.getBooleanExtra(EXTRA_PIN, false);
 			final boolean startNow = intent.getBooleanExtra(EXTRA_START_NOW, false);
-			
-			if (mHandler == null)
-				mHandler = new Handler(this);
 
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					if (startNow)
-						stopCurrentDownload();
-
-					addToQueue(trackId, doPin);
-					downloadNextOrStop();
+					if (isInCache(trackId))
+					{
+						pinInCache(trackId);
+					} else
+					{
+						if (startNow)
+							stopCurrentDownload();
+	
+						addToQueue(trackId, doPin);
+						downloadNextOrStop();
+					}
 				}
 			}).start();
 			
@@ -216,6 +222,47 @@ public class DownloadService
 			stopSelf();
 			
 			return Service.START_STICKY;
+		}
+	}
+	
+	private boolean isInCache(int trackId)
+	{
+		return getContentResolver().query(MuckeboxProvider.URI_CACHE,
+				CacheEntry.PROJECTION, CacheEntry.FULL_TRACK_ID + " IS ?",
+				new String[] { Integer.toString(trackId) }, null).getCount() > 0;
+	}
+	
+	private void pinInCache(int trackId)
+	{
+		ContentValues values = new ContentValues();
+		
+		values.put(CacheEntry.SHORT_PINNED, 1);
+		
+		getContentResolver().update(MuckeboxProvider.URI_CACHE, values,
+				CacheEntry.FULL_TRACK_ID + " IS ?",
+				new String[] { Integer.toString(trackId) });
+	}
+	
+	private void removeFromCache(int trackId) {
+		String whereString = CacheEntry.FULL_TRACK_ID + " IS ?";
+		String[] whereArgs = new String[] { Integer.toString(trackId) };
+		
+		Cursor c = getContentResolver().query(MuckeboxProvider.URI_CACHE,
+				CacheEntry.PROJECTION, whereString, whereArgs, null);
+
+		try
+		{
+			while (c.moveToNext())
+			{
+				String fileName = c.getString(c.getColumnIndex(CacheEntry.ALIAS_FILENAME));
+				
+				deleteFile(fileName);
+			}
+			
+			getContentResolver().delete(MuckeboxProvider.URI_CACHE, whereString, whereArgs);
+		} finally
+		{
+			c.close();
 		}
 	}
 	

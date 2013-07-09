@@ -28,6 +28,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -59,6 +60,9 @@ public class TrackListFragment extends RefreshableListFragment
 		public int totalHeight = 0;
 		public ListView list = null;
 	}
+	
+	MenuItem mPinAllItem;
+	MenuItem mRemoveAllItem;
 	
 	private class ContextCursorAdapter extends SimpleCursorAdapter {
 		int mIndexExtended = -1;
@@ -213,13 +217,7 @@ public class TrackListFragment extends RefreshableListFragment
 						(ImageButton) ret.findViewById(R.id.track_list_pin);
 				pinButton.setOnClickListener(new OnClickListener() {
 					public void onClick(View v) {
-						Intent intent = new Intent(getActivity(), DownloadService.class);
-						
-						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
-								mAdapter.getTrackId(getItemState(v).index));
-						intent.putExtra(DownloadService.EXTRA_PIN, true);
-						
-						getActivity().startService(intent);
+						pinTrack(mAdapter.getTrackId(getItemState(v).index));
 						toggleButtons(v);
 					}
 				});
@@ -228,14 +226,7 @@ public class TrackListFragment extends RefreshableListFragment
 						(ImageButton) ret.findViewById(R.id.track_list_discard);
 				discardButton.setOnClickListener(new OnClickListener() {
 					public void onClick(View v) {
-						Intent intent = new Intent(getActivity(), DownloadService.class);
-						
-						intent.putExtra(DownloadService.EXTRA_COMMAND,
-								DownloadService.COMMAND_DISCARD);
-						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
-								mAdapter.getTrackId(getItemState(v).index));
-						
-						getActivity().startService(intent);
+						discardTrack(mAdapter.getTrackId(getItemState(v).index));
 						toggleButtons(v);
 					}
 				});
@@ -251,6 +242,25 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			return ret;
 		}
+	}
+	
+	private void pinTrack(int trackId) {
+		Intent intent = new Intent(getActivity(), DownloadService.class);
+		
+		intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+		intent.putExtra(DownloadService.EXTRA_PIN, true);
+		
+		getActivity().startService(intent);
+	}
+	
+	private void discardTrack(int trackId) {
+		Intent intent = new Intent(getActivity(), DownloadService.class);
+		
+		intent.putExtra(DownloadService.EXTRA_COMMAND,
+				DownloadService.COMMAND_DISCARD);
+		intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+		
+		getActivity().startService(intent);
 	}
 	
 	private class TracklistViewBinder implements ViewBinder {
@@ -325,23 +335,41 @@ public class TrackListFragment extends RefreshableListFragment
 			} else if (columnIndex ==
 					cursor.getColumnIndex(TrackDownloadCacheJoin.ALIAS_CANCELABLE))
 			{
+				boolean downloading;
+				int pinStatus;
+				
+				int downloadStatusIndex = cursor.getColumnIndex(DownloadEntry.ALIAS_STATUS);
+				int pinStatusIndex = cursor.getColumnIndex(CacheEntry.ALIAS_PINNED);
+
+				downloading = ! cursor.isNull(downloadStatusIndex);
+				pinStatus = cursor.isNull(pinStatusIndex) ? -1 : cursor.getInt(pinStatusIndex);
+				
 				ImageButton downloadButton =
 						(ImageButton) view.findViewById(R.id.track_list_download);
 				ImageButton pinButton =
 						(ImageButton) view.findViewById(R.id.track_list_pin);
 				ImageButton discardButton =
 						(ImageButton) view.findViewById(R.id.track_list_discard);
-
-				if (cursor.isNull(columnIndex))
+				
+				if (! downloading && pinStatus == -1)
 				{
 					downloadButton.setVisibility(View.VISIBLE);
 					pinButton.setVisibility(View.VISIBLE);
 					discardButton.setVisibility(View.GONE);
-				} else
+				} else if (downloading)
 				{
 					downloadButton.setVisibility(View.GONE);
 					pinButton.setVisibility(View.GONE);
 					discardButton.setVisibility(View.VISIBLE);
+					
+					discardButton.setImageResource(R.drawable.navigation_cancel);
+				} else
+				{
+					downloadButton.setVisibility(View.GONE);
+					pinButton.setVisibility(pinStatus == 0 ? View.VISIBLE : View.GONE);
+					discardButton.setVisibility(View.VISIBLE);
+					
+					discardButton.setImageResource(R.drawable.content_discard);
 				}
 				
 				return true;
@@ -430,6 +458,40 @@ public class TrackListFragment extends RefreshableListFragment
     	super.onCreateOptionsMenu(menu, inflater);
     	
     	inflater.inflate(R.menu.track_list, menu);
+    	
+    	mPinAllItem = menu.findItem(R.id.track_list_action_pin);
+    	mRemoveAllItem = menu.findItem(R.id.track_list_action_remove);
+    	
+    	mRemoveAllItem.setVisible(false);
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	if (item == mPinAllItem)
+    	{
+    		Cursor c = mAdapter.getCursor();
+    		int trackIdIndex = c.getColumnIndex(TrackEntry.FULL_ID);
+    		
+    		c.moveToPosition(-1);
+    		
+    		while (c.moveToNext())
+    			pinTrack(c.getInt(trackIdIndex));
+    				
+    		return true;
+    	} else if (item == mRemoveAllItem)
+    	{
+    		Cursor c = mAdapter.getCursor();
+    		int trackIdIndex = c.getColumnIndex(TrackEntry.FULL_ID);
+    		
+    		c.moveToPosition(-1);
+    		
+    		while (c.moveToNext())
+    			discardTrack(c.getInt(trackIdIndex));
+    				
+    		return true;
+    	}
+    	
+    	return false;
     }
 
     protected void onRefreshRequested() {
@@ -457,6 +519,25 @@ public class TrackListFragment extends RefreshableListFragment
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
+        
+        data.moveToPosition(-1);
+        
+        boolean oneCached = false;
+        boolean oneNotPinned = false;
+        
+        int cachedIndex = data.getColumnIndex(CacheEntry.ALIAS_PINNED);
+        int downloadingIndex = data.getColumnIndex(DownloadEntry.ALIAS_STATUS);
+        
+        while (data.moveToNext())
+        {
+        	if (data.isNull(cachedIndex) && data.isNull(downloadingIndex))
+        		oneNotPinned = true;
+        	else
+        		oneCached = true;
+        }
+        
+        mPinAllItem.setVisible(oneNotPinned);
+        mRemoveAllItem.setVisible(oneCached);
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
