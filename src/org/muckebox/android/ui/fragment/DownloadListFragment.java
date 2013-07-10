@@ -1,7 +1,6 @@
 package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
-import org.muckebox.android.db.MuckeboxContract.DownloadTrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
@@ -167,9 +166,7 @@ public class DownloadListFragment extends ListFragment
 	
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         return new CursorLoader(getActivity(),
-        		MuckeboxProvider.URI_DOWNLOADDETAILS,
-                DownloadTrackEntry.PROJECTION, null, null,
-                DownloadEntry.SORT_ORDER);
+        		MuckeboxProvider.URI_DOWNLOADS_WITHDETAILS, null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

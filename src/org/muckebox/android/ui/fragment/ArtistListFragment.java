@@ -133,14 +133,12 @@ public class ArtistListFragment extends RefreshableListFragment
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
         if (mCurFilter != null) {
-            baseUri = Uri.parse(MuckeboxProvider.ARTIST_NAME_BASE + mCurFilter);
+        	baseUri = MuckeboxProvider.URI_ARTISTS_WITH_ALBUMS_NAME.buildUpon().appendPath(mCurFilter).build();
         } else {
-            baseUri = MuckeboxProvider.URI_ARTISTS;
+            baseUri = MuckeboxProvider.URI_ARTISTS_WITH_ALBUMS;
         }
 
-        return new CursorLoader(getActivity(), baseUri,
-                ArtistEntry.PROJECTION, null, null,
-                ArtistEntry.SORT_ORDER);
+        return new CursorLoader(getActivity(), baseUri, null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

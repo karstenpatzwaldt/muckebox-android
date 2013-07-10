@@ -14,109 +14,179 @@ import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
+import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.text.TextUtils;
 import android.util.Log;
 
 public class MuckeboxProvider extends ContentProvider {
 	private final static String LOG_TAG = "Provider";
-	
+
 	public final static String AUTHORITY = "org.muckebox.android.provider";
 	public final static String SCHEME = "content://";
-	
-	public static final String ARTISTS = SCHEME + AUTHORITY + "/artists";
-	public static final Uri URI_ARTISTS = Uri.parse(ARTISTS);
-	public static final String ARTIST_ID_BASE = ARTISTS + "/id=";
-	public static final String ARTIST_NAME_BASE = ARTISTS + "/name=";
-	
-	public static final String ALBUMS = SCHEME + AUTHORITY + "/albums";
-	public static final Uri URI_ALBUMS = Uri.parse(ALBUMS);
-	public static final String ALBUM_ID_BASE = ALBUMS + "/id=";
-	public static final String ALBUM_TITLE_BASE = ALBUMS + "/title=";
-	public static final String ALBUM_ARTIST_BASE = ALBUMS + "/artist=";
-	
-	public static final String TRACKS = SCHEME + AUTHORITY + "/tracks";
-	public static final Uri URI_TRACKS = Uri.parse(TRACKS);
-	public static final String TRACK_ID_BASE = TRACKS + "/id=";
-	public static final String TRACK_TITLE_BASE = TRACKS + "/title=";
-	public static final String TRACK_ALBUM_BASE = TRACKS + "/album=";
-	public static final String TRACK_ARTIST_BASE = TRACKS + "/artist=";
-	
-	public static final String DOWNLOADS = SCHEME + AUTHORITY + "/downloads";
-	public static final Uri URI_DOWNLOADS = Uri.parse(DOWNLOADS);
-	public static final String DOWNLOAD_ID_BASE = DOWNLOADS + "/id=";
-	
-	public static final String CACHE = SCHEME + AUTHORITY + "/cache";
-	public static final Uri URI_CACHE = Uri.parse(CACHE);
-	public static final String CACHE_ID_BASE = CACHE + "/id=";
-	
-	public static final String DOWNLOADDETAILS = SCHEME + AUTHORITY + "/downloaddetails";
-	public static final Uri URI_DOWNLOADDETAILS = Uri.parse(DOWNLOADDETAILS);
-	
-	private static MuckeboxDbHelper mDbHelper = null;
-	
-	public MuckeboxProvider() {
+		
+	private static int MASK_GROUP(int mask) {
+		return (mask & ~0xffff);
 	}
 	
-	private static MuckeboxDbHelper getDbHelper(final Context context) {
-		if (mDbHelper == null)
-			mDbHelper = new MuckeboxDbHelper(context);
+	private static final int ARTISTS					= (1 << 16);
+	private static final int ARTISTS_ID					= (1 << 16) + 1;
+	private static final int ARTISTS_NAME				= (1 << 16) + 2;
+	
+	private static final int ARTISTS_WITH_ALBUMS		= (2 << 16);
+	private static final int ARTISTS_WITH_ALBUMS_NAME	= (2 << 16) + 1;
+	
+	private static final int ALBUMS						= (3 << 16);
+	private static final int ALBUMS_ID					= (3 << 16) + 1;
+	private static final int ALBUMS_TITLE				= (3 << 16) + 2;
+	private static final int ALBUMS_ARTIST				= (3 << 16) + 3;
+	
+	private static final int ALBUMS_WITH_ARTIST			= (4 << 16);
+	private static final int ALBUMS_WITH_ARTIST_TITLE	= (4 << 16) + 1;
+	private static final int ALBUMS_WITH_ARTIST_ARTIST	= (4 << 16) + 2;
+	
+	private static final int TRACKS						= (5 << 16);
+	private static final int TRACKS_ID					= (5 << 16) + 1;
+	private static final int TRACKS_ALBUM				= (5 << 16) + 4;
+	
+	private static final int TRACKS_WITH_DETAILS		= (6 << 16);
+	private static final int TRACKS_WITH_DETAILS_ALBUM	= (6 << 16) + 1;
+	
+	private static final int DOWNLOADS					= (7 << 16);
+	private static final int DOWNLOADS_ID				= (7 << 16) + 1;
+	private static final int DOWNLOADS_TRACK			= (7 << 16) + 2;
+	
+	private static final int DOWNLOADS_WITH_DETAILS		= (8 << 16);
+	
+	private static final int CACHE						= (9 << 16);
+	private static final int CACHE_ID					= (9 << 16) + 1;
+	private static final int CACHE_TRACK				= (9 << 16) + 2;
+	
+	public static final Uri URI_ARTISTS						= Uri.parse(SCHEME + AUTHORITY + "/artists");
+	public static final Uri URI_ARTISTS_NAME				= Uri.parse(SCHEME + AUTHORITY + "/artists/name");
+	
+	public static final Uri URI_ARTISTS_WITH_ALBUMS			= Uri.parse(SCHEME + AUTHORITY + "/artists+albums");
+	public static final Uri URI_ARTISTS_WITH_ALBUMS_NAME	= Uri.parse(SCHEME + AUTHORITY + "/artists+albums/name");
+	
+	public static final Uri URI_ALBUMS						= Uri.parse(SCHEME + AUTHORITY + "/albums");
+	public static final Uri URI_ALBUMS_ARTIST				= Uri.parse(SCHEME + AUTHORITY + "/albums/artist");
+	public static final Uri URI_ALBUMS_TITLE				= Uri.parse(SCHEME + AUTHORITY + "/albums/title");
+	
+	public static final Uri URI_ALBUMS_WITH_ARTIST			= Uri.parse(SCHEME + AUTHORITY + "/albums+artist");
+	public static final Uri URI_ALBUMS_WITH_ARTIST_TITLE	= Uri.parse(SCHEME + AUTHORITY + "/albums+artist/name");
+	public static final Uri URI_ALBUMS_WITH_ARTIST_ARTIST	= Uri.parse(SCHEME + AUTHORITY + "/albums+artist/artist");
+	
+	public static final Uri URI_TRACKS						= Uri.parse(SCHEME + AUTHORITY + "/tracks");
+	public static final Uri URI_TRACKS_ALBUM				= Uri.parse(SCHEME + AUTHORITY + "/tracks/album");
+	
+	public static final Uri URI_TRACKS_WITH_DETAILS			= Uri.parse(SCHEME + AUTHORITY + "/tracks+details");
+	public static final Uri URI_TRACKS_WITH_DETAILS_ALBUM	= Uri.parse(SCHEME + AUTHORITY + "/tracks+details/album");
+	
+	public static final Uri URI_DOWNLOADS					= Uri.parse(SCHEME + AUTHORITY + "/downloads");
+	public static final Uri URI_DOWNLOADS_TRACK				= Uri.parse(SCHEME + AUTHORITY + "/downloads/track");
+	
+	public static final Uri URI_DOWNLOADS_WITHDETAILS		= Uri.parse(SCHEME + AUTHORITY + "/downloads+details");
+	
+	public static final Uri URI_CACHE						= Uri.parse(SCHEME + AUTHORITY + "/cache");
+	public static final Uri URI_CACHE_TRACK					= Uri.parse(SCHEME + AUTHORITY + "/cache/track");
+	
+	private static final UriMatcher mMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+	
+	static {
+		mMatcher.addURI(AUTHORITY, "artists", 					ARTISTS);
+		mMatcher.addURI(AUTHORITY, "artists/#", 				ARTISTS_ID);
+		mMatcher.addURI(AUTHORITY, "artists/name/*", 			ARTISTS_NAME);
 		
-		return mDbHelper;
+		mMatcher.addURI(AUTHORITY, "artists+albums",			ARTISTS_WITH_ALBUMS);
+		mMatcher.addURI(AUTHORITY, "artists+albums/name/*",		ARTISTS_WITH_ALBUMS_NAME);
+			
+		mMatcher.addURI(AUTHORITY, "albums", 					ALBUMS);
+		mMatcher.addURI(AUTHORITY, "albums/#", 					ALBUMS_ID);
+		mMatcher.addURI(AUTHORITY, "albums/title/*", 			ALBUMS_TITLE);
+		mMatcher.addURI(AUTHORITY, "albums/artist/#", 			ALBUMS_ARTIST);
+		
+		mMatcher.addURI(AUTHORITY, "albums+artist",				ALBUMS_WITH_ARTIST);
+		mMatcher.addURI(AUTHORITY, "albums+artist/name/*",		ALBUMS_WITH_ARTIST_TITLE);
+		mMatcher.addURI(AUTHORITY, "albums+artist/artist/#",	ALBUMS_WITH_ARTIST_ARTIST);
+		
+		mMatcher.addURI(AUTHORITY, "tracks", 					TRACKS);
+		mMatcher.addURI(AUTHORITY, "tracks/#", 					TRACKS_ID);
+		mMatcher.addURI(AUTHORITY, "tracks/album/#",			TRACKS_ALBUM);
+		
+		mMatcher.addURI(AUTHORITY, "tracks+details", 			TRACKS_WITH_DETAILS);
+		mMatcher.addURI(AUTHORITY, "tracks+details/album/#",	TRACKS_WITH_DETAILS_ALBUM);
+		
+		mMatcher.addURI(AUTHORITY, "downloads", 				DOWNLOADS);
+		mMatcher.addURI(AUTHORITY, "downloads/#", 				DOWNLOADS_ID);
+		mMatcher.addURI(AUTHORITY, "downloads/track/#",			DOWNLOADS_TRACK);
+		
+		mMatcher.addURI(AUTHORITY, "downloads+details",			DOWNLOADS_WITH_DETAILS);
+		
+		mMatcher.addURI(AUTHORITY, "cache", 					CACHE);
+		mMatcher.addURI(AUTHORITY, "cache/#", 					CACHE_ID);
+		mMatcher.addURI(AUTHORITY, "cache/track/#",				CACHE_TRACK);
+	}
+	
+	private static MuckeboxDbHelper mDbHelper;
+	
+	@Override
+	public boolean onCreate() {
+		mDbHelper = new MuckeboxDbHelper(getContext());
+		return true;
 	}
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
 		ContentResolver resolver = getContext().getContentResolver();
+		int match = mMatcher.match(uri);
+		int group = MASK_GROUP(match);
 		int ret;
 		
-		synchronized(this) {
-			if (URI_DOWNLOADS.equals(uri))
-			{
-				ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
+		Log.d(LOG_TAG, "Deleting " + uri);
+		
+		switch (group)
+		{
+		case DOWNLOADS:
+			switch (match) {
+			case DOWNLOADS_ID:
+				selection = DownloadEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				resolver.notifyChange(URI_DOWNLOADS, null);
-				resolver.notifyChange(URI_TRACKS, null);
-			} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
-			{
-				final long id = Long.parseLong(uri.toString().substring(DOWNLOAD_ID_BASE.length()));
-				String whereClause = DownloadEntry.FULL_ID + " = " + Long.toString(id);
+				break;
+			case DOWNLOADS_TRACK:
+				selection = DownloadEntry.FULL_TRACK_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				if (! TextUtils.isEmpty(selection))
-				{
-					whereClause += " AND " + selection;
-				}
-				
-				ret = db.delete(DownloadEntry.TABLE_NAME, whereClause, selectionArgs);
-				
-				resolver.notifyChange(URI_DOWNLOADS, null);
-				resolver.notifyChange(URI_TRACKS, null);
-			} else if (URI_CACHE.equals(uri))
-			{
-				ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
-				
-				resolver.notifyChange(URI_CACHE, null);
-			} else if (uri.toString().startsWith(CACHE_ID_BASE))
-			{
-				final long id = Long.parseLong(uri.toString().substring(CACHE_ID_BASE.length()));
-				String whereClause = CacheEntry.FULL_ID + " = " + Long.toString(id);
-				
-				if (! TextUtils.isEmpty(selection))
-				{
-					whereClause += " AND " + selection;
-				}
-				
-				ret = db.delete(CacheEntry.TABLE_NAME, whereClause, selectionArgs);
-				
-				resolver.notifyChange(URI_CACHE, null);
-				resolver.notifyChange(URI_TRACKS, null);
-			} else {
-				throw new UnsupportedOperationException("Not yet implemented");
+				break;
 			}
+			
+			ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
+			
+			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			break;
+			
+		case CACHE:
+			switch (match) {
+			case CACHE_ID:
+				selection = CacheEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			}
+		
+			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
+			
+			resolver.notifyChange(URI_CACHE, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			break;
+			
+		default:
+			throw new UnsupportedOperationException("Not yet implemented");
 		}
 		
 		return ret;
@@ -129,244 +199,244 @@ public class MuckeboxProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		synchronized(this) {
-			SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
-			ContentResolver resolver = getContext().getContentResolver();
-			Uri ret;
-	
-			if (URI_DOWNLOADS.equals(uri))
-			{
-				long id = db.insert(DownloadEntry.TABLE_NAME, null, values);
-				
-				resolver.notifyChange(URI_DOWNLOADS, null);
-				resolver.notifyChange(URI_TRACKS, null);
-				
-				ret = Uri.parse(DOWNLOAD_ID_BASE + Long.toString(id));
-			} else if (URI_CACHE.equals(uri))
-			{
-				long id = db.insert(CacheEntry.TABLE_NAME, null, values);
-				
-				resolver.notifyChange(URI_CACHE, null);
-				resolver.notifyChange(URI_TRACKS, null);
-				
-				ret = Uri.parse(CACHE_ID_BASE + Long.toString(id));
-			} else 
-			{
-				throw new UnsupportedOperationException("Unknown URI");
-			}
-			
-			return ret;
-		}
-	}
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		ContentResolver resolver = getContext().getContentResolver();
+		int match = mMatcher.match(uri);
+		long id;
+		Uri ret;
 
-	@Override
-	public boolean onCreate() {
-		return true;
+		switch (match) {
+		case DOWNLOADS:
+			id = db.insert(DownloadEntry.TABLE_NAME, null, values);
+			
+			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			ret = URI_DOWNLOADS.buildUpon().appendPath(Long.toString(id)).build();
+			
+			break;
+			
+		case CACHE:
+			id = db.insert(CacheEntry.TABLE_NAME, null, values);
+			
+			resolver.notifyChange(URI_CACHE, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			ret = URI_CACHE.buildUpon().appendPath(Long.toString(id)).build();
+			
+			break;
+			
+		default:
+			throw new UnsupportedOperationException("Unknown URI");
+		}
+		
+		return ret;
 	}
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
-		SQLiteDatabase db = getDbHelper(getContext()).getReadableDatabase();
+		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		ContentResolver resolver = getContext().getContentResolver();
+		int match = mMatcher.match(uri);
+		int group = MASK_GROUP(match);
 		Cursor result = null;
 		
-		synchronized(this) {
-			if (URI_ARTISTS.equals(uri))
+		Log.d(LOG_TAG, "Query '" + uri + "'");
+		
+		switch (group) {
+		case ARTISTS:
+			switch (match) {
+			case ARTISTS_ID:
+				selection = ArtistEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			case ARTISTS_NAME:
+				selection = "LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)";
+				selectionArgs = new String[] { "%" + uri.getLastPathSegment() + "%" };
+				
+				break;
+			}
+			
+			result = db.query(ArtistEntry.TABLE_NAME,
+					(projection == null ? ArtistEntry.PROJECTION : projection),
+					selection, selectionArgs, null, null,
+					(sortOrder == null ? ArtistEntry.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_ARTISTS);
+			
+			break;
+			
+		case ARTISTS_WITH_ALBUMS:
+			switch (match)
 			{
-				Log.d(LOG_TAG, "Query all artists");
+			case ARTISTS_WITH_ALBUMS_NAME:
+				selection = "LOWER(" + ArtistEntry.FULL_NAME + ") LIKE (?)";
+				selectionArgs = new String[] { "%" + uri.getLastPathSegment() + "%" };
 				
-				result = db.query(
-						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-						null, null, ArtistAlbumJoin.GROUP_BY, null,
-						ArtistAlbumJoin.SORT_ORDER, null);
+				break;
+			}
+			
+			result = db.query(ArtistAlbumJoin.TABLE_NAME,
+					(projection == null ? ArtistAlbumJoin.PROJECTION : projection),
+					selection, selectionArgs, ArtistAlbumJoin.GROUP_BY, null,
+					(sortOrder == null ? ArtistAlbumJoin.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_ARTISTS);
+			
+			break;
+			
+		case ALBUMS:
+			switch (match) {
+			case ALBUMS_ID:
+				selection = AlbumEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result.setNotificationUri(resolver, URI_ARTISTS);
-			} else if (uri.toString().startsWith(ARTIST_ID_BASE)) {
-				final long id = Long.parseLong(uri.toString().substring(ARTIST_ID_BASE.length()));
+				break;
+			case ALBUMS_TITLE:
+				selection = "LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)";
+				selectionArgs = new String[] { "%" + uri.getLastPathSegment() + "%" };
 				
-				Log.d(LOG_TAG, "Query artist id = " + id);
+				break;
+			case ALBUMS_ARTIST:
+				selection = AlbumEntry.FULL_ARTIST_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result = db.query(
-						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-						ArtistEntry.FULL_ID + " IS ?",
-						new String[] { String.valueOf(id) }, ArtistAlbumJoin.GROUP_BY, null,
-						ArtistAlbumJoin.SORT_ORDER, null);
+				break;
+			}
+			
+			result = db.query(AlbumEntry.TABLE_NAME,
+					(projection == null ? AlbumEntry.PROJECTION : projection),
+					selection, selectionArgs, null, null,
+					(sortOrder == null ? AlbumEntry.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_ALBUMS);
+			
+			break;
+			
+		case ALBUMS_WITH_ARTIST:
+			switch (match) {
+			case ALBUMS_WITH_ARTIST_TITLE:
+				selection = "LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)";
+				selectionArgs = new String[] { "%" + uri.getLastPathSegment() + "%" };
 				
-				result.setNotificationUri(resolver, URI_ARTISTS);
-			} else if (uri.toString().startsWith(ARTIST_NAME_BASE)) {
-				String name = uri.toString().substring(ARTIST_NAME_BASE.length());
+				break;
+			case ALBUMS_WITH_ARTIST_ARTIST:
+				selection = AlbumEntry.FULL_ARTIST_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				Log.d(LOG_TAG, "Query artist name = " + name);
+				break;
+			}
+			
+			result = db.query(AlbumArtistJoin.TABLE_NAME,
+					(projection == null ? AlbumArtistJoin.PROJECTION : projection),
+					selection, selectionArgs, null, null,
+					(sortOrder == null ? AlbumArtistJoin.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_ALBUMS);
+			
+			break;
+			
+		case TRACKS:
+			switch (match) {
+			case TRACKS_ID:
+				selection = TrackEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result = db.query(
-						ArtistAlbumJoin.TABLE_NAME, ArtistAlbumJoin.PROJECTION,
-						"LOWER(" + ArtistEntry.FULL_NAME + ") LIKE LOWER(?)",
-						new String[] { "%" + name + "%" }, ArtistAlbumJoin.GROUP_BY, null,
-						ArtistAlbumJoin.SORT_ORDER, null);
+				break;
+			case TRACKS_ALBUM:
+				selection = TrackEntry.FULL_ALBUM_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result.setNotificationUri(resolver, URI_ARTISTS);
-			} else if (URI_ALBUMS.equals(uri))
-			{
-				Log.d(LOG_TAG, "Query all albums");
+				break;
+			}
+			
+			result = db.query(TrackEntry.TABLE_NAME,
+					(projection == null ? TrackEntry.PROJECTION : projection),
+					selection, selectionArgs, null, null, 
+					(sortOrder == null ? TrackEntry.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_TRACKS);
+			
+			break;
+			
+		case TRACKS_WITH_DETAILS:
+			switch (match) {
+			case TRACKS_WITH_DETAILS_ALBUM:
+				selection = TrackEntry.FULL_ALBUM_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result = db.query(
-						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-						null, null, null, null, AlbumArtistJoin.SORT_ORDER, null);
+				break;
+			}
+			
+			result = db.query(TrackDownloadCacheJoin.TABLE_NAME,
+					(projection == null ? TrackDownloadCacheJoin.PROJECTION : projection),
+					selection, selectionArgs, null, null, 
+					(sortOrder == null ? TrackDownloadCacheJoin.SORT_ORDER : sortOrder), null);
+			
+			result.setNotificationUri(resolver, URI_TRACKS);
+			
+			break;
+			
+		case DOWNLOADS:
+			switch (match) {
+			case DOWNLOADS_ID:
+				selection = DownloadEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result.setNotificationUri(resolver, URI_ALBUMS);
-			} else if (uri.toString().startsWith(ALBUM_ID_BASE)) {
-				final long id = Long.parseLong(uri.toString().substring(ALBUM_ID_BASE.length()));
+				break;
+			case DOWNLOADS_TRACK:
+				selection = DownloadEntry.FULL_TRACK_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				Log.d(LOG_TAG, "Query album id = " + id);
+				break;
+			}
+			
+			result = db.query(DownloadEntry.TABLE_NAME,
+					(projection == null) ? DownloadEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
+			
+			result.setNotificationUri(resolver, URI_DOWNLOADS);
+			
+			break;
+			
+		case DOWNLOADS_WITH_DETAILS:
+			result = db.query(DownloadTrackEntry.TABLE_NAME, 
+					(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
+			
+			result.setNotificationUri(resolver, URI_DOWNLOADS);
+			
+			break;
+			
+		case CACHE:
+			switch (match) {
+			case CACHE_ID:
+				selection = CacheEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result = db.query(
-						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-						AlbumEntry.FULL_ID + " IS ?",
-						new String[] { String.valueOf(id) }, null, null,
-						AlbumArtistJoin.SORT_ORDER, null);
+				break;
+			case CACHE_TRACK:
+				selection = CacheEntry.FULL_TRACK_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				result.setNotificationUri(resolver, URI_ALBUMS);
-			} else if (uri.toString().startsWith(ALBUM_TITLE_BASE)) {
-				String name = uri.toString().substring(ALBUM_TITLE_BASE.length());
-				
-				Log.d(LOG_TAG, "Query album name = " + name);
-	
-				result = db.query(
-						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-						"LOWER(" + AlbumEntry.FULL_TITLE + ") LIKE LOWER(?)",
-						new String[] { "%" + name + "%" }, null, null,
-						AlbumArtistJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_ALBUMS);
-			} else if (uri.toString().startsWith(ALBUM_ARTIST_BASE))
-			{
-				final long id = Long.parseLong(uri.toString().substring(ALBUM_ARTIST_BASE.length()));
-				
-				Log.d(LOG_TAG, "Query album artist = " + id);
-				
-				result = db.query(
-						AlbumArtistJoin.TABLE_NAME, AlbumArtistJoin.PROJECTION,
-						AlbumEntry.FULL_ARTIST_ID + " IS ?",
-						new String[] { String.valueOf(id) }, null, null,
-						AlbumArtistJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_ALBUMS);
-			} else if (URI_TRACKS.equals(uri)) {
-				Log.d(LOG_TAG, "Query all tracks");
-				
-				result = db.query(
-						TrackDownloadCacheJoin.TABLE_NAME,
-						TrackDownloadCacheJoin.PROJECTION,
-						null, null, null, null, 
-						TrackDownloadCacheJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_TRACKS);
-			} else if (uri.toString().startsWith(TRACK_ID_BASE)) {
-				final long id = Long.parseLong(uri.toString().substring(TRACK_ID_BASE.length()));
-				
-				Log.d(LOG_TAG, "Query track id = " + id);
-				
-				result = db.query(
-						TrackDownloadCacheJoin.TABLE_NAME,
-						TrackDownloadCacheJoin.PROJECTION,
-						TrackEntry.FULL_ID + " IS ?",
-						new String[] { String.valueOf(id) }, null, null,
-						TrackDownloadCacheJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_TRACKS);
-			} else if (uri.toString().startsWith(TRACK_TITLE_BASE)) {
-				String name = uri.toString().substring(TRACK_TITLE_BASE.length());
-				
-				Log.d(LOG_TAG, "Query track name = " + name);
-	
-				result = db.query(
-						TrackDownloadCacheJoin.TABLE_NAME,
-						TrackDownloadCacheJoin.PROJECTION,
-						"LOWER(" + TrackEntry.FULL_TITLE + ") LIKE LOWER(?)",
-						new String[] { "%" + name + "%" }, null, null,
-						TrackDownloadCacheJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_TRACKS);
-			} else if (uri.toString().startsWith(TRACK_ALBUM_BASE)) {
-				String album_id = uri.toString().substring(TRACK_ALBUM_BASE.length());
-				
-				Log.d(LOG_TAG, "Query track album = " + album_id);
-				
-				result = db.query(
-						TrackDownloadCacheJoin.TABLE_NAME,
-						TrackDownloadCacheJoin.PROJECTION,
-						TrackEntry.FULL_ALBUM_ID + " IS ?",
-						new String[] { album_id }, null, null,
-						TrackDownloadCacheJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_TRACKS);
-			} else if (uri.toString().startsWith(TRACK_ARTIST_BASE)) {
-				String artist_id = uri.toString().substring(TRACK_ARTIST_BASE.length());
-				
-				Log.d(LOG_TAG, "Query track artist = " + artist_id);
-				
-				result = db.query(
-						TrackDownloadCacheJoin.TABLE_NAME,
-						TrackDownloadCacheJoin.PROJECTION,
-						TrackEntry.FULL_ARTIST_ID + " IS ?",
-						new String[] { artist_id }, null, null,
-						TrackDownloadCacheJoin.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_TRACKS);
-			} else if (URI_DOWNLOADS.equals(uri))
-			{
-				Log.d(LOG_TAG, "Query all downloads");
-				
-				result = db.query(
-						DownloadEntry.TABLE_NAME,
-						(projection == null) ? DownloadEntry.PROJECTION : projection,
-						selection, selectionArgs, null, null,
-						(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder,
-						null);
-				
-				result.setNotificationUri(resolver, URI_DOWNLOADS);
-			} else if (uri.toString().startsWith(DOWNLOAD_ID_BASE)) {
-				String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
-				
-				Log.d(LOG_TAG, "Query download id = " + download_id);
-				
-				result = db.query(
-						DownloadEntry.TABLE_NAME, DownloadEntry.PROJECTION,
-						DownloadEntry.FULL_ID + " IS ?",
-						new String[] { download_id }, null, null,
-						DownloadEntry.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_DOWNLOADS);
-			} else if (URI_CACHE.equals(uri))
-			{
-				result = db.query(CacheEntry.TABLE_NAME,
-						(projection == null) ? CacheEntry.PROJECTION : projection,
-						selection, selectionArgs, null, null,
-						(sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
-				
-				result.setNotificationUri(resolver, URI_CACHE);
-			} else if (uri.toString().startsWith(CACHE_ID_BASE)) {
-				String cache_id = uri.toString().substring(CACHE_ID_BASE.length());
-				
-				result = db.query(CacheEntry.TABLE_NAME,
-						(projection == null) ? CacheEntry.PROJECTION : projection,
-						CacheEntry.FULL_ID + " IS ?",
-						new String[] { cache_id }, null, null,
-						CacheEntry.SORT_ORDER, null);
-				
-				result.setNotificationUri(resolver, URI_CACHE);
-			} else if (URI_DOWNLOADDETAILS.equals(uri))
-			{
-				result = db.query(DownloadTrackEntry.TABLE_NAME, 
-						(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
-						selection, selectionArgs, null, null,
-						(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
-				
-				result.setNotificationUri(resolver, URI_DOWNLOADS);
-			} else {
-		        throw new UnsupportedOperationException("Unknown URI");
-		    }
+				break;
+			}
+			
+			result = db.query(CacheEntry.TABLE_NAME,
+					(projection == null) ? CacheEntry.PROJECTION : projection,
+					selection, selectionArgs, null, null,
+					(sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
+			
+			result.setNotificationUri(resolver, URI_CACHE);
+			
+			break;
+			
+		default:
+			throw new UnsupportedOperationException("Unknown URI");
 		}
 		
 		return result;
@@ -375,39 +445,54 @@ public class MuckeboxProvider extends ContentProvider {
 	@Override
 	public int update(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
-		synchronized(this) {
-			SQLiteDatabase db = getDbHelper(getContext()).getWritableDatabase();
-			ContentResolver resolver = getContext().getContentResolver();
-			int ret;
-			
-			if (uri.toString().startsWith(DOWNLOAD_ID_BASE))
-			{
-				String download_id = uri.toString().substring(DOWNLOAD_ID_BASE.length());
-				String whereString = DownloadEntry.FULL_ID + " IS " + download_id;
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		ContentResolver resolver = getContext().getContentResolver();
+		int match = mMatcher.match(uri);
+		int group = MASK_GROUP(match);
+		int ret;
+		
+		switch (group) {
+		case DOWNLOADS:
+			switch (match) {
+			case DOWNLOADS_ID:
+				selection = DownloadEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
-				if (! TextUtils.isEmpty(selection))
-				{
-					whereString += " AND (" + selection + ")";
-				}
-				
-				Log.d(LOG_TAG, "Updating download " + download_id);
-				
-				ret = db.update(DownloadEntry.TABLE_NAME, values, whereString, selectionArgs);
-				
-				resolver.notifyChange(URI_DOWNLOADS, null);
-				resolver.notifyChange(URI_TRACKS, null);
-			} else if (URI_CACHE.equals(uri))
-			{
-				ret = db.update(CacheEntry.TABLE_NAME, values, selection, selectionArgs);
-				
-				resolver.notifyChange(URI_CACHE, null);
-				resolver.notifyChange(URI_TRACKS, null);
-			} else
-			{
-				throw new UnsupportedOperationException("Not yet implemented");
+				break;
 			}
 			
-			return ret;
+			ret = db.update(DownloadEntry.TABLE_NAME, values, selection, selectionArgs);
+			
+			resolver.notifyChange(URI_DOWNLOADS, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			break;
+			
+		case CACHE:
+			switch (match) {
+			case CACHE_ID:
+				selection = CacheEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			case CACHE_TRACK:
+				selection = CacheEntry.FULL_TRACK_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			}
+			
+			ret = db.update(CacheEntry.TABLE_NAME, values, selection, selectionArgs);
+
+			resolver.notifyChange(URI_CACHE, null);
+			resolver.notifyChange(URI_TRACKS, null);
+			
+			break;
+			
+		default:
+			throw new UnsupportedOperationException("Not yet implemented");
 		}
+		
+		return ret;
 	}
 }

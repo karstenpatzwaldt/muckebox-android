@@ -213,16 +213,14 @@ public class AlbumListFragment extends RefreshableListFragment
         Uri baseUri;
         
         if (hasArtistId()) {
-        	baseUri = Uri.parse(MuckeboxProvider.ALBUM_ARTIST_BASE + Long.toString(getArtistId()));
+        	baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST.buildUpon().appendPath(Long.toString(getArtistId())).build();
         } else if (mCurFilter != null) {
-            baseUri = Uri.parse(MuckeboxProvider.ALBUM_TITLE_BASE + mCurFilter);
+            baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE.buildUpon().appendPath(mCurFilter).build();
         } else {
-            baseUri = MuckeboxProvider.URI_ALBUMS;
+            baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST;
         }
 
-        return new CursorLoader(getActivity(), baseUri,
-                AlbumEntry.PROJECTION, null, null,
-                AlbumEntry.SORT_ORDER);
+        return new CursorLoader(getActivity(), baseUri, null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

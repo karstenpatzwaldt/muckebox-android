@@ -3,6 +3,7 @@ package org.muckebox.android.db;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 
 import android.database.Cursor;
+import android.net.Uri;
 
 public class DownloadEntryCursor {
 	Cursor mCursor;
@@ -45,5 +46,9 @@ public class DownloadEntryCursor {
 	{
 		return (mCursor.getInt(mCursor.getColumnIndex(DownloadEntry.ALIAS_PIN_RESULT)) == 0) ?
 				false : true;
+	}
+	
+	public Uri getUri() {
+		return MuckeboxProvider.URI_DOWNLOADS.buildUpon().appendPath(Integer.toString(getId())).build();
 	}
 }

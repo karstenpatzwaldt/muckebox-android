@@ -34,15 +34,15 @@ import android.widget.Toast;
 public class DownloadService
 	extends Service
 	implements Handler.Callback {
-	public final static String EXTRA_TRACK_ID = "track_id";
-	public final static String EXTRA_PIN = "pin";
-	public final static String EXTRA_START_NOW = "start_now";
-	public final static String EXTRA_COMMAND = "command";
+	public final static String EXTRA_TRACK_ID 	= "track_id";
+	public final static String EXTRA_PIN 		= "pin";
+	public final static String EXTRA_START_NOW	= "start_now";
+	public final static String EXTRA_COMMAND 	= "command";
 	
-	public static final int COMMAND_DOWNLOAD = 1;
-	public static final int COMMAND_CHECK_QUEUE = 2;
-	public static final int COMMAND_CLEAR = 3;
-	public static final int COMMAND_DISCARD = 4;
+	public static final int COMMAND_DOWNLOAD 		= 1;
+	public static final int COMMAND_CHECK_QUEUE 	= 2;
+	public static final int COMMAND_CLEAR 			= 3;
+	public static final int COMMAND_DISCARD 		= 4;
 	
 	private static final int NOTIFICATION_ID = 1;
 	
@@ -132,38 +132,18 @@ public class DownloadService
 		{
 		case COMMAND_DISCARD:
 			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
+			final Uri discardUri = MuckeboxProvider.URI_DOWNLOADS_TRACK.buildUpon().appendPath(
+					Integer.toString(discardTrackId)).build();
 			
 			new Thread(new Runnable() {
 				public void run() {
 					removeFromCache(discardTrackId);
-			
-					if (mCurrentUri != null)
-					{
-						Cursor c = getContentResolver().query(mCurrentUri, null, null, null, null);
-						
-						try
-						{
-							if (c.getCount() > 0)
-							{
-								DownloadEntryCursor entry = new DownloadEntryCursor(c);
+					
+					if (getContentResolver().delete(discardUri, null, null) > 0)
+						updateNotificationCount();
 								
-								int currentTrackId = entry.getTrackId();
-								
-								getContentResolver().delete(
-										MuckeboxProvider.URI_DOWNLOADS,
-										DownloadEntry.FULL_TRACK_ID + " IS ?",
-										new String[] { Integer.toString(discardTrackId) });
-
-								updateNotificationCount();
-								
-								if (currentTrackId == discardTrackId)
-									stopCurrentDownload();
-							}
-						} finally
-						{
-							c.close();
-						}
-					}
+					if (discardUri.equals(mCurrentUri))
+						stopCurrentDownload();
 				}
 			}).start();
 			
@@ -227,9 +207,9 @@ public class DownloadService
 	
 	private boolean isInCache(int trackId)
 	{
-		return getContentResolver().query(MuckeboxProvider.URI_CACHE,
-				CacheEntry.PROJECTION, CacheEntry.FULL_TRACK_ID + " IS ?",
-				new String[] { Integer.toString(trackId) }, null).getCount() > 0;
+		return getContentResolver().query(
+				MuckeboxProvider.URI_CACHE_TRACK.buildUpon().appendPath(Integer.toString(trackId)).build(),
+				null, null, null, null, null).getCount() > 0;
 	}
 	
 	private void pinInCache(int trackId)
@@ -244,11 +224,8 @@ public class DownloadService
 	}
 	
 	private void removeFromCache(int trackId) {
-		String whereString = CacheEntry.FULL_TRACK_ID + " IS ?";
-		String[] whereArgs = new String[] { Integer.toString(trackId) };
-		
-		Cursor c = getContentResolver().query(MuckeboxProvider.URI_CACHE,
-				CacheEntry.PROJECTION, whereString, whereArgs, null);
+		Uri uri = MuckeboxProvider.URI_CACHE_TRACK.buildUpon().appendPath(Integer.toString(trackId)).build();
+		Cursor c = getContentResolver().query(uri, null, null, null, null);
 
 		try
 		{
@@ -259,7 +236,7 @@ public class DownloadService
 				deleteFile(fileName);
 			}
 			
-			getContentResolver().delete(MuckeboxProvider.URI_CACHE, whereString, whereArgs);
+			getContentResolver().delete(uri, null, null);
 		} finally
 		{
 			c.close();
@@ -426,27 +403,9 @@ public class DownloadService
 		String transcodingType = Preferences.getTranscodingType();
 		String transcodingQuality = Preferences.getTranscodingQuality();
 		
-		String whereString = DownloadEntry.FULL_TRACK_ID + " IS ?";
-		String[] whereArgs;
-		
-		if (! transcodingEnabled)
-		{
-			whereString += " AND " + DownloadEntry.FULL_TRANSCODE + " IS 0";
-			whereArgs = new String[] { Long.toString(trackId) };
-		} else
-		{
-			whereString += " AND " +
-				DownloadEntry.FULL_TRANSCODE + " IS 1 AND " +
-				DownloadEntry.FULL_TRANSCODING_TYPE + " IS ? AND " +
-				DownloadEntry.FULL_TRANSCODING_QUALITY + " IS ?";
-			whereArgs = new String[] { 
-				Long.toString(trackId), transcodingType, transcodingQuality
-			};
-		};
-		
 		Cursor result = Muckebox.getAppContext().getContentResolver().
-				query(MuckeboxProvider.URI_DOWNLOADS,
-				null, whereString, whereArgs, null);
+				query(MuckeboxProvider.URI_DOWNLOADS.buildUpon().appendPath(Long.toString(trackId)).build(),
+				null, null, null, null);
 		
 		try
 		{
@@ -496,23 +455,26 @@ public class DownloadService
 		
 		try
 		{
-			DownloadEntryCursor entry = new DownloadEntryCursor(cursor);
-			
-			ContentValues values = new ContentValues();
-			
-			values.put(CacheEntry.SHORT_TRACK_ID, res.trackId);
-			values.put(CacheEntry.SHORT_FILENAME, res.path);
-			values.put(CacheEntry.SHORT_MIME_TYPE, res.mimeType);
-			values.put(CacheEntry.SHORT_SIZE, res.size);
-			
-			values.put(CacheEntry.SHORT_TRANSCODED, res.transcodingEnabled ? 1 : 0);
-			values.put(CacheEntry.SHORT_TRANCODING_TYPE, res.transcodingType);
-			values.put(CacheEntry.SHORT_TRANSCODING_QUALITY, res.transcodingQuality);
-			
-			values.put(CacheEntry.SHORT_PINNED, entry.doPin() ? 1 : 0);
-			
-			getContentResolver().insert(MuckeboxProvider.URI_CACHE, values);
-			getContentResolver().delete(queueEntryUri, null, null);
+			if (cursor.getCount() > 0)
+			{
+				DownloadEntryCursor entry = new DownloadEntryCursor(cursor);
+				
+				ContentValues values = new ContentValues();
+				
+				values.put(CacheEntry.SHORT_TRACK_ID, res.trackId);
+				values.put(CacheEntry.SHORT_FILENAME, res.path);
+				values.put(CacheEntry.SHORT_MIME_TYPE, res.mimeType);
+				values.put(CacheEntry.SHORT_SIZE, res.size);
+				
+				values.put(CacheEntry.SHORT_TRANSCODED, res.transcodingEnabled ? 1 : 0);
+				values.put(CacheEntry.SHORT_TRANCODING_TYPE, res.transcodingType);
+				values.put(CacheEntry.SHORT_TRANSCODING_QUALITY, res.transcodingQuality);
+				
+				values.put(CacheEntry.SHORT_PINNED, entry.doPin() ? 1 : 0);
+				
+				getContentResolver().insert(MuckeboxProvider.URI_CACHE, values);
+				getContentResolver().delete(queueEntryUri, null, null);
+			}
 		} finally
 		{
 			cursor.close();
@@ -549,8 +511,7 @@ public class DownloadService
 					
 					mCurrentThread = new Thread(new DownloadRunnable(
 							entry.getTrackId(), mHandler, getDownloadPath(entry)));
-					mCurrentUri = Uri.parse(MuckeboxProvider.DOWNLOAD_ID_BASE +
-							Integer.toString(entry.getId()));
+					mCurrentUri = entry.getUri();
 					mCurrentThread.start();
 				} else
 				{

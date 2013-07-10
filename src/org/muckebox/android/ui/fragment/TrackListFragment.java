@@ -303,7 +303,7 @@ public class TrackListFragment extends RefreshableListFragment
 	    				break;
 	    			case DownloadEntry.STATUS_VALUE_DOWNLOADING:
 	    				// XXX add download animation
-	    				icon.setImageResource(R.drawable.device_access_time);
+	    				icon.setImageResource(R.drawable.av_download);
 	    				break;
 	    			}
     			}
@@ -323,7 +323,7 @@ public class TrackListFragment extends RefreshableListFragment
 					switch (cursor.getInt(columnIndex))
 					{
 					case 0:
-						icon.setImageResource(R.drawable.av_download);
+						icon.setImageResource(R.drawable.navigation_accept);
 						break;
 					case 1:
 						icon.setImageResource(R.drawable.av_make_available_offline);
@@ -470,7 +470,7 @@ public class TrackListFragment extends RefreshableListFragment
     	if (item == mPinAllItem)
     	{
     		Cursor c = mAdapter.getCursor();
-    		int trackIdIndex = c.getColumnIndex(TrackEntry.FULL_ID);
+    		int trackIdIndex = c.getColumnIndex(TrackEntry.SHORT_ID);
     		
     		c.moveToPosition(-1);
     		
@@ -481,7 +481,7 @@ public class TrackListFragment extends RefreshableListFragment
     	} else if (item == mRemoveAllItem)
     	{
     		Cursor c = mAdapter.getCursor();
-    		int trackIdIndex = c.getColumnIndex(TrackEntry.FULL_ID);
+    		int trackIdIndex = c.getColumnIndex(TrackEntry.SHORT_ID);
     		
     		c.moveToPosition(-1);
     		
@@ -507,14 +507,13 @@ public class TrackListFragment extends RefreshableListFragment
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
         if (hasAlbumId()) {
-        	baseUri = Uri.parse(MuckeboxProvider.TRACK_ALBUM_BASE + Long.toString(getAlbumId()));
+        	baseUri = MuckeboxProvider.URI_TRACKS_WITH_DETAILS_ALBUM.buildUpon().appendPath(
+        			Long.toString(getAlbumId())).build();
         } else {
-            baseUri = MuckeboxProvider.URI_TRACKS;
+            baseUri = MuckeboxProvider.URI_TRACKS_WITH_DETAILS;
         }
 
-        return new CursorLoader(getActivity(), baseUri,
-                TrackEntry.PROJECTION, null, null,
-                TrackEntry.SORT_ORDER);
+        return new CursorLoader(getActivity(), baseUri, null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
