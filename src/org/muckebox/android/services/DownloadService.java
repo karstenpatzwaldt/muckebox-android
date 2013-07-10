@@ -51,7 +51,12 @@ public class DownloadService
 	
 	private final Set<DownloadListener> mListeners = new HashSet<DownloadListener>();
 	
-	private Thread mCurrentThread = null;
+	private class DownloadHandler {
+		public Thread mThread = null;
+		public int mTrackId;
+	}
+	
+	private DownloadHandler mCurrentDownload = null;
 	private Uri mCurrentUri = null;
 	
 	private Handler mHandler = null;
@@ -139,11 +144,17 @@ public class DownloadService
 				public void run() {
 					removeFromCache(discardTrackId);
 					
-					if (getContentResolver().delete(discardUri, null, null) > 0)
-						updateNotificationCount();
-								
-					if (discardUri.equals(mCurrentUri))
-						stopCurrentDownload();
+					int rowsAffected = getContentResolver().delete(discardUri, null, null);
+					
+					synchronized (DownloadService.this) {
+						if (mCurrentDownload != null) {
+							if (rowsAffected > 0)
+								updateNotificationCount();
+									
+							if (mCurrentDownload.mTrackId == discardTrackId)
+								stopCurrentDownload();
+						}
+					}
 				}
 			}).start();
 			
@@ -244,16 +255,18 @@ public class DownloadService
 	}
 	
 	private void stopCurrentDownload() {
-		if (mCurrentThread != null)
-		{
-			try
+		synchronized (this) {
+			if (mCurrentDownload != null)
 			{
-				mCurrentThread.interrupt();
-				mCurrentThread.join();
-				mCurrentThread = null;
-			} catch (InterruptedException e)
-			{
-				Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
+				try
+				{
+					mCurrentDownload.mThread.interrupt();
+					mCurrentDownload.mThread.join();
+					mCurrentDownload = null;
+				} catch (InterruptedException e)
+				{
+					Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
+				}
 			}
 		}
 	}
@@ -368,8 +381,9 @@ public class DownloadService
 			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 		}
 		
-		mCurrentThread = null;
-		mCurrentUri = null;
+		synchronized (this) {
+			mCurrentDownload = null;
+		}
 		
 		new Thread(new Runnable() {
 			@Override public void run() {
@@ -481,46 +495,52 @@ public class DownloadService
 		}
 	} 
 	
-	private synchronized void downloadNextOrStop()
+	private void downloadNextOrStop()
 	{
-		if (mCurrentThread == null)
-		{
-			Log.d(LOG_TAG, "Checking for next entry in queue");
+		synchronized (this) {
+			if (mCurrentDownload == null)
+			{
+				Log.d(LOG_TAG, "Checking for next entry in queue");
+				
+				Cursor c = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS, null,
+					DownloadEntry.FULL_STATUS + " IS ?",
+					new String[] { Integer.toString(DownloadEntry.STATUS_VALUE_QUEUED) },
+					null);
 			
-			Cursor c = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS, null,
-				DownloadEntry.FULL_STATUS + " IS ?",
-				new String[] { Integer.toString(DownloadEntry.STATUS_VALUE_QUEUED) },
-				null);
-		
-			try
-			{
-				if (c.getCount() > 0)
+				try
 				{
-					DownloadEntryCursor entry = new DownloadEntryCursor(c);
-					
-					mLastTotal = 0;
-					mLastTime = System.nanoTime();
-					
-					mNotificationBuilder
-						.setContentText("0 kB")
-						.setProgress(0,  0, true)
-						.setOngoing(true);
-					mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-					
-					updateNotificationCount();
-					
-					mCurrentThread = new Thread(new DownloadRunnable(
-							entry.getTrackId(), mHandler, getDownloadPath(entry)));
-					mCurrentUri = entry.getUri();
-					mCurrentThread.start();
-				} else
+					if (c.getCount() > 0)
+					{
+						DownloadEntryCursor entry = new DownloadEntryCursor(c);
+						
+						mLastTotal = 0;
+						mLastTime = System.nanoTime();
+						
+						mNotificationBuilder
+							.setContentText("0 kB")
+							.setProgress(0,  0, true)
+							.setOngoing(true);
+						mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+						
+						updateNotificationCount();
+						
+						mCurrentDownload = new DownloadHandler();
+						
+						mCurrentDownload.mThread = new Thread(new DownloadRunnable(
+								entry.getTrackId(), mHandler, getDownloadPath(entry)));
+						mCurrentUri = entry.getUri();
+						mCurrentDownload.mTrackId = entry.getTrackId();
+						
+						mCurrentDownload.mThread.start();
+					} else
+					{
+						Log.d(LOG_TAG, "Nothing found, stopping");
+						stopSelf();
+					}
+				} finally
 				{
-					Log.d(LOG_TAG, "Nothing found, stopping");
-					stopSelf();
+					c.close();
 				}
-			} finally
-			{
-				c.close();
 			}
 		}
 	}
