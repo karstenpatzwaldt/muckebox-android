@@ -1,6 +1,7 @@
 package org.muckebox.android.net;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,12 +9,11 @@ import org.json.JSONObject;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
-import org.muckebox.android.db.MuckeboxDbHelper;
 import org.muckebox.android.db.MuckeboxProvider;
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.ContentProviderOperation;
+import android.content.OperationApplicationException;
+import android.os.RemoteException;
 import android.util.Log;
 
 public class RefreshAlbumsTask extends RefreshTask<Void> {
@@ -21,43 +21,40 @@ public class RefreshAlbumsTask extends RefreshTask<Void> {
 	
 	@Override
 	protected Integer doInBackground(Void... nothing)
-	{
-		Context c = Muckebox.getAppContext();
-		SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
-				
+	{	
 		try {
 			JSONArray json = NetHelper.callApi("albums");
+			ArrayList<ContentProviderOperation> operations = 
+					new ArrayList<ContentProviderOperation>(json.length() + 1);
 			
-			db.beginTransaction();
+			operations.add(
+					ContentProviderOperation.newDelete(MuckeboxProvider.URI_ALBUMS).build());
 			
-			try {
-				db.delete(AlbumEntry.TABLE_NAME, null, null);
-				
-				for (int i = 0; i < json.length(); ++i) {
-					JSONObject o = json.getJSONObject(i);
-					ContentValues values = new ContentValues();
-					
-					values.put(AlbumEntry.SHORT_ID, o.getInt("id"));
-					values.put(AlbumEntry.SHORT_TITLE, o.getString("title"));
-					values.put(AlbumEntry.SHORT_ARTIST_ID, o.getInt("artist_id"));
-					
-					db.insert(AlbumEntry.TABLE_NAME, null, values);
-				}
-	
-				db.setTransactionSuccessful();
-				
-				Log.d(LOG_TAG, "Got " + json.length() + " albums");
-				
-				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ALBUMS, null, false);
-				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ARTISTS, null, false);
-			} finally {
-				db.endTransaction();				
+			for (int i = 0; i < json.length(); ++i) {
+				JSONObject o = json.getJSONObject(i);
+
+				operations.add(
+						ContentProviderOperation.newInsert(MuckeboxProvider.URI_ALBUMS).
+							withValue(AlbumEntry.SHORT_ID, o.getInt("id")).
+							withValue(AlbumEntry.SHORT_TITLE, o.getString("title")).
+							withValue(AlbumEntry.SHORT_ARTIST_ID, o.getInt("artist_id")).build());
 			}
+			
+			Muckebox.getAppContext().getContentResolver().applyBatch(
+					MuckeboxProvider.AUTHORITY, operations);
+	
+			Log.d(LOG_TAG, "Got " + json.length() + " albums");
 		} catch (IOException e) {
 			Log.d(LOG_TAG, "IOException: " + e.getMessage());
 			return R.string.error_reload_albums;
 		} catch (JSONException e) {
 			return R.string.error_json;
+		} catch (RemoteException e) {
+			e.printStackTrace();
+			return R.string.error_reload_albums;
+		} catch (OperationApplicationException e) {
+			e.printStackTrace();
+			return R.string.error_reload_albums;
 		}
 		
 		return null;

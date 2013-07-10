@@ -1,6 +1,7 @@
 package org.muckebox.android.net;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,12 +9,11 @@ import org.json.JSONObject;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
-import org.muckebox.android.db.MuckeboxDbHelper;
 import org.muckebox.android.db.MuckeboxProvider;
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.ContentProviderOperation;
+import android.content.OperationApplicationException;
+import android.os.RemoteException;
 import android.util.Log;
 
 public class RefreshArtistsTask extends RefreshTask<Void> {
@@ -23,39 +23,32 @@ public class RefreshArtistsTask extends RefreshTask<Void> {
 	protected Integer doInBackground(Void... nothing)
 	{
 		try {
-			Context c = Muckebox.getAppContext();
-			SQLiteDatabase db = new MuckeboxDbHelper(c).getWritableDatabase();
 			JSONArray json = NetHelper.callApi("artists");
+			ArrayList<ContentProviderOperation> operations =
+					new ArrayList<ContentProviderOperation>(json.length() + 1);
 			
-			db.beginTransaction();
+			operations.add(ContentProviderOperation.newDelete(MuckeboxProvider.URI_ARTISTS).build());
 			
-			try {
-				db.delete(ArtistEntry.TABLE_NAME, null, null);
-				
-				for (int i = 0; i < json.length(); ++i) {
-					JSONObject o = json.getJSONObject(i);
-					ContentValues values = new ContentValues();
-					
-					values.put(ArtistEntry.SHORT_ID, o.getInt("id"));
-					values.put(ArtistEntry.SHORT_NAME, o.getString("name"));
-					
-					db.insert(ArtistEntry.TABLE_NAME, null, values);
-				}
-	
-				db.setTransactionSuccessful();
-				
-				Log.d(LOG_TAG, "Got " + json.length() + " artists");
-				
-				c.getContentResolver().notifyChange(MuckeboxProvider.URI_ARTISTS, null, false);
-			}  finally
-			{
-				db.endTransaction();
+			for (int i = 0; i < json.length(); ++i) {
+				JSONObject o = json.getJSONObject(i);
+				operations.add(ContentProviderOperation.newInsert(MuckeboxProvider.URI_ARTISTS).
+						withValue(ArtistEntry.SHORT_ID, o.getInt("id")).
+						withValue(ArtistEntry.SHORT_NAME, o.getString("name")).build());
 			}
+			
+			Muckebox.getAppContext().getContentResolver().applyBatch(
+					MuckeboxProvider.AUTHORITY, operations);
 		} catch (IOException e) {
 			Log.d(LOG_TAG, "IOException: " + e.getMessage());
 			return R.string.error_reload_artists;
 		} catch (JSONException e) {
 			return R.string.error_json;
+		} catch (RemoteException e) {
+			e.printStackTrace();
+			return R.string.error_reload_artists;
+		} catch (OperationApplicationException e) {
+			e.printStackTrace();
+			return R.string.error_reload_artists;
 		}
 		
 		return null;

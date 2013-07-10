@@ -1,6 +1,9 @@
 package org.muckebox.android.db;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
@@ -12,8 +15,11 @@ import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.ContentProvider;
+import android.content.ContentProviderResult;
+import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.OperationApplicationException;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -25,6 +31,9 @@ public class MuckeboxProvider extends ContentProvider {
 
 	public final static String AUTHORITY = "org.muckebox.android.provider";
 	public final static String SCHEME = "content://";
+	
+	private boolean mIsBatch = false;
+	private List<Uri> mNotifications;
 		
 	private static int MASK_GROUP(int mask) {
 		return (mask & ~0xffff);
@@ -135,11 +144,56 @@ public class MuckeboxProvider extends ContentProvider {
 		mDbHelper = new MuckeboxDbHelper(getContext());
 		return true;
 	}
+	
+	@Override
+	public synchronized ContentProviderResult[] applyBatch(
+	        ArrayList<ContentProviderOperation> operations)
+	        		throws OperationApplicationException {
+
+		SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		ContentProviderResult[] ret;
+		
+		try
+		{
+			db.beginTransaction();
+			mIsBatch = true;
+			
+			ret = super.applyBatch(operations);
+			
+			mIsBatch = false;
+			db.setTransactionSuccessful();
+			
+		    synchronized (mNotifications) {
+		        for (Uri uri : mNotifications) {
+		            getContext().getContentResolver().notifyChange(uri, null);
+		        }
+		    }
+		} finally {
+			db.endTransaction();
+		}
+		
+		return ret;
+	}
+	
+	protected void sendNotification(Uri uri) {
+	    if (mIsBatch) {
+	        if (mNotifications == null) {
+	            mNotifications = new ArrayList<Uri>();
+	        }
+	        
+	        synchronized (mNotifications) {
+	            if (! mNotifications.contains(uri)) {
+	                mNotifications.add(uri);
+	            }
+	        }
+	    } else {
+	        getContext().getContentResolver().notifyChange(uri, null);
+	    }
+	}
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
 		SQLiteDatabase db = mDbHelper.getWritableDatabase();
-		ContentResolver resolver = getContext().getContentResolver();
 		int match = mMatcher.match(uri);
 		int group = MASK_GROUP(match);
 		int ret;
@@ -164,8 +218,8 @@ public class MuckeboxProvider extends ContentProvider {
 			
 			ret = db.delete(DownloadEntry.TABLE_NAME, selection, selectionArgs);
 			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_DOWNLOADS);
+			sendNotification(URI_TRACKS);
 			
 			break;
 			
@@ -180,8 +234,58 @@ public class MuckeboxProvider extends ContentProvider {
 		
 			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
 			
-			resolver.notifyChange(URI_CACHE, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_CACHE);
+			sendNotification(URI_TRACKS);
+			
+			break;
+			
+		case ALBUMS:
+			switch (match) {
+			case ALBUMS_ID:
+				selection = AlbumEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			}
+			
+			ret = db.delete(AlbumEntry.TABLE_NAME, selection, selectionArgs);
+			
+			sendNotification(URI_ALBUMS);
+			
+			break;
+			
+		case ARTISTS:
+			switch (match) {
+			case ARTISTS_ID:
+				selection = ArtistEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			}
+			
+			ret = db.delete(ArtistEntry.TABLE_NAME, selection, selectionArgs);
+			
+			sendNotification(URI_ARTISTS);
+			
+			break;
+			
+		case TRACKS:
+			switch (match) {
+			case TRACKS_ID:
+				selection = TrackEntry.FULL_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			case TRACKS_ALBUM:
+				selection = TrackEntry.FULL_ALBUM_ID + " = ?";
+				selectionArgs = new String[] { uri.getLastPathSegment() };
+				
+				break;
+			}
+			
+			ret = db.delete(TrackEntry.TABLE_NAME, selection, selectionArgs);
+			
+			sendNotification(URI_TRACKS);
 			
 			break;
 			
@@ -200,7 +304,6 @@ public class MuckeboxProvider extends ContentProvider {
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
 		SQLiteDatabase db = mDbHelper.getWritableDatabase();
-		ContentResolver resolver = getContext().getContentResolver();
 		int match = mMatcher.match(uri);
 		long id;
 		Uri ret;
@@ -209,8 +312,8 @@ public class MuckeboxProvider extends ContentProvider {
 		case DOWNLOADS:
 			id = db.insert(DownloadEntry.TABLE_NAME, null, values);
 			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_DOWNLOADS);
+			sendNotification(URI_TRACKS);
 			
 			ret = URI_DOWNLOADS.buildUpon().appendPath(Long.toString(id)).build();
 			
@@ -219,16 +322,45 @@ public class MuckeboxProvider extends ContentProvider {
 		case CACHE:
 			id = db.insert(CacheEntry.TABLE_NAME, null, values);
 			
-			resolver.notifyChange(URI_CACHE, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_CACHE);
+			sendNotification(URI_TRACKS);
 			
-			ret = URI_CACHE.buildUpon().appendPath(Long.toString(id)).build();
+			ret = Uri.withAppendedPath(URI_CACHE, Long.toString(id));
+			
+			break;
+			
+		case ALBUMS:
+			id = db.insert(AlbumEntry.TABLE_NAME, null, values);
+			
+			sendNotification(URI_ALBUMS);
+			
+			ret = Uri.withAppendedPath(URI_ALBUMS, Long.toString(id));
+			
+			break;
+			
+		case ARTISTS:
+			id = db.insert(ArtistEntry.TABLE_NAME, null, values);
+			
+			sendNotification(URI_ARTISTS);
+			
+			ret = Uri.withAppendedPath(URI_ARTISTS, Long.toString(id));
+			
+			break;
+			
+		case TRACKS:
+			id = db.insert(TrackEntry.TABLE_NAME, null, values);
+			
+			sendNotification(URI_TRACKS);
+			
+			ret = Uri.withAppendedPath(URI_TRACKS, Long.toString(id));
 			
 			break;
 			
 		default:
 			throw new UnsupportedOperationException("Unknown URI");
 		}
+		
+		Log.d(LOG_TAG, "New entry at " + ret);
 		
 		return ret;
 	}
@@ -446,7 +578,6 @@ public class MuckeboxProvider extends ContentProvider {
 	public int update(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
 		SQLiteDatabase db = mDbHelper.getWritableDatabase();
-		ContentResolver resolver = getContext().getContentResolver();
 		int match = mMatcher.match(uri);
 		int group = MASK_GROUP(match);
 		int ret;
@@ -463,8 +594,8 @@ public class MuckeboxProvider extends ContentProvider {
 			
 			ret = db.update(DownloadEntry.TABLE_NAME, values, selection, selectionArgs);
 			
-			resolver.notifyChange(URI_DOWNLOADS, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_DOWNLOADS);
+			sendNotification(URI_TRACKS);
 			
 			break;
 			
@@ -484,8 +615,8 @@ public class MuckeboxProvider extends ContentProvider {
 			
 			ret = db.update(CacheEntry.TABLE_NAME, values, selection, selectionArgs);
 
-			resolver.notifyChange(URI_CACHE, null);
-			resolver.notifyChange(URI_TRACKS, null);
+			sendNotification(URI_CACHE);
+			sendNotification(URI_TRACKS);
 			
 			break;
 			
