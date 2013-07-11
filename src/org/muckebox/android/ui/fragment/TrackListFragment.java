@@ -11,20 +11,18 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.services.PlayerService;
-import org.muckebox.android.ui.utils.HeightEvaluator;
+import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,13 +30,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.View.MeasureSpec;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
@@ -46,41 +39,65 @@ import android.widget.TextView;
 public class TrackListFragment extends RefreshableListFragment
 	implements OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
-	private static final String LOG_TAG = "TrackListFragment";
 	
 	private static final String ALBUM_ID_ARG = "album_id";
 	private static final String ALBUM_TITLE_ARG = "album_title";
 	
-	private ContextCursorAdapter mAdapter;
+	private TrackListCursorAdapter mAdapter;
 	private boolean mListLoaded = false;
-	
-	private class ListItemState {
-		public int index = 0;
-		public int textsHeight = 0;
-		public int totalHeight = 0;
-		public ListView list = null;
-	}
-	
+
 	MenuItem mPinAllItem;
 	MenuItem mRemoveAllItem;
 	
-	private class ContextCursorAdapter extends SimpleCursorAdapter {
-		int mIndexExtended = -1;
-		final int mSpec = MeasureSpec.makeMeasureSpec(4096, MeasureSpec.AT_MOST);			
+	private class TrackListCursorAdapter extends ExpandableCursorAdapter {
+		private OnClickListener mPlayListener;
+		private OnClickListener mDownloadListener;
+		private OnClickListener mPinListener;
+		private OnClickListener mDiscardListener;
 		
-		public ContextCursorAdapter(Context context, int layout, Cursor c,
+		public TrackListCursorAdapter(Context context, int layout, Cursor c,
 				String[] from, int[] to, int flags) {
 			super(context, layout, c, from, to, flags);
+			
+			mPlayListener = new OnClickListener() {
+				public void onClick(View v) {
+					Intent intent = new Intent(getActivity(), PlayerService.class);
+					
+					intent.putExtra(PlayerService.EXTRA_TRACK_ID,
+							getTrackId(getItemIndex(v)));
+					
+					getActivity().startService(intent);
+					toggleExpanded(v);
+				}
+			};
+			
+			mDownloadListener = new OnClickListener() {
+				public void onClick(View v) {
+					Intent intent = new Intent(getActivity(), DownloadService.class);
+					
+					intent.putExtra(DownloadService.EXTRA_TRACK_ID,
+							getTrackId(getItemIndex(v)));
+					
+					getActivity().startService(intent);
+					toggleExpanded(v);
+				}
+			};
+			
+			mPinListener = new OnClickListener() {
+				public void onClick(View v) {
+					pinTrack(getTrackId(getItemIndex(v)));
+					toggleExpanded(v);
+				}
+			};
+			
+			mDiscardListener = new OnClickListener() {
+				public void onClick(View v) {
+					discardTrack(mAdapter.getTrackId(getItemIndex(v)));
+					toggleExpanded(v);
+				}
+			};
 		}
-		
-		public void setIndexExtended(int index) {
-			mIndexExtended = index;
-		}
-		
-		public int getIndexExtended() {
-			return mIndexExtended;
-		}
-		
+
 		public int getTrackId(int position) {
 			Cursor c = getCursor();
 			
@@ -89,156 +106,20 @@ public class TrackListFragment extends RefreshableListFragment
 			return c.getInt(c.getColumnIndex(TrackEntry.SHORT_ID));
 		}
 		
-	    private void hideItem(View item)
-	    {
-	    	ListItemState state = (ListItemState) item.getTag();
-	    	
-			ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-					state.totalHeight, state.textsHeight);
-			
-			Log.d(LOG_TAG, "animate " + state.totalHeight + " -> " + state.textsHeight);
-			
-			anim.setInterpolator(new AccelerateDecelerateInterpolator());
-			anim.start();
-
-			item.setTag(state);
-	    }
-	    
-	    private void showItem(View item)
-	    {
-	    	ListItemState state = (ListItemState) item.getTag();
-
-	    	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
-					state.textsHeight, state.totalHeight);
-
-			anim.setInterpolator(new AccelerateDecelerateInterpolator());
-			anim.start();
-			
-			item.setTag(state);
-	    }
-	    
-	    private View getListItem(View view) {
-	    	View parent = view;
-	    	
-	    	do {
-	        	parent = (View) parent.getParent();
-	    	} while (parent.getId() != R.id.track_list_top);
-	    	
-	    	return parent;
-	    }
-	    
-	    private ListItemState getItemState(View view) {
-	    	return (ListItemState) getListItem(view).getTag();
-	    }
-	    
-	    public void toggleButtons(View item)
-	    {
-	    	View parent = getListItem(item);
-	    	ListItemState state = (ListItemState) parent.getTag();
-	    	int indexExtended = mAdapter.getIndexExtended();
-	    	
-	    	if (state.index == indexExtended)
-	    	{
-	    		mAdapter.setIndexExtended(-1);
-	    		hideItem(parent);
-	    	} else
-	    	{
-	    		int first = state.list.getFirstVisiblePosition();
-	    		int end = first + state.list.getChildCount();
-	    		
-	    		if (indexExtended != -1 && indexExtended >= first && indexExtended < end)
-	    		{
-	    			View extendedItem = state.list.getChildAt(indexExtended - first);
-	    			
-	    			if (extendedItem != null)
-	    				hideItem(extendedItem);
-	    		}
-
-	    		mAdapter.setIndexExtended(state.index);
-	    		showItem(parent);
-	    	}
-	    }
-
 		@Override
 		public View getView(final int position, View convertView, ViewGroup parent)
 		{
 			View ret = super.getView(position, convertView, parent);
-			ListItemState state = (ListItemState) ret.getTag();
-			ViewGroup.LayoutParams params = ret.getLayoutParams();
-					
-			if (state == null)
+			
+			if (ret.getTag() == null)
 			{
-				LinearLayout texts =
-						(LinearLayout) ret.findViewById(R.id.track_list_texts);
-
-				ret.measure(mSpec, mSpec);
-				texts.measure(mSpec, mSpec);
-	
-				state = new ListItemState();
+				ret.findViewById(R.id.track_list_play).setOnClickListener(mPlayListener);
+				ret.findViewById(R.id.track_list_download).setOnClickListener(mDownloadListener);
+				ret.findViewById(R.id.track_list_pin).setOnClickListener(mPinListener);
+				ret.findViewById(R.id.track_list_discard).setOnClickListener(mDiscardListener);
 				
-				state.textsHeight = texts.getMeasuredHeight();
-				state.totalHeight = ret.getMeasuredHeight();
-				state.list = (ListView) parent;
-	
-				texts.setOnClickListener(new View.OnClickListener() {
-					public void onClick(View v) {
-						toggleButtons(v);
-					}
-				});
-				
-				ImageView playButton = (ImageButton) ret.findViewById(R.id.track_list_play);
-				playButton.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Intent intent = new Intent(getActivity(), PlayerService.class);
-						
-						intent.putExtra(PlayerService.EXTRA_TRACK_ID,
-								mAdapter.getTrackId(getItemState(v).index));
-						
-						getActivity().startService(intent);
-						toggleButtons(v);
-					}
-				});
-				
-				ImageView downloadButton =
-						(ImageButton) ret.findViewById(R.id.track_list_download);
-				downloadButton.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Intent intent = new Intent(getActivity(), DownloadService.class);
-						
-						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
-								mAdapter.getTrackId(getItemState(v).index));
-						
-						getActivity().startService(intent);
-						toggleButtons(v);
-					}
-				});
-				
-				ImageButton pinButton =
-						(ImageButton) ret.findViewById(R.id.track_list_pin);
-				pinButton.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						pinTrack(mAdapter.getTrackId(getItemState(v).index));
-						toggleButtons(v);
-					}
-				});
-				
-				ImageButton discardButton =
-						(ImageButton) ret.findViewById(R.id.track_list_discard);
-				discardButton.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						discardTrack(mAdapter.getTrackId(getItemState(v).index));
-						toggleButtons(v);
-					}
-				});
+				ret.setTag(true);
 			}
-			
-			state.index = position;
-			
-			params.height = (position == mIndexExtended) ?
-					state.totalHeight : state.textsHeight;
-			
-			ret.setLayoutParams(params);
-			ret.setTag(state);
 			
 			return ret;
 		}
@@ -421,7 +302,7 @@ public class TrackListFragment extends RefreshableListFragment
 
         setHasOptionsMenu(true);
 
-        mAdapter = new ContextCursorAdapter(getActivity(),
+        mAdapter = new TrackListCursorAdapter(getActivity(),
                 R.layout.list_row_track, null,
                 new String[] {
         			TrackEntry.ALIAS_TITLE,
@@ -533,6 +414,9 @@ public class TrackListFragment extends RefreshableListFragment
         		oneNotPinned = true;
         	else
         		oneCached = true;
+        	
+        	if (oneNotPinned && oneCached)
+        		break;
         }
         
         mPinAllItem.setVisible(oneNotPinned);
