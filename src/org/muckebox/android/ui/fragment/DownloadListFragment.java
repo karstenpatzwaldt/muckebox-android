@@ -2,9 +2,11 @@ package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxProvider;
+import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.services.DownloadService;
+import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
 
 import android.app.ListFragment;
 import android.app.LoaderManager;
@@ -14,6 +16,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,6 +25,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
@@ -39,17 +43,27 @@ public class DownloadListFragment extends ListFragment
 		public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
 			if (columnIndex == cursor.getColumnIndex(DownloadEntry.ALIAS_STATUS))
 			{
-				TextView text = (TextView) view;
+				ImageView icon = (ImageView) view;
 				
 				switch (cursor.getInt(columnIndex))
 				{
 				case DownloadEntry.STATUS_VALUE_DOWNLOADING:
-					text.setText(R.string.status_downloading);
+					icon.setImageResource(R.drawable.av_download);
 					break;
 				case DownloadEntry.STATUS_VALUE_QUEUED:
-					text.setText(R.string.status_queued);
+					icon.setImageResource(R.drawable.device_access_time);
 					break;
 				}
+				
+				return true;
+			} else if (columnIndex == cursor.getColumnIndex(DownloadEntry.ALIAS_BYTES_DOWNLOADED)) {
+				TextView text = (TextView) view;
+				int size = cursor.getInt(columnIndex);
+				
+				if (size == 0)
+					text.setText("");
+				else
+					text.setText(Formatter.formatFileSize(getActivity(), size));
 				
 				return true;
 			}
@@ -58,14 +72,27 @@ public class DownloadListFragment extends ListFragment
 		}
 	}
 	
-	private class DownloadCursorAdapter extends SimpleCursorAdapter {
-		private class ItemTag {
-			int position;
-		}
+	private class DownloadCursorAdapter extends ExpandableCursorAdapter {
+		private OnClickListener mDiscardListener;
 		
 		public DownloadCursorAdapter(Context context, int layout, Cursor c,
 				String[] from, int[] to, int flags) {
 			super(context, layout, c, from, to, flags);
+			
+			mDiscardListener = new OnClickListener() {
+				public void onClick(View v) {
+					Intent intent = new Intent(getActivity(), DownloadService.class);
+					
+					intent.putExtra(DownloadService.EXTRA_COMMAND,
+							DownloadService.COMMAND_DISCARD);
+					intent.putExtra(DownloadService.EXTRA_TRACK_ID,
+							getTrackId(getItemIndex(v)));
+					
+					getActivity().startService(intent);
+					
+					toggleExpanded(v);
+				}
+			};
 		}
 		
 		private int getTrackId(int position) {
@@ -76,43 +103,20 @@ public class DownloadListFragment extends ListFragment
 			return c.getInt(c.getColumnIndex(TrackEntry.ALIAS_ID));
 		}
 		
-		private ItemTag getItemTag(View v) {
-			while (v.getId() != R.id.download_list_top)
-				v = (View) v.getParent();
-			
-			return (ItemTag) v.getTag();
-		}
-		
 		@Override
 		public View getView(final int position, View convertView, ViewGroup parent)
 		{
 			View ret = super.getView(position, convertView, parent);
-			ItemTag tag = (ItemTag) ret.getTag();
 			
-			if (tag == null)
+			if (ret.getTag() == null)
 			{
-				tag = new ItemTag();
-				
 				ImageButton discardButton =
 						(ImageButton) ret.findViewById(R.id.download_list_row_discard);
 				
-				discardButton.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Intent intent = new Intent(getActivity(), DownloadService.class);
-						
-						intent.putExtra(DownloadService.EXTRA_COMMAND,
-								DownloadService.COMMAND_DISCARD);
-						intent.putExtra(DownloadService.EXTRA_TRACK_ID,
-								getTrackId(getItemTag(v).position));
-						
-						getActivity().startService(intent);
-					}
-				});
+				discardButton.setOnClickListener(mDiscardListener);
+				
+				ret.setTag(true);
 			}
-			
-			tag.position = position;
-			
-			ret.setTag(tag);
 			
 			return ret;
 		}
@@ -132,8 +136,18 @@ public class DownloadListFragment extends ListFragment
 
         mAdapter = new DownloadCursorAdapter(getActivity(),
                 R.layout.list_row_download, null,
-                new String[] { TrackEntry.ALIAS_TITLE, DownloadEntry.ALIAS_STATUS },
-                new int[] { R.id.download_list_row_title, R.id.download_list_row_status }, 0);
+                new String[] {
+        			TrackEntry.ALIAS_TITLE,
+        			ArtistEntry.ALIAS_NAME,
+        			DownloadEntry.ALIAS_STATUS,
+        			DownloadEntry.ALIAS_BYTES_DOWNLOADED
+        		},
+                new int[] {
+        			R.id.download_list_row_title,
+        			R.id.download_list_row_artist,
+        			R.id.download_list_row_status,
+        			R.id.download_list_row_bytes_downloaded
+        		}, 0);
         mAdapter.setViewBinder(new DownloadViewBinder());
         
         setListAdapter(mAdapter);

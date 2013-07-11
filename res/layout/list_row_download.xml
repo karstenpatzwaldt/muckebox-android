@@ -1,36 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/download_list_top"
-    style="@style/ListItem"
-    android:orientation="horizontal"
-    android:divider="@android:drawable/divider_horizontal_bright"
-    android:dividerPadding="4dip"
-	android:showDividers="middle" >
+    	xmlns:android="http://schemas.android.com/apk/res/android"
+    	android:id="@+id/expandable_full"
+		style="@style/ExpandableListItemContainer" >
     
 	<LinearLayout
-	    android:id="@+id/expandable_text"
+	    android:id="@+id/expandable_short"
 	    style="@style/ClickableListItem"
 	    android:orientation="vertical">
+	    
+	    <LinearLayout
+	        style="@style/FullWidth"
+	        android:orientation="horizontal">
 	
-	    <TextView
-	        android:id="@+id/download_list_row_title"
-	        style="@style/ListItemPrimaryText" />
+		    <TextView
+		        android:id="@+id/download_list_row_title"
+		        style="@style/ListItemPrimaryText"
+				android:layout_width="0dp"
+				android:layout_weight="1" />
+		    
+		    <TextView
+		        android:id="@+id/download_list_row_bytes_downloaded"
+		        android:gravity="right"
+		        style="@style/ListItemPlaytime"
+		        android:paddingLeft="@dimen/list_item_padding" />
+		</LinearLayout>
 	 
-	    <TextView
-	        android:id="@+id/download_list_row_status"
-	        style="@style/ListItemSecondaryText" />
+	    <LinearLayout
+	        style="@style/FullWidth"
+	        android:orientation="horizontal">
+	
+		    <TextView
+		        android:id="@+id/download_list_row_artist"
+		        style="@style/ListItemSecondaryText"
+				android:layout_width="0dp"
+				android:layout_weight="1"  />
+		    
+		    <ImageView 
+		        android:id="@+id/download_list_row_status"
+		        android:src="@drawable/device_access_time"
+		        android:contentDescription="@string/download_status"
+		        style="@style/ListItemStatusIcon" />
+		    
+		</LinearLayout>
 	    
     </LinearLayout>
     
-    <ImageButton 
-        android:id="@+id/download_list_row_discard"
-        android:src="@drawable/navigation_cancel"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:contentDescription="@string/discard"
-        android:adjustViewBounds="true"
-        android:background="@color/blue_transparent"/>
+	<LinearLayout
+   	    style="@style/ClosedButtonList"
+   	    android:paddingLeft="@dimen/activity_horizontal_margin" >
+        
+	    <ImageButton 
+	        android:id="@+id/download_list_row_discard"
+	        android:src="@drawable/navigation_cancel"
+	        android:contentDescription="@string/discard"
+	        style="@style/TrackListButton"/>
+	    
+	</LinearLayout>
 
 </LinearLayout>

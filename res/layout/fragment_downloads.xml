@@ -8,6 +8,7 @@
     
     <ListView
         android:id="@android:id/list"
-        style="@style/ListFullsize" />
+        style="@style/ListFullsize"
+        android:animateLayoutChanges="true" />
 
 </LinearLayout>

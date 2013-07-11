@@ -4,15 +4,7 @@ package org.muckebox.android.db;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.muckebox.android.db.MuckeboxContract.AlbumArtistJoin;
-import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
-import org.muckebox.android.db.MuckeboxContract.ArtistAlbumJoin;
-import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
-import org.muckebox.android.db.MuckeboxContract.CacheEntry;
-import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.db.MuckeboxContract.DownloadTrackEntry;
-import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
-import org.muckebox.android.db.MuckeboxContract.TrackEntry;
+import org.muckebox.android.db.MuckeboxContract.*;
 
 import android.content.ContentProvider;
 import android.content.ContentProviderResult;
@@ -535,8 +527,8 @@ public class MuckeboxProvider extends ContentProvider {
 			break;
 			
 		case DOWNLOADS_WITH_DETAILS:
-			result = db.query(DownloadTrackEntry.TABLE_NAME, 
-					(projection == null) ? DownloadTrackEntry.PROJECTION : projection,
+			result = db.query(DownloadTrackArtistEntry.TABLE_NAME, 
+					(projection == null) ? DownloadTrackArtistEntry.PROJECTION : projection,
 					selection, selectionArgs, null, null,
 					(sortOrder == null) ? DownloadEntry.SORT_ORDER : sortOrder, null);
 			

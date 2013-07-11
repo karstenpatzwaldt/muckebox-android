@@ -3,14 +3,7 @@
 <LinearLayout
     	xmlns:android="http://schemas.android.com/apk/res/android"
     	android:id="@+id/expandable_full"
-       	android:layout_width="fill_parent"
-       	android:layout_height="wrap_content"
-       	android:orientation="vertical"
-       	android:divider="@android:drawable/divider_horizontal_bright"
-		android:dividerPadding="4dip"
-		android:showDividers="middle"
-		android:animateLayoutChanges="true"
-		android:background="@android:color/background_light" >
+		style="@style/ExpandableListItemContainer" >
         
 	<LinearLayout
 	    android:id="@+id/expandable_short"
