@@ -25,6 +25,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Binder;
 import android.os.Message;
@@ -51,15 +52,18 @@ public class DownloadService
 	
 	private final Set<DownloadListener> mListeners = new HashSet<DownloadListener>();
 	
-	private class DownloadHandler {
+	private class DownloadHandle {
 		public Thread mThread = null;
 		public int mTrackId;
+		public Uri mUri;
 	}
 	
-	private DownloadHandler mCurrentDownload = null;
-	private Uri mCurrentUri = null;
+	private DownloadHandle mCurrentDownload = null;
 	
-	private Handler mHandler = null;
+	private Handler mMyHandler = null;
+	
+	private HandlerThread mHelperThread = null;
+	private Handler mHelperHandler = null;
 	
 	private NotificationManager mNotificationManager;
 	private Notification.Builder mNotificationBuilder;
@@ -110,12 +114,18 @@ public class DownloadService
 		mNotificationBuilder.setContentIntent(pendingNotifyIntent);
 		
 		mNumberFormatter = NumberFormat.getInstance();
-		mHandler = new Handler(this);
+		mMyHandler = new Handler(this);
+		
+		mHelperThread = new HandlerThread("DownloadServiceHelper");
+		mHelperThread.start();
+		
+		mHelperHandler = new Handler(mHelperThread.getLooper());
 	}
 	
 	@Override
 	public void onDestroy() {
 		mNotificationManager.cancel(NOTIFICATION_ID);
+		mHelperThread.quit();
 	}
 
 	@Override
@@ -137,31 +147,29 @@ public class DownloadService
 		{
 		case COMMAND_DISCARD:
 			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
-			final Uri discardUri = MuckeboxProvider.URI_DOWNLOADS_TRACK.buildUpon().appendPath(
-					Integer.toString(discardTrackId)).build();
+			final Uri discardUri = Uri.withAppendedPath(MuckeboxProvider.URI_DOWNLOADS_TRACK, 
+					Integer.toString(discardTrackId));
 			
-			new Thread(new Runnable() {
+			mHelperHandler.post(new Runnable() {
 				public void run() {
 					removeFromCache(discardTrackId);
 					
 					int rowsAffected = getContentResolver().delete(discardUri, null, null);
 					
-					synchronized (DownloadService.this) {
-						if (mCurrentDownload != null) {
-							if (rowsAffected > 0)
-								updateNotificationCount();
-									
-							if (mCurrentDownload.mTrackId == discardTrackId)
-								stopCurrentDownload();
-						}
+					if (mCurrentDownload != null) {
+						if (rowsAffected > 0)
+							updateNotificationCount();
+								
+						if (mCurrentDownload.mTrackId == discardTrackId)
+							stopCurrentDownload();
 					}
 				}
-			}).start();
+			});
 			
 			return Service.START_NOT_STICKY;
 			
 		case COMMAND_CLEAR:
-			new Thread(new Runnable() {
+			mHelperHandler.post(new Runnable() {
 				@Override
 				public void run() {
 					getContentResolver().delete(
@@ -170,7 +178,7 @@ public class DownloadService
 					stopCurrentDownload();
 					stopSelf();
 				}
-			}).start();
+			});
 			
 			return Service.START_NOT_STICKY;
 
@@ -179,7 +187,7 @@ public class DownloadService
 			final boolean doPin = intent.getBooleanExtra(EXTRA_PIN, false);
 			final boolean startNow = intent.getBooleanExtra(EXTRA_START_NOW, false);
 
-			new Thread(new Runnable() {
+			mHelperHandler.post(new Runnable() {
 				@Override
 				public void run() {
 					if (isInCache(trackId))
@@ -194,16 +202,16 @@ public class DownloadService
 						downloadNextOrStop();
 					}
 				}
-			}).start();
+			});
 			
 			return Service.START_STICKY;
 			
 		case COMMAND_CHECK_QUEUE:
-			new Thread(new Runnable() {
+			mHelperHandler.post(new Runnable() {
 				@Override public void run() {
 					downloadNextOrStop();
 				}
-			}).start();
+			});
 			
 			return Service.START_STICKY;
 			
@@ -253,27 +261,10 @@ public class DownloadService
 			c.close();
 		}
 	}
-	
-	private void stopCurrentDownload() {
-		synchronized (this) {
-			if (mCurrentDownload != null)
-			{
-				try
-				{
-					mCurrentDownload.mThread.interrupt();
-					mCurrentDownload.mThread.join();
-					mCurrentDownload = null;
-				} catch (InterruptedException e)
-				{
-					Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
-				}
-			}
-		}
-	}
 
 	@Override
 	public boolean handleMessage(final Message msg) {
-		final Uri currentUri = mCurrentUri;
+		final Uri currentUri = mCurrentDownload.mUri;
 		
 		switch (msg.what)
 		{
@@ -281,7 +272,7 @@ public class DownloadService
 			for (DownloadListener l: mListeners)
 				l.onDownloadStarted(msg.arg1, (String) msg.obj);
 			
-			new Thread(new Runnable() {
+			mHelperHandler.post(new Runnable() {
 				@Override
 				public void run() {
 					ContentValues values = new ContentValues();
@@ -289,23 +280,28 @@ public class DownloadService
 							DownloadEntry.STATUS_VALUE_DOWNLOADING);
 					getContentResolver().update(currentUri, values, null, null);					
 				}
-			}).start();
+			});
 
 			break;
+			
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
-			
-			updateNotification(chunk.bytesTotal);
 
 			for (DownloadListener l: mListeners)
 				l.onDataReceived(msg.arg1, chunk.buffer);
+			
+			mHelperHandler.post(new Runnable() {
+				public void run() {
+					updateNotification(chunk.bytesTotal);
+				}
+			});
+
 
 			break;
+			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
 			for (DownloadListener l: mListeners)
 				l.onDownloadFinished(msg.arg1);
-			
-			onDownloadFinished(null);
 			
 			Toast.makeText(getApplicationContext(),
 					getResources().getString(R.string.download_finished), Toast.LENGTH_SHORT).show();
@@ -314,12 +310,12 @@ public class DownloadService
 			
 			Log.d(LOG_TAG, "Download finished, moving to cache");
 			
-			new Thread(new Runnable() {
-				@Override
+			mHelperHandler.post(new Runnable() {
 				public void run() {
 					moveToCache(currentUri, res);
+					onDownloadFinished(null);
 				}
-			}).start();
+			});
 			
 			break;
 			
@@ -329,15 +325,16 @@ public class DownloadService
 			
 			Log.d(LOG_TAG, "Download interrupted, re-enqueueing");
 			
-			onDownloadFinished(null);
-			
-			new Thread(new Runnable() {
-				@Override public void run() {
-					ContentValues values = new ContentValues();
+			mHelperHandler.post(new Runnable() {
+				public void run() {
+					onDownloadFinished(null);
+					
+					ContentValues values = new ContentValues(1);
 					values.put(DownloadEntry.SHORT_STATUS, DownloadEntry.STATUS_VALUE_QUEUED);
+					
 					getContentResolver().update(currentUri, values, null, null);	
 				}
-			}).start();
+			});
 			
 			break;
 			
@@ -350,13 +347,12 @@ public class DownloadService
 			Toast.makeText(getApplicationContext(), 
 					getResources().getString(R.string.download_failed), Toast.LENGTH_SHORT).show();
 			
-			new Thread(new Runnable() {
-				@Override
+			mHelperHandler.post(new Runnable() {
 				public void run() {
 					getContentResolver().delete(currentUri, null, null);
 					onDownloadFinished(R.string.download_failed_short);	
 				}
-			}).start();
+			});
 			
 			break;
 			
@@ -365,31 +361,6 @@ public class DownloadService
 		}
 
 		return true;
-	}
-	
-	public void onDownloadFinished(Integer stringId) {
-		if (stringId == null)
-		{
-			mNotificationManager.cancel(NOTIFICATION_ID);
-		} else
-		{
-			mNotificationBuilder
-				.setProgress(0,  0, false)
-				.setContentTitle(getResources().getText(stringId))
-				.setContentText("")
-				.setOngoing(false);
-			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-		}
-		
-		synchronized (this) {
-			mCurrentDownload = null;
-		}
-		
-		new Thread(new Runnable() {
-			@Override public void run() {
-				downloadNextOrStop();
-			}
-		}).start();
 	}
 	
 	private void updateNotification(long bytesTotal) {
@@ -411,15 +382,15 @@ public class DownloadService
 		}
 	}
 	
-	void addToQueue(long trackId, boolean doPin)
+	private void addToQueue(long trackId, boolean doPin)
 	{
 		boolean transcodingEnabled = Preferences.getTranscodingEnabled();
 		String transcodingType = Preferences.getTranscodingType();
 		String transcodingQuality = Preferences.getTranscodingQuality();
 		
 		Cursor result = Muckebox.getAppContext().getContentResolver().
-				query(MuckeboxProvider.URI_DOWNLOADS.buildUpon().appendPath(Long.toString(trackId)).build(),
-				null, null, null, null);
+				query(Uri.withAppendedPath(MuckeboxProvider.URI_DOWNLOADS_TRACK, Long.toString(trackId)),
+						null, null, null, null);
 		
 		try
 		{
@@ -497,52 +468,89 @@ public class DownloadService
 	
 	private void downloadNextOrStop()
 	{
-		synchronized (this) {
-			if (mCurrentDownload == null)
-			{
-				Log.d(LOG_TAG, "Checking for next entry in queue");
-				
-				Cursor c = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS, null,
-					DownloadEntry.FULL_STATUS + " IS ?",
-					new String[] { Integer.toString(DownloadEntry.STATUS_VALUE_QUEUED) },
-					null);
+		if (mCurrentDownload == null)
+		{
+			Log.d(LOG_TAG, "Checking for next entry in queue");
 			
-				try
+			Cursor c = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS, null,
+				DownloadEntry.FULL_STATUS + " IS ?",
+				new String[] { Integer.toString(DownloadEntry.STATUS_VALUE_QUEUED) },
+				null);
+		
+			try
+			{
+				if (c.getCount() > 0)
 				{
-					if (c.getCount() > 0)
-					{
-						DownloadEntryCursor entry = new DownloadEntryCursor(c);
-						
-						mLastTotal = 0;
-						mLastTime = System.nanoTime();
-						
-						mNotificationBuilder
-							.setContentText("0 kB")
-							.setProgress(0,  0, true)
-							.setOngoing(true);
-						mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-						
-						updateNotificationCount();
-						
-						mCurrentDownload = new DownloadHandler();
-						
-						mCurrentDownload.mThread = new Thread(new DownloadRunnable(
-								entry.getTrackId(), mHandler, getDownloadPath(entry)));
-						mCurrentUri = entry.getUri();
-						mCurrentDownload.mTrackId = entry.getTrackId();
-						
-						mCurrentDownload.mThread.start();
-					} else
-					{
-						Log.d(LOG_TAG, "Nothing found, stopping");
-						stopSelf();
-					}
-				} finally
+					startNewDownload(new DownloadEntryCursor(c));
+				} else
 				{
-					c.close();
+					Log.d(LOG_TAG, "Nothing found, stopping");
+					stopSelf();
 				}
+			} finally
+			{
+				c.close();
 			}
 		}
+	}
+	
+	private void startNewDownload(DownloadEntryCursor entry) {
+		mLastTotal = 0;
+		mLastTime = System.nanoTime();
+	
+		resetNotificationProgress();
+		
+		mCurrentDownload = new DownloadHandle();
+		
+		mCurrentDownload.mThread = new Thread(new DownloadRunnable(
+				entry.getTrackId(), mMyHandler, getDownloadPath(entry)));
+		mCurrentDownload.mUri = entry.getUri();
+		mCurrentDownload.mTrackId = entry.getTrackId();
+		
+		mCurrentDownload.mThread.start();
+	}
+	
+	private void stopCurrentDownload() {
+		if (mCurrentDownload != null)
+		{
+			try
+			{
+				mCurrentDownload.mThread.interrupt();
+				mCurrentDownload.mThread.join();
+			} catch (InterruptedException e)
+			{
+				Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
+			}
+		}
+	}
+	
+	private void onDownloadFinished(Integer stringId) {
+		if (stringId == null)
+		{
+			mNotificationManager.cancel(NOTIFICATION_ID);
+		} else
+		{
+			mNotificationBuilder
+				.setProgress(0,  0, false)
+				.setContentTitle(getResources().getText(stringId))
+				.setContentText("")
+				.setOngoing(false);
+			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+		}
+		
+		mCurrentDownload = null;
+		
+		downloadNextOrStop();
+	}
+	
+	private void resetNotificationProgress() {
+		mNotificationBuilder
+			.setContentText("0 kB")
+			.setProgress(0,  0, true)
+			.setOngoing(true);
+		mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+		
+		updateNotificationCount();
 	}
 	
 	void updateNotificationCount()
