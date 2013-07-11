@@ -36,10 +36,11 @@ import android.widget.Toast;
 public class DownloadService
 	extends Service
 	implements Handler.Callback {
-	public final static String EXTRA_TRACK_ID 	= "track_id";
-	public final static String EXTRA_PIN 		= "pin";
-	public final static String EXTRA_START_NOW	= "start_now";
-	public final static String EXTRA_COMMAND 	= "command";
+	public final static String EXTRA_TRACK_ID 		= "track_id";
+	public final static String EXTRA_TRACK_ID_ARRAY	= "track_id_array";
+	public final static String EXTRA_PIN 			= "pin";
+	public final static String EXTRA_START_NOW		= "start_now";
+	public final static String EXTRA_COMMAND 		= "command";
 	
 	public static final int COMMAND_DOWNLOAD 		= 1;
 	public static final int COMMAND_CHECK_QUEUE 	= 2;
@@ -57,6 +58,7 @@ public class DownloadService
 		public Thread mThread = null;
 		public int mTrackId;
 		public Uri mUri;
+		public boolean mStopping = false;
 	}
 	
 	private DownloadHandle mCurrentDownload = null;
@@ -476,6 +478,7 @@ public class DownloadService
 		{
 			try
 			{
+				mCurrentDownload.mStopping = true;
 				mCurrentDownload.mThread.interrupt();
 				mCurrentDownload.mThread.join();
 			} catch (InterruptedException e)
@@ -548,27 +551,30 @@ public class DownloadService
 	}
 	
 	private void updateProgress(long bytesTotal) {
-		String totalStr = Formatter.formatFileSize(getApplicationContext(), bytesTotal);
-		long timeNow = System.nanoTime();
-		
-		if (timeNow - mLastTime > 1E9)
+		if (! mCurrentDownload.mStopping)
 		{
-			int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
-					((float) (timeNow - mLastTime) / 1.0E9));
+			String totalStr = Formatter.formatFileSize(getApplicationContext(), bytesTotal);
+			long timeNow = System.nanoTime();
 			
-			mLastTotal = bytesTotal;
-			mLastTime = timeNow;
-	
-			String speedStr = Formatter.formatFileSize(getApplicationContext(), speed);
-			
-			mNotificationBuilder.setContentText(totalStr + " (" + speedStr + "/s)");
-			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-			
-			ContentValues values = new ContentValues();
-			
-			values.put(DownloadEntry.SHORT_BYTES_DOWNLOADED, bytesTotal);
-			
-			getContentResolver().update(mCurrentDownload.mUri, values, null, null);
+			if (timeNow - mLastTime > 1E9)
+			{
+				int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
+						((float) (timeNow - mLastTime) / 1.0E9));
+				
+				mLastTotal = bytesTotal;
+				mLastTime = timeNow;
+		
+				String speedStr = Formatter.formatFileSize(getApplicationContext(), speed);
+				
+				mNotificationBuilder.setContentText(totalStr + " (" + speedStr + "/s)");
+				mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+				
+				ContentValues values = new ContentValues();
+				
+				values.put(DownloadEntry.SHORT_BYTES_DOWNLOADED, bytesTotal);
+				
+				getContentResolver().update(mCurrentDownload.mUri, values, null, null);
+			}
 		}
 	}
 }
