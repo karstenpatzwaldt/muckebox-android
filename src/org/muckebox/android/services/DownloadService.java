@@ -1,6 +1,5 @@
 package org.muckebox.android.services;
 
-import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,6 +18,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -29,6 +29,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Binder;
 import android.os.Message;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -67,7 +68,6 @@ public class DownloadService
 	
 	private NotificationManager mNotificationManager;
 	private Notification.Builder mNotificationBuilder;
-	private NumberFormat mNumberFormatter;
 	
 	private long mLastTotal;
 	private long mLastTime;
@@ -89,31 +89,10 @@ public class DownloadService
 		}
 	}
 	
-	@SuppressWarnings("static-access")
 	@Override
 	public void onCreate() {
-		mNotificationManager =
-			    (NotificationManager) getSystemService(this.NOTIFICATION_SERVICE);
-		Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
-		mNotificationBuilder =
-				new Notification.Builder(this).
-					setSmallIcon(android.R.drawable.stat_sys_download).
-					setLargeIcon(bm).
-					setContentTitle("").
-					setContentText("0 kB").
-					setOngoing(true);
+		setupNotifications();
 		
-		Intent notifyIntent = new Intent(this, DownloadListActivity.class);
-		notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-		PendingIntent pendingNotifyIntent = PendingIntent.getActivity(
-				        this,
-				        0,
-				        notifyIntent,
-				        PendingIntent.FLAG_UPDATE_CURRENT);
-		
-		mNotificationBuilder.setContentIntent(pendingNotifyIntent);
-		
-		mNumberFormatter = NumberFormat.getInstance();
 		mMyHandler = new Handler(this);
 		
 		mHelperThread = new HandlerThread("DownloadServiceHelper");
@@ -292,7 +271,7 @@ public class DownloadService
 			
 			mHelperHandler.post(new Runnable() {
 				public void run() {
-					updateNotification(chunk.bytesTotal);
+					updateProgress(chunk.bytesTotal);
 				}
 			});
 
@@ -327,12 +306,12 @@ public class DownloadService
 			
 			mHelperHandler.post(new Runnable() {
 				public void run() {
-					onDownloadFinished(null);
-					
 					ContentValues values = new ContentValues(1);
 					values.put(DownloadEntry.SHORT_STATUS, DownloadEntry.STATUS_VALUE_QUEUED);
 					
-					getContentResolver().update(currentUri, values, null, null);	
+					getContentResolver().update(currentUri, values, null, null);
+					
+					onDownloadFinished(null);	
 				}
 			});
 			
@@ -350,6 +329,7 @@ public class DownloadService
 			mHelperHandler.post(new Runnable() {
 				public void run() {
 					getContentResolver().delete(currentUri, null, null);
+					
 					onDownloadFinished(R.string.download_failed_short);	
 				}
 			});
@@ -361,25 +341,6 @@ public class DownloadService
 		}
 
 		return true;
-	}
-	
-	private void updateNotification(long bytesTotal) {
-		String totalStr = mNumberFormatter.format((int) bytesTotal / 1024);
-		long timeNow = System.nanoTime();
-		
-		if (timeNow - mLastTime > 1000000000)
-		{
-			int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
-					((float) (timeNow - mLastTime) / 1000000000.0f));
-			
-			mLastTotal = bytesTotal;
-			mLastTime = timeNow;
-	
-			String speedStr = mNumberFormatter.format((int) speed / 1024);
-			
-			mNotificationBuilder.setContentText(totalStr + " kB (" + speedStr + " kB/s)");
-			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-		}
 	}
 	
 	private void addToQueue(long trackId, boolean doPin)
@@ -543,6 +504,29 @@ public class DownloadService
 		downloadNextOrStop();
 	}
 	
+	private void setupNotifications() {
+		mNotificationManager =
+			    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+		mNotificationBuilder =
+				new Notification.Builder(this).
+					setSmallIcon(android.R.drawable.stat_sys_download).
+					setLargeIcon(bm).
+					setContentTitle("").
+					setContentText(Formatter.formatFileSize(getApplicationContext(), 0)).
+					setOngoing(true);
+		
+		Intent notifyIntent = new Intent(this, DownloadListActivity.class);
+		notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		PendingIntent pendingNotifyIntent = PendingIntent.getActivity(
+				        this,
+				        0,
+				        notifyIntent,
+				        PendingIntent.FLAG_UPDATE_CURRENT);
+		
+		mNotificationBuilder.setContentIntent(pendingNotifyIntent);
+	}
+	
 	private void resetNotificationProgress() {
 		mNotificationBuilder
 			.setContentText("0 kB")
@@ -561,5 +545,30 @@ public class DownloadService
 		mNotificationBuilder.setContentTitle(
 				getResources().getQuantityString(R.plurals.downloading, count, count));
 		mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+	}
+	
+	private void updateProgress(long bytesTotal) {
+		String totalStr = Formatter.formatFileSize(getApplicationContext(), bytesTotal);
+		long timeNow = System.nanoTime();
+		
+		if (timeNow - mLastTime > 1E9)
+		{
+			int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
+					((float) (timeNow - mLastTime) / 1.0E9));
+			
+			mLastTotal = bytesTotal;
+			mLastTime = timeNow;
+	
+			String speedStr = Formatter.formatFileSize(getApplicationContext(), speed);
+			
+			mNotificationBuilder.setContentText(totalStr + " (" + speedStr + "/s)");
+			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+			
+			ContentValues values = new ContentValues();
+			
+			values.put(DownloadEntry.SHORT_BYTES_DOWNLOADED, bytesTotal);
+			
+			getContentResolver().update(mCurrentDownload.mUri, values, null, null);
+		}
 	}
 }

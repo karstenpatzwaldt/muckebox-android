@@ -139,6 +139,8 @@ public final class MuckeboxContract {
 		public static final int STATUS_VALUE_QUEUED				= 1;
 		public static final int STATUS_VALUE_DOWNLOADING		= 2;
 		
+		public static final String SHORT_BYTES_DOWNLOADED		= "bytes_downloaded";
+		
 		public static final String FULL_ID					= TABLE_NAME + "." + SHORT_ID;
 		
 		public static final String FULL_TIMESTAMP			= TABLE_NAME + "." + SHORT_TIMESTAMP;
@@ -152,6 +154,7 @@ public final class MuckeboxContract {
 		public static final String FULL_START_NOW			= TABLE_NAME + "." + SHORT_START_NOW;
 		
 		public static final String FULL_STATUS				= TABLE_NAME + "." + SHORT_STATUS;
+		public static final String FULL_BYTES_DOWNLOADED	= TABLE_NAME + "." + SHORT_BYTES_DOWNLOADED;
 
 		public static final String ALIAS_ID						= TABLE_NAME + "_" + SHORT_ID;
 		
@@ -166,6 +169,7 @@ public final class MuckeboxContract {
 		public static final String ALIAS_START_NOW				= TABLE_NAME + "_" + SHORT_START_NOW;
 		
 		public static final String ALIAS_STATUS					= TABLE_NAME + "_" + SHORT_STATUS;
+		public static final String ALIAS_BYTES_DOWNLOADED		= TABLE_NAME + "_" + SHORT_BYTES_DOWNLOADED;
 
 		public static final String[] PROJECTION = {
 			FULL_ID,
@@ -181,6 +185,7 @@ public final class MuckeboxContract {
 			FULL_START_NOW + AS + ALIAS_START_NOW,
 
 			FULL_STATUS + AS + ALIAS_STATUS,
+			FULL_BYTES_DOWNLOADED + AS + ALIAS_BYTES_DOWNLOADED
 		};
 		
 		public static final String SORT_ORDER = 
@@ -326,6 +331,7 @@ public final class MuckeboxContract {
 			DownloadEntry.FULL_ID,
 			
 			DownloadEntry.FULL_STATUS + AS + DownloadEntry.ALIAS_STATUS,
+			DownloadEntry.FULL_BYTES_DOWNLOADED + AS + DownloadEntry.ALIAS_BYTES_DOWNLOADED,
 			
 			TrackEntry.FULL_ID + AS + TrackEntry.ALIAS_ID,
 			TrackEntry.FULL_TITLE + AS + TrackEntry.ALIAS_TITLE,
