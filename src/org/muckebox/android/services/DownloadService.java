@@ -1,6 +1,9 @@
 package org.muckebox.android.services;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.muckebox.android.Muckebox;
@@ -11,6 +14,8 @@ import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.ui.activity.DownloadListActivity;
 import org.muckebox.android.utils.Preferences;
+import org.muckebox.android.net.DownloadCatchupRunnable;
+import org.muckebox.android.net.DownloadRunnable;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -52,12 +57,29 @@ public class DownloadService
 	private final static String LOG_TAG = "DownloadService";
 	private final IBinder mBinder = new DownloadBinder();
 	
-	private final Set<DownloadListener> mListeners = new HashSet<DownloadListener>();
+	private class DownloadListenerHandle {
+		public DownloadListener mListener;
+		
+		public int mTrackId;
+		
+		public boolean mCatchingUp = false;
+		public boolean mFinished = false;
+		
+		public Thread mCatchupThread;
+		public List<ByteBuffer> mBuffers;
+	}
+	
+	private final Set<DownloadListenerHandle> mListeners = new HashSet<DownloadListenerHandle>();
 	
 	private class DownloadHandle {
 		public Thread mThread = null;
+		
 		public int mTrackId;
 		public Uri mUri;
+		
+		public String mMimeType;
+		public String mFilename;
+		
 		public boolean mStopping = false;
 	}
 	
@@ -74,9 +96,33 @@ public class DownloadService
 	private long mLastTotal;
 	private long mLastTime;
 
-	public void registerListener(DownloadListener listener)
+	public void registerListener(DownloadListener listener, int trackId)
 	{
-		mListeners.add(listener);
+		DownloadHandle currentDownload = mCurrentDownload;
+		
+		DownloadListenerHandle handle = new DownloadListenerHandle();
+		
+		handle.mTrackId = trackId;
+		
+		if (currentDownload != null &&
+		    currentDownload.mTrackId == trackId) {
+		    handle.mCatchingUp = true;
+		    handle.mBuffers = new ArrayList<ByteBuffer>();
+		    
+		    listener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
+		    
+		    handle.mCatchupThread = new Thread(
+		        new DownloadCatchupRunnable(
+		            currentDownload.mFilename,
+		            mLastTotal,
+		            trackId,
+		            mMyHandler));
+		    handle.mCatchupThread.start();
+		} else {
+		    handle.mCatchingUp = false;
+		}
+		
+		mListeners.add(handle);
 	}
 	
 	public void removeListener(DownloadListener listener)
@@ -246,12 +292,21 @@ public class DownloadService
 	@Override
 	public boolean handleMessage(final Message msg) {
 		final Uri currentUri = mCurrentDownload.mUri;
+		final int trackId = msg.arg1;
 		
 		switch (msg.what)
 		{
 		case DownloadRunnable.MESSAGE_DOWNLOAD_STARTED:
-			for (DownloadListener l: mListeners)
-				l.onDownloadStarted(msg.arg1, (String) msg.obj);
+		    DownloadRunnable.FileInfo info = (DownloadRunnable.FileInfo) msg.obj;
+		    
+		    mCurrentDownload.mMimeType = info.mimeType;
+		    mCurrentDownload.mFilename = info.path;
+		    
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+			        h.mListener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
+			    }
+			}
 			
 			mHelperHandler.post(new Runnable() {
 				@Override
@@ -268,8 +323,15 @@ public class DownloadService
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
 
-			for (DownloadListener l: mListeners)
-				l.onDataReceived(msg.arg1, chunk.buffer);
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+    			    if (h.mCatchingUp) {
+    			        h.mBuffers.add(chunk.buffer);
+    			    } else {
+    			        h.mListener.onDataReceived(trackId, chunk.buffer);
+    			    }
+			    }
+			}
 			
 			mHelperHandler.post(new Runnable() {
 				public void run() {
@@ -281,8 +343,16 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
-			for (DownloadListener l: mListeners)
-				l.onDownloadFinished(msg.arg1);
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+                    h.mFinished = true;
+                    
+			        if (! h.mCatchingUp) {
+			            h.mListener.onDownloadFinished(trackId);
+			            mListeners.remove(h);
+			        }
+			    }
+			}
 			
 			Toast.makeText(getApplicationContext(),
 					getResources().getString(R.string.download_finished), Toast.LENGTH_SHORT).show();
@@ -301,8 +371,17 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_INTERRUPTED:
-			for (DownloadListener l: mListeners)
-				l.onDownloadCanceled(msg.arg1);
+			for (DownloadListenerHandle h: mListeners)
+			{
+			    if (h.mTrackId == trackId) {
+    				h.mListener.onDownloadCanceled(trackId);
+    				
+    				if (h.mCatchingUp)
+    				    h.mCatchupThread.interrupt();
+    				
+    				mListeners.remove(h);
+			    }
+			}
 			
 			Log.d(LOG_TAG, "Download interrupted, re-enqueueing");
 			
@@ -320,8 +399,17 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FAILED:
-			for (DownloadListener l: mListeners)
-				l.onDownloadFailed(msg.arg1);
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId)
+			    {
+			        h.mListener.onDownloadFailed(trackId);
+			        
+			        if (h.mCatchingUp)
+			            h.mCatchupThread.interrupt();
+			        
+			        mListeners.remove(h);
+			    }
+			}
 			
 			Log.d(LOG_TAG, "Download failed!");
 			
@@ -337,6 +425,43 @@ public class DownloadService
 			});
 			
 			break;
+			
+		case DownloadCatchupRunnable.MESSAGE_DATA_RECEIVED:
+		    for (DownloadListenerHandle h: mListeners) {
+		        if (h.mTrackId == trackId && h.mCatchingUp) {
+		            h.mListener.onDataReceived(h.mTrackId, (ByteBuffer) msg.obj);
+		        }
+		    }
+		    
+		    break;
+		    
+		case DownloadCatchupRunnable.MESSAGE_DATA_COMPLETE:
+		    for (DownloadListenerHandle h: mListeners) {
+		        if (h.mTrackId == trackId) {
+		            for (ByteBuffer buf: h.mBuffers) {
+		                h.mListener.onDataReceived(trackId, buf);
+		            }
+		                
+                    h.mCatchingUp = false;
+                    
+		            if (h.mFinished) {
+		                h.mListener.onDownloadFinished(trackId);
+		                mListeners.remove(h);
+		            }
+		        }
+		    }
+		    
+		    break;
+		    
+		case DownloadCatchupRunnable.MESSAGE_ERROR:
+		    for (DownloadListenerHandle h: mListeners) {
+		        if (h.mTrackId == trackId && h.mCatchingUp) {
+		            h.mListener.onDownloadFailed(trackId);
+		            mListeners.remove(h);
+		        }
+		    }
+		    
+		    break;
 			
 		default:
 			return false;

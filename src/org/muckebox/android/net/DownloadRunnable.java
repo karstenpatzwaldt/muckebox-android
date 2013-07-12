@@ -1,4 +1,4 @@
-package org.muckebox.android.services;
+package org.muckebox.android.net;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 
 import org.muckebox.android.Muckebox;
-import org.muckebox.android.net.NetHelper;
+import org.muckebox.android.utils.BufferUtils;
 import org.muckebox.android.utils.Preferences;
 
 import android.content.Context;
@@ -40,6 +40,11 @@ public class DownloadRunnable implements Runnable
 	public static final int MESSAGE_DOWNLOAD_FINISHED = 3;
 	public static final int MESSAGE_DOWNLOAD_FAILED = 4;
 	public static final int MESSAGE_DOWNLOAD_INTERRUPTED = 5;
+	
+	public static class FileInfo {
+	    public String mimeType;
+	    public String path;
+	}
 
 	public static class Result {
 		public long trackId;
@@ -63,7 +68,7 @@ public class DownloadRunnable implements Runnable
 		init(trackId, resultHandler, null);
 	}
 	
-	DownloadRunnable(long trackId, Handler resultHandler, String outputPath)
+	public DownloadRunnable(long trackId, Handler resultHandler, String outputPath)
 	{
 		init(trackId, resultHandler, outputPath);
 	}
@@ -102,7 +107,7 @@ public class DownloadRunnable implements Runnable
 	
 	private int handleReceivedData(ByteBuffer data) throws IOException
 	{
-		if (! isEmpty(data))
+		if (! BufferUtils.isEmpty(data))
 		{
 			Log.d(LOG_TAG, "Sending message for " + data.position() + " bytes");
 			
@@ -124,42 +129,6 @@ public class DownloadRunnable implements Runnable
 		}
 		
 		return 0;
-	}
-	
-	private int bytesRemaining(ByteBuffer buf)
-	{
-		return buf.capacity() - buf.position();
-	}
-	
-	private boolean isFull(ByteBuffer buf)
-	{
-		return (buf.position() + 1) >= buf.capacity();
-	}
-	
-	private boolean isEmpty(ByteBuffer buf)
-	{
-		return buf.position() == 0;
-	}
-	
-	private void increasePosition(ByteBuffer buf, int delta)
-	{
-		buf.position(buf.position() + delta);
-	}
-	
-	private boolean readIntoBuffer(InputStream is, ByteBuffer buf) throws IOException
-	{
-		while (! isFull(buf))
-		{
-			int bytes_read = is.read(buf.array(),
-					buf.position(), bytesRemaining(buf));
-			
-			if (bytes_read == -1)
-				return true;
-			
-			increasePosition(buf, bytes_read);
-		}
-		
-		return false;
 	}
 	
 	public void closeOutputStream()
@@ -192,6 +161,15 @@ public class DownloadRunnable implements Runnable
 		return res;
 	}
 	
+	private FileInfo makeFileInfo(String mimeType, String path) {
+	    FileInfo ret = new FileInfo();
+	    
+	    ret.mimeType = mimeType;
+	    ret.path = path;
+	    
+	    return ret;
+	}
+	
 	public void run()
 	{
 		HttpURLConnection conn = null;
@@ -211,15 +189,17 @@ public class DownloadRunnable implements Runnable
 				
 				Log.d(LOG_TAG, "Saving to " + mOutputPath);
 			}
+			
+			FileInfo fileInfo = makeFileInfo(mimeType, mOutputPath);
 
 			if (mHandler != null)
 				mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, mimeType));
+						MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, fileInfo));
 
 			while (true)
 			{
 				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
-				boolean eosReached = readIntoBuffer(is, buf);
+				boolean eosReached = BufferUtils.readIntoBuffer(is, buf);
 				
 				mBytesTotal += handleReceivedData(buf);
 				
