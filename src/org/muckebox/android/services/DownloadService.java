@@ -103,6 +103,7 @@ public class DownloadService
 		DownloadListenerHandle handle = new DownloadListenerHandle();
 		
 		handle.mTrackId = trackId;
+		handle.mListener = listener;
 		
 		if (currentDownload != null &&
 		    currentDownload.mTrackId == trackId) {
@@ -214,22 +215,7 @@ public class DownloadService
 			final boolean doPin = intent.getBooleanExtra(EXTRA_PIN, false);
 			final boolean startNow = intent.getBooleanExtra(EXTRA_START_NOW, false);
 
-			mHelperHandler.post(new Runnable() {
-				@Override
-				public void run() {
-					if (isInCache(trackId))
-					{
-						pinInCache(trackId);
-					} else
-					{
-						if (startNow)
-							stopCurrentDownload();
-	
-						addToQueue(trackId, doPin);
-						downloadNextOrStop();
-					}
-				}
-			});
+			startDownload(trackId, doPin, startNow);
 			
 			return Service.START_STICKY;
 			
@@ -251,7 +237,26 @@ public class DownloadService
 		}
 	}
 	
-	private boolean isInCache(int trackId)
+	public void startDownload(final int trackId, final boolean doPin, final boolean startNow) {
+        mHelperHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (isInCache(trackId))
+                {
+                    pinInCache(trackId);
+                } else
+                {
+                    if (startNow)
+                        stopCurrentDownload();
+
+                    addToQueue(trackId, doPin);
+                    downloadNextOrStop();
+                }
+            }
+        });
+    }
+
+    private boolean isInCache(int trackId)
 	{
 		return getContentResolver().query(
 				MuckeboxProvider.URI_CACHE_TRACK.buildUpon().appendPath(Integer.toString(trackId)).build(),
@@ -302,11 +307,13 @@ public class DownloadService
 		    mCurrentDownload.mMimeType = info.mimeType;
 		    mCurrentDownload.mFilename = info.path;
 		    
-			for (DownloadListenerHandle h: mListeners) {
-			    if (h.mTrackId == trackId) {
-			        h.mListener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
-			    }
-			}
+		    synchronized (mListeners) {
+    			for (DownloadListenerHandle h: mListeners) {
+    			    if (h.mTrackId == trackId) {
+    			        h.mListener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
+    			    }
+    			}
+		    }
 			
 			mHelperHandler.post(new Runnable() {
 				@Override
@@ -323,14 +330,16 @@ public class DownloadService
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
 
-			for (DownloadListenerHandle h: mListeners) {
-			    if (h.mTrackId == trackId) {
-    			    if (h.mCatchingUp) {
-    			        h.mBuffers.add(chunk.buffer);
-    			    } else {
-    			        h.mListener.onDataReceived(trackId, chunk.buffer);
+			synchronized (mListeners) {
+    			for (DownloadListenerHandle h: mListeners) {
+    			    if (h.mTrackId == trackId) {
+        			    if (h.mCatchingUp) {
+        			        h.mBuffers.add(chunk.buffer);
+        			    } else {
+        			        h.mListener.onDataReceived(trackId, chunk.buffer);
+        			    }
     			    }
-			    }
+    			}
 			}
 			
 			mHelperHandler.post(new Runnable() {
@@ -343,14 +352,16 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
-			for (DownloadListenerHandle h: mListeners) {
-			    if (h.mTrackId == trackId) {
-                    h.mFinished = true;
-                    
-			        if (! h.mCatchingUp) {
-			            h.mListener.onDownloadFinished(trackId);
-			            mListeners.remove(h);
-			        }
+			synchronized (mListeners) {
+			    for (DownloadListenerHandle h: mListeners) {
+    			    if (h.mTrackId == trackId) {
+                        h.mFinished = true;
+                        
+    			        if (! h.mCatchingUp) {
+    			            h.mListener.onDownloadFinished(trackId);
+    			            mListeners.remove(h);
+    			        }
+    			    }
 			    }
 			}
 			
@@ -599,26 +610,21 @@ public class DownloadService
 	}
 	
 	private void stopCurrentDownload() {
-		if (mCurrentDownload != null)
-		{
-			try
-			{
+		if (mCurrentDownload != null) {
+			try {
 				mCurrentDownload.mStopping = true;
 				mCurrentDownload.mThread.interrupt();
 				mCurrentDownload.mThread.join();
-			} catch (InterruptedException e)
-			{
+			} catch (InterruptedException e) {
 				Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
 			}
 		}
 	}
 	
 	private void onDownloadFinished(Integer stringId) {
-		if (stringId == null)
-		{
+		if (stringId == null) {
 			mNotificationManager.cancel(NOTIFICATION_ID);
-		} else
-		{
+		} else {
 			mNotificationBuilder
 				.setProgress(0,  0, false)
 				.setContentTitle(getResources().getText(stringId))
@@ -665,8 +671,7 @@ public class DownloadService
 		updateNotificationCount();
 	}
 	
-	void updateNotificationCount()
-	{
+	private void updateNotificationCount() {
 		int count = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS,
 				null, null, null, null, null).getCount();
 		
@@ -676,13 +681,11 @@ public class DownloadService
 	}
 	
 	private void updateProgress(long bytesTotal) {
-		if (! mCurrentDownload.mStopping)
-		{
+		if (! mCurrentDownload.mStopping) {
 			String totalStr = Formatter.formatFileSize(getApplicationContext(), bytesTotal);
 			long timeNow = System.nanoTime();
 			
-			if (timeNow - mLastTime > 1E9)
-			{
+			if (timeNow - mLastTime > 1E9) {
 				int speed = (int) (((float) bytesTotal - (float) mLastTotal) /
 						((float) (timeNow - mLastTime) / 1.0E9));
 				

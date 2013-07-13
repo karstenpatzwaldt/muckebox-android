@@ -137,6 +137,7 @@ public class DownloadRunnable implements Runnable
 		{
 			try {
 				mOutputStream.close();
+				mOutputStream = null;
 			} catch (IOException eInner)
 			{
 				Log.e(LOG_TAG, "Yo dawg, i heard ya like exceptions!");
@@ -185,7 +186,8 @@ public class DownloadRunnable implements Runnable
 			
 			if (mOutputPath != null)
 			{
-				Muckebox.getAppContext().openFileOutput(mOutputPath, Context.MODE_PRIVATE);
+				mOutputStream = Muckebox.getAppContext().openFileOutput(
+				    mOutputPath, Context.MODE_PRIVATE);
 				
 				Log.d(LOG_TAG, "Saving to " + mOutputPath);
 			}

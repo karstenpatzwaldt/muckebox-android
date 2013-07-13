@@ -12,6 +12,7 @@ import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
+import org.muckebox.android.ui.utils.TimeFormatter;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
 import android.database.Cursor;
@@ -151,17 +152,8 @@ public class TrackListFragment extends RefreshableListFragment
 			if (columnIndex == cursor.getColumnIndex(TrackEntry.ALIAS_LENGTH))
 			{
 				TextView textview = (TextView) view;
-				String text;
-
-				long duration = cursor.getInt(columnIndex);
-				long hours = TimeUnit.SECONDS.toHours(duration);
-				long minutes = TimeUnit.SECONDS.toMinutes(duration - hours * 60);
-				long seconds = duration - ((hours * 60) + minutes) * 60;
-				
-				if (hours > 0)
-					text = String.format("%d:%02d:%02d", hours, minutes, seconds);
-				else
-					text = String.format("%d:%02d", minutes, seconds);
+				String text = TimeFormatter.formatDuration(
+				    cursor.getInt(columnIndex));
 				
 				textview.setText(text);
 				

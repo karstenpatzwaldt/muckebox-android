@@ -4,6 +4,7 @@ import org.muckebox.android.R;
 import org.muckebox.android.services.PlayerListener;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
+import org.muckebox.android.ui.utils.TimeFormatter;
 
 import android.animation.ValueAnimator;
 import android.app.Fragment;
@@ -175,10 +176,10 @@ public class PlayerFragment
 		if (mCollapsed)
 		{
 			changeHeight(mTitleHeight, mTotalHeight);
-			mCollapseButton.setImageResource(R.drawable.navigation_expand);
+			mCollapseButton.setImageResource(R.drawable.navigation_collapse);
 		} else {
 			changeHeight(mTotalHeight, mTitleHeight);
-			mCollapseButton.setImageResource(R.drawable.navigation_collapse);
+			mCollapseButton.setImageResource(R.drawable.navigation_expand);
 		}
 
 		mCollapsed = ! mCollapsed;
@@ -229,15 +230,7 @@ public class PlayerFragment
 	@Override
 	public void onNewTrack(int id, String title, int duration) {
 		mTitleText.setText(title);
-		
-		int seconds = duration % 60;
-		int minutes = ((duration - seconds) % (60 * 60)) / 60;
-		int hours = (duration - (seconds + minutes * 60)) / (60 * 60);
-		
-		if (hours > 0)
-			mPlaytimeText.setText(String.format("%d:%02d:%02d", hours, minutes, seconds));
-		else
-			mPlaytimeText.setText(String.format("%02d:%02d", minutes, seconds));
+		mPlaytimeText.setText(TimeFormatter.formatDuration(duration));
 	}
 
 	@Override
