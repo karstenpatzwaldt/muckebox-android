@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
@@ -13,6 +15,7 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.net.DownloadServerRunnable;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -43,6 +46,19 @@ public class PlayerService extends Service
 	
 	public final static String EXTRA_TRACK_ID = "track_id";
 	
+	public class TrackInfo {
+	    public int TrackId;
+	    public String title;
+	    public int duration;
+	    
+	    public int position;
+	    
+	    public boolean isStreaming;
+	    
+	    public boolean hasPrevious;
+	    public boolean hasNext;
+	}
+	
 	private enum State {
 		STOPPED, 
 		PAUSED,
@@ -62,6 +78,7 @@ public class PlayerService extends Service
 	private DownloadServerRunnable mServer;
 	private Thread mServerThread;
 
+	private NotificationManager mNotificationManager;
 	private Notification.Builder mNotificationBuilder;
 	
 	private Handler mMainHandler;
@@ -69,10 +86,33 @@ public class PlayerService extends Service
 	private HandlerThread mHelperThread;
 	private Handler mHelperHandler;
 	
-	private String mCurrentTitle = "";
-	private int mCurrentDuration = 0;
+	private TrackInfo mTrackInfo;
+	
+	private Timer mTimer;
 	
 	private FileInputStream mCurrentFile = null;
+	
+	private class ElapsedTimeTask extends TimerTask {
+	    private Runnable mNotifyTask = new Runnable() {
+	        public void run() {
+	            if (mMediaPlayer.isPlaying()) {
+	                mTrackInfo.position = getCurrentPlayPosition();
+	            }
+	            
+	            for (PlayerListener l: mListeners) {
+	                if (l != null)
+	                    l.onPlayProgress(mTrackInfo.position);
+	            }
+	        }
+	    };
+	    
+        public void run() {
+            if (mState != State.STOPPED)
+            {
+                mMainHandler.post(mNotifyTask);
+            }
+        }
+	}
 	
 	@Override
 	public void onCreate() {
@@ -88,6 +128,8 @@ public class PlayerService extends Service
                       setLargeIcon(bm).
                       setContentTitle("Playing...").
                       setOngoing(true);
+        
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
           
         mMediaPlayer = new MediaPlayer();
         
@@ -147,8 +189,6 @@ public class PlayerService extends Service
 	    if (intent != null)
 	    {
     	    playTrack(intent.getIntExtra(EXTRA_TRACK_ID, -1));
-    		
-            startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
 	    }
         
 		return Service.START_STICKY;
@@ -162,64 +202,87 @@ public class PlayerService extends Service
         
         mHelperHandler.post(new Runnable() {
             public void run() {
-                Cursor c = getContentResolver().query(Uri.withAppendedPath(
-                    MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
+                boolean isStreaming = playTrackFromAnywhere(trackId);
                 
-                try {
-                    if (c.moveToFirst())
+                fetchTrackInfo(trackId, isStreaming);
+            }
+        });
+	}
+	
+	private boolean playTrackFromAnywhere(final int trackId) {
+        Cursor c = getContentResolver().query(
+            Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK, Integer.toString(trackId)),
+                null, null, null, null);
+        
+        try {
+            if (c.moveToFirst()) {
+                final String filename = c.getString(c.getColumnIndex(CacheEntry.ALIAS_FILENAME));
+                
+                mMainHandler.post(new Runnable() {
+                    public void run() {
+                        playTrackFromFile(filename);
+                    }
+                });
+                
+                return false;
+            } else {
+                mMainHandler.post(new Runnable() {
+                    public void run() {
+                        playTrackFromStream(trackId);
+                    }
+                });
+                
+                return true;
+            }
+        } finally {
+            c.close();
+        }
+	}
+	
+	private void fetchTrackInfo(final int trackId, boolean isStreaming) {
+        Cursor c = getContentResolver().query(Uri.withAppendedPath(
+            MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
+        
+        mTrackInfo = new TrackInfo();
+        mTrackInfo.isStreaming = isStreaming;
+        mTrackInfo.position = 0;
+        
+        try {
+            if (c.moveToFirst())
+            {
+                mTrackInfo.title =
+                    c.getString(c.getColumnIndex(TrackEntry.ALIAS_DISPLAY_ARTIST)) + " - " +
+                    c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
+                mTrackInfo.duration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));
+                
+                Log.d(LOG_TAG, "Title is " + mTrackInfo.title);
+            } else {
+                Log.e(LOG_TAG, "Could not fetch track info for " + trackId);
+            }
+            
+            mMainHandler.post(new Runnable() {
+                public void run() {
+                    for (PlayerListener l: mListeners)
                     {
-                        mCurrentTitle =
-                            c.getString(c.getColumnIndex(TrackEntry.ALIAS_DISPLAY_ARTIST)) + " - " +
-                            c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
-                        mCurrentDuration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));
-                        
-                        Log.d(LOG_TAG, "Title is " + mCurrentTitle);
+                        if (l != null)
+                        {
+                            l.onNewTrack(mTrackInfo);
+                        }
                     }
                     
-                    mMainHandler.post(new Runnable() {
-                        public void run() {
-                            for (PlayerListener l: mListeners)
-                            {
-                                if (l != null)
-                                {
-                                    l.onNewTrack(trackId, mCurrentTitle, mCurrentDuration);
-                                }
-                            }
-                        }
-                    });
-                } finally {
-                    c.close();
+                    mNotificationBuilder.
+                        setContentTitle(mTrackInfo.title).
+                        setTicker(mTrackInfo.title);
+                    
+                    startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
+                    
+                    mTimer = new Timer();
+                    mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
                 }
-            }
-        });
-        
-        mHelperHandler.post(new Runnable() {
-            public void run() {
-                Cursor c = getContentResolver().query(
-                    Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK, Integer.toString(trackId)),
-                        null, null, null, null);
-                
-                try {
-                    if (c.moveToFirst()) {
-                        final String filename = c.getString(c.getColumnIndex(CacheEntry.ALIAS_FILENAME));
-                        
-                        mMainHandler.post(new Runnable() {
-                            public void run() {
-                                playTrackFromFile(filename);
-                            }
-                        });
-                    } else {
-                        mMainHandler.post(new Runnable() {
-                            public void run() {
-                                playTrackFromStream(trackId);
-                            }
-                        });
-                    }
-                } finally {
-                    c.close();
-                }
-            }
-        });
+            });
+        } finally {
+            c.close();
+        }
 	}
 	
 	protected void playTrackFromFile(final String filename) {
@@ -286,10 +349,14 @@ public class PlayerService extends Service
         mServer = null;
         mServerThread = null;
         
-        mCurrentTitle = "";
-        mCurrentDuration = 0;
+        mTrackInfo = null;
         
         mDownloadService.removeListener(this);
+        
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
         
         Log.d(LOG_TAG, "Stopped playing");
         
@@ -347,9 +414,6 @@ public class PlayerService extends Service
 	public void previous() {
 		if (mState == State.PAUSED || mState == State.PLAYING)
 		{
-			for (PlayerListener l: mListeners)
-				if (l != null) l.onNewTrack(23,  "Cooler Track", 523);
-			
 			Log.d(LOG_TAG, "Previous track");
 		}
 	}
@@ -357,27 +421,58 @@ public class PlayerService extends Service
 	public void next() {
 		if (mState == State.PAUSED || mState == State.PLAYING)
 		{
-			for (PlayerListener l: mListeners)
-				if (l != null) l.onNewTrack(42, "Naechster Track", 325);
-			
 			Log.d(LOG_TAG, "Next track");
 		}
+	}
+	
+	public void seek(int targetSeconds) {
+	    if (mState == State.PLAYING || mState == State.PAUSED) {
+	        mMediaPlayer.seekTo(targetSeconds * 1000);
+	    }
 	}
 
 	public boolean isPlaying() {
 		return mState == State.PLAYING;
 	}
 	
+	public boolean isStopped() {
+	    return mState == State.STOPPED;
+	}
+	
 	public Integer getCurrentTrackLength() {
-	    return mCurrentDuration;
+	    if (mTrackInfo != null)
+	        return mTrackInfo.duration;
+	    
+	    return null;
 	}
 	
 	public Integer getCurrentPlayPosition() {
-	    return mMediaPlayer.getCurrentPosition() / 1000;
+	    if (mState == State.PLAYING || mState == State.PAUSED)
+	        return mMediaPlayer.getCurrentPosition() / 1000;
+	    
+	    return 0;
+	}
+	
+	public Integer getCurrentTimeLeft() {
+	    int ret = getCurrentTrackLength() - getCurrentPlayPosition();
+	    
+	    if (ret < 0) {
+	        Log.e(LOG_TAG, "Current time remaining < 0");
+	        ret = 0;
+	    }
+	    
+	    return ret;
 	}
 	
 	public String getCurrentTrackTitle() {
-		return mCurrentTitle;
+	    if (mTrackInfo != null)
+	        return mTrackInfo.title;
+	    
+	    return null;
+	}
+	
+	public TrackInfo getCurrentTrackInfo() {
+	    return mTrackInfo;
 	}
 
     @Override

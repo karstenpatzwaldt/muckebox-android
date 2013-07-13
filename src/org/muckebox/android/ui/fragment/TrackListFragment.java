@@ -411,8 +411,11 @@ public class TrackListFragment extends RefreshableListFragment
         		break;
         }
         
-        mPinAllItem.setVisible(oneNotPinned);
-        mRemoveAllItem.setVisible(oneCached);
+        if (mPinAllItem != null)
+            mPinAllItem.setVisible(oneNotPinned);
+        
+        if (mRemoveAllItem != null)
+            mRemoveAllItem.setVisible(oneCached);
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {

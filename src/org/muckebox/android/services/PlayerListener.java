@@ -3,7 +3,7 @@ package org.muckebox.android.services;
 public interface PlayerListener {
 	void onConnected();
 	
-	void onNewTrack(int id, String title, int duration);
+	void onNewTrack(PlayerService.TrackInfo trackInfo);
 	
 	void onStartBuffering();
 	
@@ -13,4 +13,6 @@ public interface PlayerListener {
 	void onPlayResumed();
 
 	void onStopPlaying();
+	
+	void onPlayProgress(int secondsElapsed);
 }

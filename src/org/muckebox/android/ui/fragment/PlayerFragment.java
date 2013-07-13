@@ -4,6 +4,7 @@ import org.muckebox.android.R;
 import org.muckebox.android.services.PlayerListener;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
+import org.muckebox.android.ui.utils.ImageButtonHelper;
 import org.muckebox.android.ui.utils.TimeFormatter;
 
 import android.animation.ValueAnimator;
@@ -23,11 +24,12 @@ import android.view.View.MeasureSpec;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 public class PlayerFragment
 	extends Fragment
-	implements PlayerListener
+	implements PlayerListener, SeekBar.OnSeekBarChangeListener
 {
 	private final static String LOG_TAG = "PlayerFragment";
 	
@@ -44,13 +46,15 @@ public class PlayerFragment
 	ImageButton mNextButton;
 	ImageButton mStopButton;
 	
+	SeekBar mSeekBar;
+	
 	ImageView mPlayIndicator;
 	TextView mTitleText;
 	TextView mPlaytimeText;
 	
 	PlayerService mService = null;
 	boolean mBound = false;
-	
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -58,7 +62,10 @@ public class PlayerFragment
         
         mTitleText = (TextView) mView.findViewById(R.id.player_title_text);
         mPlayIndicator = (ImageView) mView.findViewById(R.id.player_play_indicator);
+        
         mPlaytimeText = (TextView) mView.findViewById(R.id.player_play_time);
+        mSeekBar = (SeekBar) mView.findViewById(R.id.player_seek_bar);
+        mSeekBar.setOnSeekBarChangeListener(this);
         
         measureView();
         attachButtonListeners();
@@ -102,6 +109,11 @@ public class PlayerFragment
     		mBound = true;
     		
     		mService.registerListener(PlayerFragment.this);
+    		
+    		PlayerService.TrackInfo trackInfo = mService.getCurrentTrackInfo();
+    		
+    		if (trackInfo != null)
+    		    onNewTrack(trackInfo);
     		
     		Log.d(LOG_TAG, "Bound to service");
     	}
@@ -244,14 +256,25 @@ public class PlayerFragment
 	}
 
 	@Override
-	public void onNewTrack(int id, String title, int duration) {
-		mTitleText.setText(title);
-		mPlaytimeText.setText(TimeFormatter.formatDuration(duration));
+	public void onNewTrack(PlayerService.TrackInfo trackInfo) {
+		mTitleText.setText(trackInfo.title);
+		
+       ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), trackInfo.hasNext, mNextButton, R.drawable.av_next);
+       ImageButtonHelper.setImageButtonEnabled(
+           getActivity(), trackInfo.hasPrevious, mPreviousButton, R.drawable.av_previous);
+       ImageButtonHelper.setImageButtonEnabled(
+           getActivity(), true, mStopButton, R.drawable.av_stop);
+		
+		mSeekBar.setEnabled(! trackInfo.isStreaming);
+		mSeekBar.setMax(trackInfo.duration);
+		
+		onPlayProgress(0);
 	}
 
 	@Override
 	public void onStartBuffering() {
-
+	    mPlayIndicator.setImageResource(R.drawable.device_access_time);
 	}
 
 	@Override
@@ -262,21 +285,60 @@ public class PlayerFragment
 	@Override
 	public void onStopPlaying() {
 		mTitleText.setText(R.string.no_track);
-		mPlayPauseButton.setImageResource(R.drawable.av_play);
+		
+        ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), false, mPlayPauseButton, R.drawable.av_play);
+        ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), false, mStopButton, R.drawable.av_stop);
+        ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), false, mNextButton, R.drawable.av_next);
+        ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), false, mPreviousButton, R.drawable.av_previous);		
+		
 		mPlaytimeText.setText(R.string.null_null);
 		mPlayIndicator.setImageResource(R.drawable.av_stop);
+		
+		mSeekBar.setProgress(0);
+		mSeekBar.setEnabled(false);
 	}
 
 	@Override
 	public void onPlayPaused() {
-		mPlayPauseButton.setImageResource(R.drawable.av_play);
+       ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), true, mPlayPauseButton, R.drawable.av_play);
+	       
 		mPlayIndicator.setImageResource(R.drawable.av_pause);
 	}
 
 	@Override
 	public void onPlayResumed() {
-		mPlayPauseButton.setImageResource(R.drawable.av_pause);
+       ImageButtonHelper.setImageButtonEnabled(
+            getActivity(), true, mPlayPauseButton, R.drawable.av_pause);
 		mPlayIndicator.setImageResource(R.drawable.av_play);
 	}
 	
+	@Override
+	public void onPlayProgress(int secondsElapsed) {
+        int timeRemaining = mService.getCurrentTimeLeft();
+        
+        mPlaytimeText.setText(TimeFormatter.formatDuration(timeRemaining));
+        mSeekBar.setProgress(secondsElapsed);
+	}
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if (mService != null && fromUser) {
+            mService.seek(progress);
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        // nothing
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        // nothing
+    }
 }
