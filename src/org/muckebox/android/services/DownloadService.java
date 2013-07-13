@@ -131,8 +131,10 @@ public class DownloadService
 	{
 	    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); )
 	    {
-	        if (it.next() == listener)
+	        if (it.next().mListener == listener)
+	        {
 	            it.remove();
+	        }
 	    }
 	}
 	
@@ -242,6 +244,9 @@ public class DownloadService
 	}
 	
 	public void startDownload(final int trackId, final boolean doPin, final boolean startNow) {
+	    if (mCurrentDownload != null && mCurrentDownload.mTrackId == trackId)
+	        return;
+	    
         mHelperHandler.post(new Runnable() {
             @Override
             public void run() {
