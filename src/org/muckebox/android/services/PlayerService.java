@@ -500,6 +500,7 @@ public class PlayerService extends Service
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        Log.d(LOG_TAG, "Completed, stopping");
         stopPlaying();
     }
 
@@ -562,7 +563,7 @@ public class PlayerService extends Service
     @Override
     public void onDownloadFinished(long trackId) {
         if (mServer != null)
-            mServer.done();
+            mServer.feed(null);
     }
 
     @Override

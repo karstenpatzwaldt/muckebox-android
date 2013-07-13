@@ -15,8 +15,7 @@ public class DownloadServerRunnable implements Runnable {
     private static final int PORT = 2342;
     
     private String mMimeType;
-    
-    private boolean mFinished = false;
+
     private boolean mReady = false;
     
     private Queue<ByteBuffer> mQueue;
@@ -55,24 +54,27 @@ public class DownloadServerRunnable implements Runnable {
                 os.write(new String("Connection: close\n").getBytes());
                 os.write(new String("\n").getBytes());
                 
-                while (true)
+                boolean eosSeen = false;
+                
+                while (! eosSeen)
                 {
-                    while (mQueue.isEmpty() && ! mFinished) {
+                    while (mQueue.isEmpty()) {
                         synchronized (mQueue) {
                             mQueue.wait();
                         }
                     }
                     
                     synchronized (mQueue) {
-                        if (! mQueue.isEmpty()) {
-                            ByteBuffer buf = mQueue.remove();
-                            
-                            os.write(buf.array(), 0, buf.position());
+                        ByteBuffer buf = mQueue.remove();
+                        
+                        if (buf == null)
+                        {
+                            eosSeen = true;
+                            break;
                         }
+                        
+                        os.write(buf.array(), 0, buf.position());
                     }
-                    
-                    if (mFinished)
-                        break;
                 }
             } finally {
                 if (os != null)
@@ -98,10 +100,6 @@ public class DownloadServerRunnable implements Runnable {
             mQueue.add(buf);
             mQueue.notify();
         }
-    }
-    
-    public void done() {
-        mFinished = true;
     }
     
     public boolean isReady() {
