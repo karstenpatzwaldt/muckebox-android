@@ -129,8 +129,11 @@ public class DownloadService
 	
 	public void removeListener(DownloadListener listener)
 	{
-		if (mListeners.contains(listener))
-			mListeners.remove(listener);
+	    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); )
+	    {
+	        if (it.next() == listener)
+	            it.remove();
+	    }
 	}
 	
 	public class DownloadBinder extends Binder {
@@ -250,7 +253,7 @@ public class DownloadService
                     if (startNow)
                         stopCurrentDownload();
 
-                    addToQueue(trackId, doPin);
+                    addToQueue(trackId, doPin, startNow);
                     downloadNextOrStop();
                 }
             }
@@ -317,9 +320,16 @@ public class DownloadService
 			mHelperHandler.post(new Runnable() {
 				@Override
 				public void run() {
+				    ContentValues valuesForAll = new ContentValues();
+				    valuesForAll.put(DownloadEntry.SHORT_STATUS,
+				        DownloadEntry.STATUS_VALUE_QUEUED);
+				    getContentResolver().update(MuckeboxProvider.URI_DOWNLOADS,
+				        valuesForAll, null, null);
+				    
 					ContentValues values = new ContentValues();
 					values.put(DownloadEntry.SHORT_STATUS,
 							DownloadEntry.STATUS_VALUE_DOWNLOADING);
+					values.put(DownloadEntry.SHORT_START_NOW, 0);
 					getContentResolver().update(currentUri, values, null, null);					
 				}
 			});
@@ -349,13 +359,15 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
-		    for (DownloadListenerHandle h: mListeners) {
+		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
+		        DownloadListenerHandle h = it.next();
+		        
 			    if (h.mTrackId == trackId) {
                     h.mFinished = true;
                     
 			        if (! h.mCatchingUp) {
 			            h.mListener.onDownloadFinished(trackId);
-			            mListeners.remove(h);
+			            it.remove();
 			        }
 			    }
 		    }
@@ -485,7 +497,7 @@ public class DownloadService
 		return true;
 	}
 	
-	private void addToQueue(long trackId, boolean doPin)
+	private void addToQueue(long trackId, boolean doPin, boolean startNow)
 	{
 		boolean transcodingEnabled = Preferences.getTranscodingEnabled();
 		String transcodingType = Preferences.getTranscodingType();
@@ -508,6 +520,7 @@ public class DownloadService
 				values.put(DownloadEntry.SHORT_TRANSCODING_QUALITY, transcodingQuality);
 				
 				values.put(DownloadEntry.SHORT_PIN_RESULT, doPin);
+				values.put(DownloadEntry.SHORT_START_NOW, startNow ? 1 : 0);
 				
 				Muckebox.getAppContext().getContentResolver().insert(
 						MuckeboxProvider.URI_DOWNLOADS, values);

@@ -82,6 +82,7 @@
     <string name="paused">Paused</string>
    	<string name="previous">Previous</string>
    	<string name="next">Next</string>
+   	<string name="stop">Stop</string>
     <string name="download">Download</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>

@@ -42,6 +42,7 @@ public class PlayerFragment
 	ImageButton mPlayPauseButton;
 	ImageButton mPreviousButton;
 	ImageButton mNextButton;
+	ImageButton mStopButton;
 	
 	ImageView mPlayIndicator;
 	TextView mTitleText;
@@ -146,6 +147,14 @@ public class PlayerFragment
     					onNextButton();
     				}
     			});
+    	
+    	mStopButton = (ImageButton) mView.findViewById(R.id.player_stop_button);
+    	mStopButton.setOnClickListener(
+    	    new OnClickListener() {
+    	        public void onClick(View v) {
+    	            onStopButton();
+    	        }
+    	    });
     }
 
 	private void measureView() {
@@ -220,6 +229,13 @@ public class PlayerFragment
     	{
     		mService.next();
     	}
+    }
+    
+    private void onStopButton() {
+        if (mBound)
+        {
+            mService.stopPlaying();
+        }
     }
 
 	@Override

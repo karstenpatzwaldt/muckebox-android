@@ -74,6 +74,13 @@
             android:src="@drawable/av_play"
             android:contentDescription="@string/play"
             android:enabled="false" />
+           
+        <ImageButton
+            style="@style/TrackListButton"
+            android:id="@+id/player_stop_button"
+            android:src="@drawable/av_stop"
+            android:contentDescription="@string/stop"
+            android:enabled="false" />
         
         <ImageButton
             style="@style/TrackListButton"

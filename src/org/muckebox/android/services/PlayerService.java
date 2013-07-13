@@ -260,7 +260,7 @@ public class PlayerService extends Service
         }
 	}
 	
-	protected void stopPlaying() {
+	public void stopPlaying() {
 	    mState = State.STOPPED;
 	    
 	    mMediaPlayer.reset();
@@ -288,6 +288,8 @@ public class PlayerService extends Service
         
         mCurrentTitle = "";
         mCurrentDuration = 0;
+        
+        mDownloadService.removeListener(this);
         
         Log.d(LOG_TAG, "Stopped playing");
         
@@ -408,6 +410,10 @@ public class PlayerService extends Service
 
     @Override
     public void onDownloadStarted(long trackId, String mimeType) {
+        Log.d(LOG_TAG, "Download started for " + trackId + " (" + mimeType + ")");
+        
+        assert(mServer == null);
+        
         mServer = new DownloadServerRunnable(mimeType);
         mServerThread = new Thread(mServer);
         mServerThread.start();
@@ -416,14 +422,26 @@ public class PlayerService extends Service
     }
     
     private void startStreamMediaPlayer() {
+        if (mServer == null) {
+            Log.e(LOG_TAG, "HTTP server missing");
+            stopPlaying();
+            return;
+        }
+        
         if (! mServer.isReady()) {
             Log.d(LOG_TAG, "HTTP server not ready, retrying");
             
-            mMainHandler.postDelayed(new Runnable() {
-                public void run() {
-                    startStreamMediaPlayer();
-                }
-            }, 50);
+            if (! mServerThread.isAlive())
+            {
+                Log.e(LOG_TAG, "HTTP server died! Cannot play.");
+                stopPlaying();
+            } else {
+                mMainHandler.postDelayed(new Runnable() {
+                    public void run() {
+                        startStreamMediaPlayer();
+                    }
+                }, 50);
+            }
         } else {
             try
             {
