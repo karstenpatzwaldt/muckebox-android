@@ -109,6 +109,11 @@ public class PlayerService extends Service
 	
 	@Override
 	public void onDestroy() {
+	    if (isPlaying()) {
+	        Log.e(LOG_TAG, "Player service still playing when destroyed");
+	        stopPlaying();
+	    }
+	    
 	    mHelperThread.quit();
 	    
 	    if (mMediaPlayer != null)
@@ -150,6 +155,9 @@ public class PlayerService extends Service
 	}
 	
 	protected void playTrack(final int trackId) {
+	    if (mState != State.STOPPED)
+	        stopPlaying();
+	    
         mState = State.BUFFERING;
         
         mHelperHandler.post(new Runnable() {
@@ -245,7 +253,7 @@ public class PlayerService extends Service
                 }
             }, 100);
         } else {
-            Log.d(LOG_TAG, "Start playing track " + trackId);
+            Log.d(LOG_TAG, "Start playing streamed track " + trackId);
             
             mDownloadService.registerListener(this, trackId);
             mDownloadService.startDownload(trackId, false, true);

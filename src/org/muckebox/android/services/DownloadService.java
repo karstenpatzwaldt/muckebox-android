@@ -3,6 +3,7 @@ package org.muckebox.android.services;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -307,13 +308,11 @@ public class DownloadService
 		    mCurrentDownload.mMimeType = info.mimeType;
 		    mCurrentDownload.mFilename = info.path;
 		    
-		    synchronized (mListeners) {
-    			for (DownloadListenerHandle h: mListeners) {
-    			    if (h.mTrackId == trackId) {
-    			        h.mListener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
-    			    }
-    			}
-		    }
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+			        h.mListener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
+			    }
+			}
 			
 			mHelperHandler.post(new Runnable() {
 				@Override
@@ -330,16 +329,14 @@ public class DownloadService
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
 
-			synchronized (mListeners) {
-    			for (DownloadListenerHandle h: mListeners) {
-    			    if (h.mTrackId == trackId) {
-        			    if (h.mCatchingUp) {
-        			        h.mBuffers.add(chunk.buffer);
-        			    } else {
-        			        h.mListener.onDataReceived(trackId, chunk.buffer);
-        			    }
+			for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+    			    if (h.mCatchingUp) {
+    			        h.mBuffers.add(chunk.buffer);
+    			    } else {
+    			        h.mListener.onDataReceived(trackId, chunk.buffer);
     			    }
-    			}
+			    }
 			}
 			
 			mHelperHandler.post(new Runnable() {
@@ -352,18 +349,16 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FINISHED:
-			synchronized (mListeners) {
-			    for (DownloadListenerHandle h: mListeners) {
-    			    if (h.mTrackId == trackId) {
-                        h.mFinished = true;
-                        
-    			        if (! h.mCatchingUp) {
-    			            h.mListener.onDownloadFinished(trackId);
-    			            mListeners.remove(h);
-    			        }
-    			    }
+		    for (DownloadListenerHandle h: mListeners) {
+			    if (h.mTrackId == trackId) {
+                    h.mFinished = true;
+                    
+			        if (! h.mCatchingUp) {
+			            h.mListener.onDownloadFinished(trackId);
+			            mListeners.remove(h);
+			        }
 			    }
-			}
+		    }
 			
 			Toast.makeText(getApplicationContext(),
 					getResources().getString(R.string.download_finished), Toast.LENGTH_SHORT).show();
@@ -382,15 +377,17 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_INTERRUPTED:
-			for (DownloadListenerHandle h: mListeners)
+			for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); )
 			{
+			    DownloadListenerHandle h = it.next();
+			    
 			    if (h.mTrackId == trackId) {
     				h.mListener.onDownloadCanceled(trackId);
     				
     				if (h.mCatchingUp)
     				    h.mCatchupThread.interrupt();
     				
-    				mListeners.remove(h);
+    				it.remove();
 			    }
 			}
 			
@@ -410,7 +407,9 @@ public class DownloadService
 			break;
 			
 		case DownloadRunnable.MESSAGE_DOWNLOAD_FAILED:
-			for (DownloadListenerHandle h: mListeners) {
+			for (Iterator<DownloadListenerHandle>  it = mListeners.iterator(); it.hasNext(); ) {
+			    DownloadListenerHandle h = it.next();
+			    
 			    if (h.mTrackId == trackId)
 			    {
 			        h.mListener.onDownloadFailed(trackId);
@@ -418,7 +417,7 @@ public class DownloadService
 			        if (h.mCatchingUp)
 			            h.mCatchupThread.interrupt();
 			        
-			        mListeners.remove(h);
+			        it.remove();
 			    }
 			}
 			
@@ -447,7 +446,9 @@ public class DownloadService
 		    break;
 		    
 		case DownloadCatchupRunnable.MESSAGE_DATA_COMPLETE:
-		    for (DownloadListenerHandle h: mListeners) {
+		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
+		        DownloadListenerHandle h = it.next();
+		        
 		        if (h.mTrackId == trackId) {
 		            for (ByteBuffer buf: h.mBuffers) {
 		                h.mListener.onDataReceived(trackId, buf);
@@ -457,7 +458,8 @@ public class DownloadService
                     
 		            if (h.mFinished) {
 		                h.mListener.onDownloadFinished(trackId);
-		                mListeners.remove(h);
+		                
+		                it.remove();
 		            }
 		        }
 		    }
@@ -465,10 +467,12 @@ public class DownloadService
 		    break;
 		    
 		case DownloadCatchupRunnable.MESSAGE_ERROR:
-		    for (DownloadListenerHandle h: mListeners) {
+		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
+		        DownloadListenerHandle h = it.next();
+		        
 		        if (h.mTrackId == trackId && h.mCatchingUp) {
 		            h.mListener.onDownloadFailed(trackId);
-		            mListeners.remove(h);
+		            it.remove();
 		        }
 		    }
 		    
