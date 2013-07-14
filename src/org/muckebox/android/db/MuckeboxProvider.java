@@ -237,6 +237,11 @@ public class MuckeboxProvider extends ContentProvider {
 				selectionArgs = new String[] { uri.getLastPathSegment() };
 				
 				break;
+			case CACHE_TRACK:
+			    selection = CacheEntry.FULL_TRACK_ID + " = ?";
+			    selectionArgs = new String[] { uri.getLastPathSegment() };
+			    
+			    break;
 			}
 		
 			ret = db.delete(CacheEntry.TABLE_NAME, selection, selectionArgs);
