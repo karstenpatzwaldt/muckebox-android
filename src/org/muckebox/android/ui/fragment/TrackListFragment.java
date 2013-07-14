@@ -151,6 +151,8 @@ public class TrackListFragment extends RefreshableListFragment
 	
 	@Override
 	public void onDestroy() {
+	    super.onDestroy();
+	    
 	    mHandlerThread.quit();
 	}
 	

@@ -484,6 +484,8 @@ public class DownloadService
 		    break;
 		    
 		case DownloadCatchupRunnable.MESSAGE_ERROR:
+		    Log.e(LOG_TAG, "Error catching up!");
+		    
 		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
 		        DownloadListenerHandle h = it.next();
 		        

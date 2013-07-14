@@ -8,8 +8,10 @@ import org.muckebox.android.Muckebox;
 import org.muckebox.android.utils.BufferUtils;
 
 import android.os.Handler;
+import android.util.Log;
 
 public class DownloadCatchupRunnable implements Runnable {
+    private final static String LOG_TAG = "DownloadCatchupRunnable";
     private final static long BUFFER_SIZE = 32 * 1024;
     
     public static final int MESSAGE_DATA_RECEIVED   = 10;
@@ -40,7 +42,10 @@ public class DownloadCatchupRunnable implements Runnable {
                 eofSeen = BufferUtils.readIntoBuffer(input, buf);
                 
                 if (eofSeen)
+                {
+                    Log.e(LOG_TAG, "Expected " + mBytesToRead + " more bytes, but saw EOF!");
                     throw new IOException("short read");
+                }
                 
                 if (mHandler != null)
                     mHandler.sendMessage(mHandler.obtainMessage(
