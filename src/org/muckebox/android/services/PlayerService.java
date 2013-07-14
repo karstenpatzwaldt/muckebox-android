@@ -10,12 +10,13 @@ import java.util.TimerTask;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
+import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
+import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadServerRunnable;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -44,10 +45,12 @@ public class PlayerService extends Service
 	
 	private final static int NOTIFICATION_ID = 23;
 	
-	public final static String EXTRA_TRACK_ID = "track_id";
+	public final static String EXTRA_PLAYLIST_ITEM_ID = "playlist_item_id";
 	
 	public class TrackInfo {
-	    public int TrackId;
+	    public int trackId;
+	    public int playlistEntryId;
+	    
 	    public String title;
 	    public int duration;
 	    
@@ -78,7 +81,6 @@ public class PlayerService extends Service
 	private DownloadServerRunnable mServer;
 	private Thread mServerThread;
 
-	private NotificationManager mNotificationManager;
 	private Notification.Builder mNotificationBuilder;
 	
 	private Handler mMainHandler;
@@ -128,9 +130,7 @@ public class PlayerService extends Service
                       setLargeIcon(bm).
                       setContentTitle("Playing...").
                       setOngoing(true);
-        
-        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-          
+
         mMediaPlayer = new MediaPlayer();
         
         mMediaPlayer.setWakeMode(getApplicationContext(),
@@ -188,13 +188,13 @@ public class PlayerService extends Service
 	public int onStartCommand(Intent intent, int flags, int startId) {
 	    if (intent != null)
 	    {
-    	    playTrack(intent.getIntExtra(EXTRA_TRACK_ID, -1));
+    	    playTrack(intent.getIntExtra(EXTRA_PLAYLIST_ITEM_ID, 0));
 	    }
         
 		return Service.START_STICKY;
 	}
 	
-	protected void playTrack(final int trackId) {
+	protected void playTrack(final int playlistEntryId) {
 	    if (mState != State.STOPPED)
 	        stopPlaying();
 	    
@@ -202,9 +202,11 @@ public class PlayerService extends Service
         
         mHelperHandler.post(new Runnable() {
             public void run() {
+                int trackId = PlaylistHelper.getTrackId(getApplicationContext(),
+                    Uri.withAppendedPath(MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId)));
                 boolean isStreaming = playTrackFromAnywhere(trackId);
                 
-                fetchTrackInfo(trackId, isStreaming);
+                fetchTrackInfo(playlistEntryId, trackId, isStreaming);
             }
         });
 	}
@@ -239,13 +241,22 @@ public class PlayerService extends Service
         }
 	}
 	
-	private void fetchTrackInfo(final int trackId, boolean isStreaming) {
-        Cursor c = getContentResolver().query(Uri.withAppendedPath(
-            MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
+	private void fetchTrackInfo(int playlistEntryId, int trackId, boolean isStreaming) {
+        Uri playlistEntryUri = Uri.withAppendedPath(
+            MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId));
         
         mTrackInfo = new TrackInfo();
+        
+        mTrackInfo.playlistEntryId = playlistEntryId;
+        mTrackInfo.trackId = trackId;
+        
         mTrackInfo.isStreaming = isStreaming;
         mTrackInfo.position = 0;
+        mTrackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
+        mTrackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
+  
+        Cursor c = getContentResolver().query(Uri.withAppendedPath(
+            MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
         
         try {
             if (c.moveToFirst())
@@ -412,17 +423,43 @@ public class PlayerService extends Service
 	}
 	
 	public void previous() {
-		if (mState == State.PAUSED || mState == State.PLAYING)
-		{
-			Log.d(LOG_TAG, "Previous track");
-		}
+	    prevNext(false);
 	}
 	
 	public void next() {
-		if (mState == State.PAUSED || mState == State.PLAYING)
-		{
-			Log.d(LOG_TAG, "Next track");
-		}
+	    prevNext(true);
+	}
+	
+	public void prevNext(final boolean isNext) {
+	    if (mState == State.PLAYING || mState == State.PAUSED) {
+	        mHelperHandler.post(new Runnable() {
+	            public void run() {
+	                Cursor c = getContentResolver().query(
+	                    Uri.withAppendedPath(
+	                        (isNext ? MuckeboxProvider.URI_PLAYLIST_AFTER : MuckeboxProvider.URI_PLAYLIST_BEFORE),
+	                        Integer.toString(mTrackInfo.playlistEntryId)),
+	                        null, null, null, null);
+
+	                try {
+	                    if (isNext ? c.moveToFirst() : c.moveToLast()) {
+	                        final int nextPlaylistEntryId = c.getInt(c.getColumnIndex(PlaylistEntry.SHORT_ID));
+	                        
+	                        mMainHandler.post(new Runnable() {
+	                            public void run() {
+	                                stopPlaying();
+	                                playTrack(nextPlaylistEntryId);
+	                            }
+	                        });
+	                    }
+	                } finally {
+	                    c.close();
+	                }
+
+	            }
+	        });
+	    }
+
+	    Log.d(LOG_TAG, "Skip to " + (isNext ? "next" : "previous") + " track");
 	}
 	
 	public void seek(int targetSeconds) {
@@ -500,8 +537,10 @@ public class PlayerService extends Service
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        Log.d(LOG_TAG, "Completed, stopping");
-        stopPlaying();
+        if (mTrackInfo.hasNext)
+            next();
+        else
+            stopPlaying();
     }
 
     @Override

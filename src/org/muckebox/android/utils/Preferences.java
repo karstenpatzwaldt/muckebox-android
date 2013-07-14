@@ -30,4 +30,11 @@ public class Preferences {
 	public static boolean isCachingEnabled() {
 		return getPreferences().getBoolean("caching_enable", true);
 	}
+	
+	public static int getCurrentPlaylistId() {
+	    return getPreferences().getInt("current_playlist_id", 0);
+	}
+	
+	public static void setCurrentPlaylistItem() {
+	}
 }

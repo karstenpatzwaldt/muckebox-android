@@ -311,6 +311,8 @@ public class MuckeboxProvider extends ContentProvider {
 		    }
 		    
 		    ret = db.delete(PlaylistEntry.TABLE_NAME, selection, selectionArgs);
+		    
+		    break;
 			
 		default:
 			throw new UnsupportedOperationException("Not yet implemented");
@@ -330,6 +332,8 @@ public class MuckeboxProvider extends ContentProvider {
 		int match = mMatcher.match(uri);
 		long id;
 		Uri ret;
+		
+		Log.d(LOG_TAG, "Insert into " + uri);
 
 		switch (match) {
 		case DOWNLOADS:
@@ -383,8 +387,11 @@ public class MuckeboxProvider extends ContentProvider {
 		    if (! values.containsKey(PlaylistEntry.SHORT_PLAYLIST_ID)) {
 		        values.put(PlaylistEntry.SHORT_PLAYLIST_ID,
 		            Integer.parseInt(uri.getLastPathSegment()));
-		    } else if (Integer.toString(values.getAsInteger(PlaylistEntry.SHORT_PLAYLIST_ID)) != 
-		        uri.getLastPathSegment()) {
+		    } else if (values.getAsInteger(PlaylistEntry.SHORT_PLAYLIST_ID) != 
+		        Integer.parseInt(uri.getLastPathSegment())) {
+		        Log.e(LOG_TAG, "Expected playlist " + values.getAsInteger(PlaylistEntry.SHORT_PLAYLIST_ID) +
+		            " from values, got " + uri.getLastPathSegment() + " in URI");
+		        
 		        throw new UnsupportedOperationException();
 		    }
 		    
@@ -623,16 +630,18 @@ public class MuckeboxProvider extends ContentProvider {
 		        
 		    case PLAYLIST_BEFORE:
 		    case PLAYLIST_AFTER:
-		        Cursor c = db.query(PlaylistEntry.TABLE_NAME,
-		            new String[] { PlaylistEntry.SHORT_POSITION, PlaylistEntry.SHORT_PLAYLIST_ID },
-		            PlaylistEntry.SHORT_ID + " = ?", new String[] { uri.getLastPathSegment() },
+		        Cursor c = db.query(PlaylistEntry.TABLE_NAME, PlaylistEntry.PROJECTION,
+		            PlaylistEntry.FULL_ID + " = ?", new String[] { uri.getLastPathSegment() },
 		            null, null, null, null);
 		        
 		        try {
-		            c.moveToFirst();
+		            if (! c.moveToFirst()) {
+		                Log.e(LOG_TAG, "Could not find playlist entry " + uri.getLastPathSegment());
+		                throw new UnsupportedOperationException();
+		            }
 		            
-		            int position = c.getInt(c.getColumnIndex(PlaylistEntry.SHORT_POSITION));
-		            int playlistId = c.getInt(c.getColumnIndex(PlaylistEntry.SHORT_PLAYLIST_ID));
+		            int position = c.getInt(c.getColumnIndex(PlaylistEntry.ALIAS_POSITION));
+		            int playlistId = c.getInt(c.getColumnIndex(PlaylistEntry.ALIAS_PLAYLIST_ID));
 		            
 		            selection = PlaylistEntry.FULL_PLAYLIST_ID + " = ? AND " +
 		                PlaylistEntry.FULL_POSITION +

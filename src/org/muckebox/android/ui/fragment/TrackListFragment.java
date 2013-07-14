@@ -1,13 +1,12 @@
 package org.muckebox.android.ui.fragment;
 
-import java.util.concurrent.TimeUnit;
-
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
+import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.services.PlayerService;
@@ -18,6 +17,8 @@ import org.muckebox.android.ui.widgets.RefreshableListFragment;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.Context;
@@ -46,6 +47,9 @@ public class TrackListFragment extends RefreshableListFragment
 	
 	private TrackListCursorAdapter mAdapter;
 	private boolean mListLoaded = false;
+	
+	private HandlerThread mHandlerThread;
+	private Handler mHandler;
 
 	MenuItem mPinAllItem;
 	MenuItem mRemoveAllItem;
@@ -62,12 +66,21 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			mPlayListener = new OnClickListener() {
 				public void onClick(View v) {
-					Intent intent = new Intent(getActivity(), PlayerService.class);
-					
-					intent.putExtra(PlayerService.EXTRA_TRACK_ID,
-							getTrackId(getItemIndex(v)));
-					
-					getActivity().startService(intent);
+                    final int index = getItemIndex(v);
+                    
+				    mHandler.post(new Runnable() {
+				        public void run() {
+				            Uri playlistUri = PlaylistHelper.rebuildFromTrackCursor(
+				                getActivity(), getCursor(), index);
+        					Intent intent = new Intent(getActivity(), PlayerService.class);
+        					
+        					intent.putExtra(PlayerService.EXTRA_PLAYLIST_ITEM_ID,
+        					    Integer.parseInt(playlistUri.getLastPathSegment()));
+        					
+        					getActivity().startService(intent);
+				        }
+				    });
+				    
 					toggleExpanded(v);
 				}
 			};
@@ -124,6 +137,21 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			return ret;
 		}
+	}
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+	    super.onCreate(savedInstanceState);
+	    
+	    mHandlerThread = new HandlerThread("TrackListHelper");
+	    mHandlerThread.start();
+	    
+	    mHandler = new Handler(mHandlerThread.getLooper());
+	}
+	
+	@Override
+	public void onDestroy() {
+	    mHandlerThread.quit();
 	}
 	
 	private void pinTrack(int trackId) {

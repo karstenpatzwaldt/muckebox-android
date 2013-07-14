@@ -1,10 +1,11 @@
 package org.muckebox.android.ui.utils;
 
 import android.annotation.SuppressLint;
+
 import java.util.concurrent.TimeUnit;
 
+@SuppressLint("DefaultLocale")
 public class TimeFormatter {
-    @SuppressLint("DefaultLocale")
     public static String formatDuration(int duration) {
         long hours = TimeUnit.SECONDS.toHours(duration);
         long minutes = TimeUnit.SECONDS.toMinutes(duration - hours * 60);

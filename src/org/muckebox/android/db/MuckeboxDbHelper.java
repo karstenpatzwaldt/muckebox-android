@@ -99,7 +99,8 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	    PlaylistEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
 	    PlaylistEntry.SHORT_PLAYLIST_ID + INT_TYPE + SEP +
 	    PlaylistEntry.SHORT_TRACK_ID + INT_TYPE + SEP +
-	    PlaylistEntry.SHORT_POSITION + INT_TYPE +
+	    PlaylistEntry.SHORT_POSITION + INT_TYPE + SEP +
+	    PlaylistEntry.SHORT_IS_CURRENT + INT_TYPE + DEFAULT_ZERO +
 	    ")";
 	private static final String SQL_DROP_PLAYLIST_TABLE =
 	    "DROP TABLE IF EXISTS " + PlaylistEntry.TABLE_NAME;

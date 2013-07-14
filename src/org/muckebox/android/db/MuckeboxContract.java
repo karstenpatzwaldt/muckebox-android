@@ -271,26 +271,31 @@ public final class MuckeboxContract {
 	    public static final String SHORT_PLAYLIST_ID   = "playlist_id";
 	    public static final String SHORT_TRACK_ID      = "track_id";
 	    public static final String SHORT_POSITION      = "position";
+	    public static final String SHORT_IS_CURRENT    = "is_current";
 	    
 	    public static final String FULL_ID             = TABLE_NAME + "." + SHORT_ID;
 	    public static final String FULL_PLAYLIST_ID    = TABLE_NAME + "." + SHORT_PLAYLIST_ID;
 	    public static final String FULL_TRACK_ID       = TABLE_NAME + "." + SHORT_TRACK_ID;
 	    public static final String FULL_POSITION       = TABLE_NAME + "." + SHORT_POSITION;
+	    public static final String FULL_IS_CURRENT     = TABLE_NAME + "." + SHORT_IS_CURRENT;
 	    
 	    public static final String ALIAS_ID            = TABLE_NAME + "_" + SHORT_ID;
 	    public static final String ALIAS_PLAYLIST_ID   = TABLE_NAME + "_" + SHORT_PLAYLIST_ID;
 	    public static final String ALIAS_TRACK_ID      = TABLE_NAME + "_" + SHORT_TRACK_ID;
 	    public static final String ALIAS_POSITION      = TABLE_NAME + "_" + SHORT_POSITION;
+	    public static final String ALIAS_IS_CURRENT    = TABLE_NAME + "_" + SHORT_IS_CURRENT;
 	    
 	    public static final String[] PROJECTION = {
 	        FULL_ID,
 	        
-	        FULL_PLAYLIST_ID + AS + ALIAS_TRACK_ID,
+	        FULL_PLAYLIST_ID + AS + ALIAS_PLAYLIST_ID,
 	        FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
-	        FULL_POSITION + AS + ALIAS_POSITION
+	        FULL_POSITION + AS + ALIAS_POSITION,
+	        
+	        FULL_IS_CURRENT + AS + ALIAS_IS_CURRENT
 	    };
 	    
-	    public static final String SORT_ORDER = FULL_POSITION + ASC;
+	    public static final String SORT_ORDER = FULL_POSITION + " ASC";
 	}
 	
 	public static abstract class AlbumArtistJoin implements BaseColumns {
