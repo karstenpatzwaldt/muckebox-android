@@ -4,6 +4,7 @@ import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
+import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 
 import android.content.Context;
@@ -93,7 +94,17 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_CACHE_TABLE =
 			"DROP TABLE IF EXISTS " + CacheEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 1;
+	private static final String SQL_CREATE_PLAYLIST_TABLE =
+	    "CREATE TABLE " + PlaylistEntry.TABLE_NAME + " (" +
+	    PlaylistEntry.SHORT_ID + INT_TYPE + PRIMARY_KEY + SEP +
+	    PlaylistEntry.SHORT_PLAYLIST_ID + INT_TYPE + SEP +
+	    PlaylistEntry.SHORT_TRACK_ID + INT_TYPE + SEP +
+	    PlaylistEntry.SHORT_POSITION + INT_TYPE +
+	    ")";
+	private static final String SQL_DROP_PLAYLIST_TABLE =
+	    "DROP TABLE IF EXISTS " + PlaylistEntry.TABLE_NAME;
+	
+	private static final int DB_VERSION = 2;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {
@@ -107,6 +118,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 		db.execSQL(SQL_CREATE_TRACK_TABLE);
 		db.execSQL(SQL_CREATE_DOWNLOAD_TABLE);
 		db.execSQL(SQL_CREATE_CACHE_TABLE);
+		db.execSQL(SQL_CREATE_PLAYLIST_TABLE);
 	}
 
 	@Override
@@ -116,6 +128,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 		db.execSQL(SQL_DROP_TRACK_TABLE);
 		db.execSQL(SQL_DROP_DOWNLOAD_TABLE);
 		db.execSQL(SQL_DROP_CACHE_TABLE);
+		db.execSQL(SQL_DROP_PLAYLIST_TABLE);
 		
 		onCreate(db);
 	}

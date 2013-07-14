@@ -64,6 +64,11 @@ public class MuckeboxProvider extends ContentProvider {
 	private static final int CACHE_ID					= (9 << 16) + 1;
 	private static final int CACHE_TRACK				= (9 << 16) + 2;
 	
+	private static final int PLAYLIST                   = (10 << 16);
+	private static final int PLAYLIST_ENTRY             = (10 << 16) + 1;
+	private static final int PLAYLIST_AFTER             = (10 << 16) + 2;
+	private static final int PLAYLIST_BEFORE            = (10 << 16) + 3;
+	
 	public static final Uri URI_ARTISTS						= Uri.parse(SCHEME + AUTHORITY + "/artists");
 	public static final Uri URI_ARTISTS_NAME				= Uri.parse(SCHEME + AUTHORITY + "/artists/name");
 	
@@ -91,6 +96,11 @@ public class MuckeboxProvider extends ContentProvider {
 	
 	public static final Uri URI_CACHE						= Uri.parse(SCHEME + AUTHORITY + "/cache");
 	public static final Uri URI_CACHE_TRACK					= Uri.parse(SCHEME + AUTHORITY + "/cache/track");
+	
+	public static final Uri URI_PLAYLIST                    = Uri.parse(SCHEME + AUTHORITY + "/playlist");
+	public static final Uri URI_PLAYLIST_ENTRY              = Uri.parse(SCHEME + AUTHORITY + "/playlist/entry");
+	public static final Uri URI_PLAYLIST_BEFORE             = Uri.parse(SCHEME + AUTHORITY + "/playlist/before");
+	public static final Uri URI_PLAYLIST_AFTER              = Uri.parse(SCHEME + AUTHORITY + "/playlist/after");
 	
 	private static final UriMatcher mMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 	
@@ -127,6 +137,11 @@ public class MuckeboxProvider extends ContentProvider {
 		mMatcher.addURI(AUTHORITY, "cache", 					CACHE);
 		mMatcher.addURI(AUTHORITY, "cache/#", 					CACHE_ID);
 		mMatcher.addURI(AUTHORITY, "cache/track/#",				CACHE_TRACK);
+		
+		mMatcher.addURI(AUTHORITY, "playlist/#",                PLAYLIST);
+		mMatcher.addURI(AUTHORITY, "playlist/entry/#",          PLAYLIST_ENTRY);
+		mMatcher.addURI(AUTHORITY, "playlist/before/#",         PLAYLIST_BEFORE);
+		mMatcher.addURI(AUTHORITY, "playlist/after/#",          PLAYLIST_AFTER);
 	}
 	
 	private static MuckeboxDbHelper mDbHelper;
@@ -281,6 +296,22 @@ public class MuckeboxProvider extends ContentProvider {
 			
 			break;
 			
+		case PLAYLIST:
+		    switch (match) {
+		    case PLAYLIST:
+		        selection = PlaylistEntry.FULL_PLAYLIST_ID + " = ?";
+		        selectionArgs = new String[] { uri.getLastPathSegment() };
+		        
+		        break;
+		    case PLAYLIST_ENTRY:
+		        selection = PlaylistEntry.FULL_ID + " = ?";
+		        selectionArgs = new String[] { uri.getLastPathSegment() };
+		        
+		        break;
+		    }
+		    
+		    ret = db.delete(PlaylistEntry.TABLE_NAME, selection, selectionArgs);
+			
 		default:
 			throw new UnsupportedOperationException("Not yet implemented");
 		}
@@ -347,6 +378,23 @@ public class MuckeboxProvider extends ContentProvider {
 			ret = Uri.withAppendedPath(URI_TRACKS, Long.toString(id));
 			
 			break;
+			
+		case PLAYLIST:
+		    if (! values.containsKey(PlaylistEntry.SHORT_PLAYLIST_ID)) {
+		        values.put(PlaylistEntry.SHORT_PLAYLIST_ID,
+		            Integer.parseInt(uri.getLastPathSegment()));
+		    } else if (Integer.toString(values.getAsInteger(PlaylistEntry.SHORT_PLAYLIST_ID)) != 
+		        uri.getLastPathSegment()) {
+		        throw new UnsupportedOperationException();
+		    }
+		    
+		    id = db.insert(PlaylistEntry.TABLE_NAME, null, values);
+		    
+		    sendNotification(URI_PLAYLIST);
+		    
+		    ret = Uri.withAppendedPath(URI_PLAYLIST_ENTRY, Long.toString(id));
+		    
+		    break;
 			
 		default:
 			throw new UnsupportedOperationException("Unknown URI");
@@ -559,6 +607,53 @@ public class MuckeboxProvider extends ContentProvider {
 			
 			break;
 			
+		case PLAYLIST:
+		    switch (match) {
+		    case PLAYLIST:
+		        selection = PlaylistEntry.FULL_PLAYLIST_ID + " = ?";
+		        selectionArgs = new String[] { uri.getLastPathSegment() };
+		        
+		        break;
+		        
+		    case PLAYLIST_ENTRY:
+		        selection = PlaylistEntry.FULL_ID + " = ?";
+		        selectionArgs = new String[] { uri.getLastPathSegment() };
+		        
+		        break;
+		        
+		    case PLAYLIST_BEFORE:
+		    case PLAYLIST_AFTER:
+		        Cursor c = db.query(PlaylistEntry.TABLE_NAME,
+		            new String[] { PlaylistEntry.SHORT_POSITION, PlaylistEntry.SHORT_PLAYLIST_ID },
+		            PlaylistEntry.SHORT_ID + " = ?", new String[] { uri.getLastPathSegment() },
+		            null, null, null, null);
+		        
+		        try {
+		            c.moveToFirst();
+		            
+		            int position = c.getInt(c.getColumnIndex(PlaylistEntry.SHORT_POSITION));
+		            int playlistId = c.getInt(c.getColumnIndex(PlaylistEntry.SHORT_PLAYLIST_ID));
+		            
+		            selection = PlaylistEntry.FULL_PLAYLIST_ID + " = ? AND " +
+		                PlaylistEntry.FULL_POSITION +
+		                (match == PLAYLIST_BEFORE ? " < " : " > ") + " ?";
+		            selectionArgs = new String[] { Integer.toString(playlistId), Integer.toString(position) };
+		        } finally {
+		            c.close();
+		        }
+		        
+		        break;
+		    }
+		    
+		    result = db.query(PlaylistEntry.TABLE_NAME,
+		        projection == null ? PlaylistEntry.PROJECTION : projection,
+		        selection, selectionArgs, null, null,
+		        (sortOrder == null) ? PlaylistEntry.SORT_ORDER : sortOrder, null);
+		    
+		    result.setNotificationUri(resolver, URI_PLAYLIST);
+		    
+		    break;
+			
 		default:
 			throw new UnsupportedOperationException("Unknown URI");
 		}
@@ -611,6 +706,16 @@ public class MuckeboxProvider extends ContentProvider {
 			sendNotification(URI_TRACKS);
 			
 			break;
+			
+		case PLAYLIST_ENTRY:
+		    selection = PlaylistEntry.FULL_ID + " = ?";
+		    selectionArgs = new String[] { uri.getLastPathSegment() };
+		    
+		    ret = db.update(PlaylistEntry.TABLE_NAME, values, selection, selectionArgs);
+		    
+		    sendNotification(URI_PLAYLIST);
+		    
+		    break;
 			
 		default:
 			throw new UnsupportedOperationException("Not yet implemented");

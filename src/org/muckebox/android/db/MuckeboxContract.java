@@ -262,7 +262,36 @@ public final class MuckeboxContract {
 		
 		// we probably don't need to sort those
 		public static final String SORT_ORDER = null;
-}
+	}
+	
+	public static abstract class PlaylistEntry implements BaseColumns {
+	    public static final String TABLE_NAME = "playlists";
+	    
+	    public static final String SHORT_ID            = _ID;
+	    public static final String SHORT_PLAYLIST_ID   = "playlist_id";
+	    public static final String SHORT_TRACK_ID      = "track_id";
+	    public static final String SHORT_POSITION      = "position";
+	    
+	    public static final String FULL_ID             = TABLE_NAME + "." + SHORT_ID;
+	    public static final String FULL_PLAYLIST_ID    = TABLE_NAME + "." + SHORT_PLAYLIST_ID;
+	    public static final String FULL_TRACK_ID       = TABLE_NAME + "." + SHORT_TRACK_ID;
+	    public static final String FULL_POSITION       = TABLE_NAME + "." + SHORT_POSITION;
+	    
+	    public static final String ALIAS_ID            = TABLE_NAME + "_" + SHORT_ID;
+	    public static final String ALIAS_PLAYLIST_ID   = TABLE_NAME + "_" + SHORT_PLAYLIST_ID;
+	    public static final String ALIAS_TRACK_ID      = TABLE_NAME + "_" + SHORT_TRACK_ID;
+	    public static final String ALIAS_POSITION      = TABLE_NAME + "_" + SHORT_POSITION;
+	    
+	    public static final String[] PROJECTION = {
+	        FULL_ID,
+	        
+	        FULL_PLAYLIST_ID + AS + ALIAS_TRACK_ID,
+	        FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
+	        FULL_POSITION + AS + ALIAS_POSITION
+	    };
+	    
+	    public static final String SORT_ORDER = FULL_POSITION + ASC;
+	}
 	
 	public static abstract class AlbumArtistJoin implements BaseColumns {
 		public static final String TABLE_NAME = AlbumEntry.TABLE_NAME + " LEFT OUTER JOIN " +
