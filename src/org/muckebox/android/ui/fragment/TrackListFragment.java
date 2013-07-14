@@ -70,8 +70,8 @@ public class TrackListFragment extends RefreshableListFragment
                     
 				    mHandler.post(new Runnable() {
 				        public void run() {
-				            Uri playlistUri = PlaylistHelper.rebuildFromTrackCursor(
-				                getActivity(), getCursor(), index);
+				            Uri playlistUri = PlaylistHelper.rebuildFromTrackList(
+				                getActivity(), getCursorUri(), index);
         					Intent intent = new Intent(getActivity(), PlayerService.class);
         					
         					intent.putExtra(PlayerService.EXTRA_PLAYLIST_ITEM_ID,
@@ -406,17 +406,22 @@ public class TrackListFragment extends RefreshableListFragment
     public boolean onClose() {
         return true;
     }
+    
+    public Uri getCursorUri() {
+        Uri ret;
+        
+        if (hasAlbumId()) {
+            ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS_ALBUM.buildUpon().appendPath(
+                    Long.toString(getAlbumId())).build();
+        } else {
+            ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS;
+        }
+        
+        return ret;
+    }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Uri baseUri;
-        if (hasAlbumId()) {
-        	baseUri = MuckeboxProvider.URI_TRACKS_WITH_DETAILS_ALBUM.buildUpon().appendPath(
-        			Long.toString(getAlbumId())).build();
-        } else {
-            baseUri = MuckeboxProvider.URI_TRACKS_WITH_DETAILS;
-        }
-
-        return new CursorLoader(getActivity(), baseUri, null, null, null, null);
+        return new CursorLoader(getActivity(), getCursorUri(), null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

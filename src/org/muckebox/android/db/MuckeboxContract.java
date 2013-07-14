@@ -115,7 +115,7 @@ public final class MuckeboxContract {
 		};
 		
 		public static final String SORT_ORDER =
-				"(" + FULL_DISCNUMBER + " * 1000 + " +
+				"(IFNULL(" + FULL_DISCNUMBER + ", 1) * 1000 + " +
 				FULL_TRACKNUMBER + ") ASC ";
 	}
 	

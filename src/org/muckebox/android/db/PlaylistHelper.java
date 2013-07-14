@@ -15,37 +15,43 @@ public class PlaylistHelper {
         return Preferences.getCurrentPlaylistId();
     }
     
-    public static void rebuildFromTrackCursor(Context ctx, Cursor c) {
-        rebuildFromTrackCursor(ctx, c, 0);
+    public static void rebuildFromTrackCursor(Context ctx, Uri uri) {
+        rebuildFromTrackList(ctx, uri, 0);
     }
     
-    public static Uri rebuildFromTrackCursor(Context ctx, Cursor c, int currentIndex) {
+    public static Uri rebuildFromTrackList(Context ctx, Uri uri, int currentIndex) {
         ContentResolver resolver = ctx.getContentResolver();
-        int currentPlaylistId = getCurrentPlaylistId();
-        Uri currentPlaylistUri = Uri.withAppendedPath(
-            MuckeboxProvider.URI_PLAYLIST, Integer.toString(currentPlaylistId));
-        int trackIdIndex = c.getColumnIndex(TrackEntry.SHORT_ID);
-        int i = -1;
+        Cursor c = resolver.query(uri, null, null, null, null);
         Uri ret = null;
         
-        resolver.delete(currentPlaylistUri, null, null);
-        
-        c.moveToPosition(i);
-
-        while (c.moveToNext())
-        {
-            ++i;
+        try {
+            int currentPlaylistId = getCurrentPlaylistId();
+            Uri currentPlaylistUri = Uri.withAppendedPath(
+                MuckeboxProvider.URI_PLAYLIST, Integer.toString(currentPlaylistId));
+            int trackIdIndex = c.getColumnIndex(TrackEntry.SHORT_ID);
+            int i = -1;
             
-            ContentValues values = new ContentValues();
+            resolver.delete(currentPlaylistUri, null, null);
             
-            values.put(PlaylistEntry.SHORT_PLAYLIST_ID, currentPlaylistId);
-            values.put(PlaylistEntry.SHORT_TRACK_ID, c.getInt(trackIdIndex));
-            values.put(PlaylistEntry.SHORT_POSITION, i);
-            
-            Uri newUri = resolver.insert(currentPlaylistUri, values);
-            
-            if (i == currentIndex)
-                ret = newUri;
+            c.moveToPosition(i);
+    
+            while (c.moveToNext())
+            {
+                ++i;
+                
+                ContentValues values = new ContentValues();
+                
+                values.put(PlaylistEntry.SHORT_PLAYLIST_ID, currentPlaylistId);
+                values.put(PlaylistEntry.SHORT_TRACK_ID, c.getInt(trackIdIndex));
+                values.put(PlaylistEntry.SHORT_POSITION, i);
+                
+                Uri newUri = resolver.insert(currentPlaylistUri, values);
+                
+                if (i == currentIndex)
+                    ret = newUri;
+            }
+        } finally {
+            c.close();
         }
         
         return ret;
