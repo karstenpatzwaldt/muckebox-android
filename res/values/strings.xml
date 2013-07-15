@@ -73,6 +73,8 @@
     <string name="error_reload_tracks">An error occurred while refreshing the track list.</string>
     <string name="error_download">An error occurred while downloading a track.</string>
     
+    <string name="error_playback">An error occurred during playback. (%1$d / %2$d)</string>
+    
     <!--  TITLES -->
     <string name="title_activity_artist_album_browse_activiy">Albums</string>
     <string name="title_activity_track_browse_activiy">Tracks</string>

@@ -1,10 +1,10 @@
 package org.muckebox.android.services;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 
 import org.muckebox.android.Muckebox;
@@ -67,7 +67,7 @@ public class DownloadService
 		public boolean mFinished = false;
 		
 		public Thread mCatchupThread;
-		public List<ByteBuffer> mBuffers;
+		public Queue<ByteBuffer> mBuffers;
 	}
 	
 	private final Set<DownloadListenerHandle> mListeners = new HashSet<DownloadListenerHandle>();
@@ -80,6 +80,8 @@ public class DownloadService
 		
 		public String mMimeType;
 		public String mFilename;
+		
+		public long mBytesReceived = 0;
 		
 		public boolean mStopping = false;
 	}
@@ -100,7 +102,7 @@ public class DownloadService
 	public void registerListener(DownloadListener listener, int trackId)
 	{
 		DownloadHandle currentDownload = mCurrentDownload;
-		
+
 		DownloadListenerHandle handle = new DownloadListenerHandle();
 		
 		handle.mTrackId = trackId;
@@ -109,17 +111,19 @@ public class DownloadService
 		if (currentDownload != null &&
 		    currentDownload.mTrackId == trackId) {
 		    handle.mCatchingUp = true;
-		    handle.mBuffers = new ArrayList<ByteBuffer>();
+		    handle.mBuffers = new LinkedList<ByteBuffer>();
 		    
 		    listener.onDownloadStarted(trackId, mCurrentDownload.mMimeType);
 		    
 		    handle.mCatchupThread = new Thread(
 		        new DownloadCatchupRunnable(
 		            currentDownload.mFilename,
-		            mLastTotal,
+		            currentDownload.mBytesReceived,
 		            trackId,
 		            mMyHandler));
 		    handle.mCatchupThread.start();
+		    
+		    Log.d(LOG_TAG, "Catching up with " + currentDownload.mBytesReceived + " bytes");
 		} else {
 		    handle.mCatchingUp = false;
 		}
@@ -284,7 +288,8 @@ public class DownloadService
 	}
 	
 	private void removeFromCache(int trackId) {
-		Uri uri = MuckeboxProvider.URI_CACHE_TRACK.buildUpon().appendPath(Integer.toString(trackId)).build();
+		Uri uri = Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK,
+		    Integer.toString(trackId));
 		Cursor c = getContentResolver().query(uri, null, null, null, null);
 
 		try
@@ -301,6 +306,20 @@ public class DownloadService
 		{
 			c.close();
 		}
+	}
+	
+	private void markAsDownloading(Uri downloadEntryUri) {
+        ContentValues valuesForAll = new ContentValues();
+        valuesForAll.put(DownloadEntry.SHORT_STATUS,
+            DownloadEntry.STATUS_VALUE_QUEUED);
+        getContentResolver().update(MuckeboxProvider.URI_DOWNLOADS,
+            valuesForAll, null, null);
+        
+        ContentValues values = new ContentValues();
+        values.put(DownloadEntry.SHORT_STATUS,
+                DownloadEntry.STATUS_VALUE_DOWNLOADING);
+        values.put(DownloadEntry.SHORT_START_NOW, 0);
+        getContentResolver().update(downloadEntryUri, values, null, null);    
 	}
 
 	@Override
@@ -325,17 +344,7 @@ public class DownloadService
 			mHelperHandler.post(new Runnable() {
 				@Override
 				public void run() {
-				    ContentValues valuesForAll = new ContentValues();
-				    valuesForAll.put(DownloadEntry.SHORT_STATUS,
-				        DownloadEntry.STATUS_VALUE_QUEUED);
-				    getContentResolver().update(MuckeboxProvider.URI_DOWNLOADS,
-				        valuesForAll, null, null);
-				    
-					ContentValues values = new ContentValues();
-					values.put(DownloadEntry.SHORT_STATUS,
-							DownloadEntry.STATUS_VALUE_DOWNLOADING);
-					values.put(DownloadEntry.SHORT_START_NOW, 0);
-					getContentResolver().update(currentUri, values, null, null);					
+				    markAsDownloading(currentUri);
 				}
 			});
 
@@ -343,6 +352,8 @@ public class DownloadService
 			
 		case DownloadRunnable.MESSAGE_DATA_RECEIVED:
 			final DownloadRunnable.Chunk chunk = (DownloadRunnable.Chunk) msg.obj;
+			
+			mCurrentDownload.mBytesReceived = chunk.bytesTotal;
 
 			for (DownloadListenerHandle h: mListeners) {
 			    if (h.mTrackId == trackId) {
@@ -456,7 +467,8 @@ public class DownloadService
 		case DownloadCatchupRunnable.MESSAGE_DATA_RECEIVED:
 		    for (DownloadListenerHandle h: mListeners) {
 		        if (h.mTrackId == trackId && h.mCatchingUp) {
-		            h.mListener.onDataReceived(h.mTrackId, (ByteBuffer) msg.obj);
+		            ByteBuffer buf = (ByteBuffer) msg.obj;
+		            h.mListener.onDataReceived(h.mTrackId, buf);
 		        }
 		    }
 		    
@@ -466,13 +478,16 @@ public class DownloadService
 		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
 		        DownloadListenerHandle h = it.next();
 		        
-		        if (h.mTrackId == trackId) {
-		            for (ByteBuffer buf: h.mBuffers) {
+		        if (h.mTrackId == trackId && h.mCatchingUp) {
+		            while (! h.mBuffers.isEmpty()) {
+		                ByteBuffer buf = h.mBuffers.remove();
 		                h.mListener.onDataReceived(trackId, buf);
 		            }
-		                
+		            
+		            Log.d(LOG_TAG, "Handing over to download at " + mCurrentDownload.mBytesReceived);
+
                     h.mCatchingUp = false;
-                    
+
 		            if (h.mFinished) {
 		                h.mListener.onDownloadFinished(trackId);
 		                

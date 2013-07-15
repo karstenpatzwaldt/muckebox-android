@@ -34,6 +34,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+import android.widget.Toast;
 
 public class PlayerService extends Service
     implements MediaPlayer.OnPreparedListener, 
@@ -97,14 +98,16 @@ public class PlayerService extends Service
 	private class ElapsedTimeTask extends TimerTask {
 	    private Runnable mNotifyTask = new Runnable() {
 	        public void run() {
-	            if (mMediaPlayer.isPlaying()) {
-	                mTrackInfo.position = getCurrentPlayPosition();
-	            }
-	            
-	            for (PlayerListener l: mListeners) {
-	                if (l != null)
-	                    l.onPlayProgress(mTrackInfo.position);
-	            }
+	            if (mTrackInfo != null) {
+    	            if (mMediaPlayer.isPlaying()) {
+    	                mTrackInfo.position = getCurrentPlayPosition();
+    	            }
+    	            
+    	            for (PlayerListener l: mListeners) {
+    	                if (l != null)
+    	                    l.onPlayProgress(mTrackInfo.position);
+    	            }
+    	        }
 	        }
 	    };
 	    
@@ -530,6 +533,10 @@ public class PlayerService extends Service
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        Toast.makeText(this,
+            String.format((String) getText(R.string.error_playback), what, extra),
+            Toast.LENGTH_SHORT).show();
+        
         stopPlaying();
         
         return false;
@@ -537,10 +544,13 @@ public class PlayerService extends Service
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        if (mTrackInfo.hasNext)
-            next();
-        else
-            stopPlaying();
+        if (mTrackInfo != null)
+        {
+            if (mTrackInfo.hasNext)
+                next();
+            else
+                stopPlaying();
+        }
     }
 
     @Override

@@ -41,23 +41,22 @@ public class DownloadCatchupRunnable implements Runnable {
                 
                 eofSeen = BufferUtils.readIntoBuffer(input, buf);
                 
-                if (eofSeen)
-                {
-                    Log.e(LOG_TAG, "Expected " + mBytesToRead + " more bytes, but saw EOF!");
-                    throw new IOException("short read");
-                }
-                
                 if (mHandler != null)
                     mHandler.sendMessage(mHandler.obtainMessage(
                         MESSAGE_DATA_RECEIVED, mTrackId, 0, buf));
                 
                 mBytesToRead -= buf.position();
-            } while (mBytesToRead > 0);
+            } while (mBytesToRead > 0 || eofSeen);
+            
+            if (mBytesToRead > 0)
+                Log.e(LOG_TAG, "Could not read all bytes (" + mBytesToRead + " left)");
             
             if (mHandler != null)
                 mHandler.sendMessage(mHandler.obtainMessage(
-                    MESSAGE_DATA_COMPLETE, mTrackId));
+                    MESSAGE_DATA_COMPLETE, mTrackId, 0));
         } catch (IOException e) {
+            Log.e(LOG_TAG, "failed to catch up!");
+            
             e.printStackTrace();
             
             if (mHandler != null)

@@ -104,31 +104,29 @@ public class DownloadRunnable implements Runnable
 		
 		return url;
 	}
-	
-	private int handleReceivedData(ByteBuffer data) throws IOException
+
+	private void handleReceivedData(ByteBuffer data) throws IOException
 	{
-		if (! BufferUtils.isEmpty(data))
-		{
-			Log.d(LOG_TAG, "Sending message for " + data.position() + " bytes");
-			
-			Chunk chunk = new Chunk();
-			
-			chunk.bytesTotal = mBytesTotal;
-			chunk.buffer = data;
-			
-			if (mHandler != null)
-				mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, chunk));
-			
-			if (mOutputStream != null)
-			{
-				mOutputStream.write(data.array(), 0, data.position());
-			}
-			
-			return data.position();
-		}
-		
-		return 0;
+	    if (! BufferUtils.isEmpty(data))
+	    {
+            mBytesTotal += data.position();
+
+            if (mOutputStream != null)
+	        {
+	            mOutputStream.write(data.array(), 0, data.position());
+	            mOutputStream.flush();
+	        }
+
+	        Chunk chunk = new Chunk();
+
+	        chunk.bytesTotal = mBytesTotal;
+	        chunk.buffer = data;
+
+	        if (mHandler != null)
+	            mHandler.sendMessage(mHandler.obtainMessage(
+	                MESSAGE_DATA_RECEIVED, (int) mTrackId, 0, chunk));
+	    }
+
 	}
 	
 	public void closeOutputStream()
@@ -203,7 +201,7 @@ public class DownloadRunnable implements Runnable
 				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
 				boolean eosReached = BufferUtils.readIntoBuffer(is, buf);
 				
-				mBytesTotal += handleReceivedData(buf);
+				handleReceivedData(buf);
 				
 				if (eosReached)
 				{
@@ -247,6 +245,6 @@ public class DownloadRunnable implements Runnable
 
 		if (mHandler != null)
 			mHandler.sendMessage(mHandler.obtainMessage(
-					messageType, mTrackId));
+					messageType, (int) mTrackId, 0));
 	}
 }

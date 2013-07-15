@@ -7,13 +7,15 @@ import android.graphics.drawable.Drawable;
 import android.widget.ImageButton;
 
 public class ImageButtonHelper {
-    public static void setImageButtonEnabled(Context ctxt, boolean enabled, ImageButton item,
-        int iconResId) {
-        Drawable originalIcon = ctxt.getResources().getDrawable(iconResId);
-        Drawable icon = enabled ? originalIcon : convertDrawableToGrayScale(originalIcon);
-        
-        item.setImageDrawable(icon);
-        item.setEnabled(enabled);
+    public static void setImageButtonEnabled(
+        Context ctxt, boolean enabled, ImageButton item, int iconResId) {
+        if (item != null) {
+            Drawable originalIcon = ctxt.getResources().getDrawable(iconResId);
+            Drawable icon = enabled ? originalIcon : convertDrawableToGrayScale(originalIcon);
+            
+            item.setImageDrawable(icon);
+            item.setEnabled(enabled);
+        }
     }
     
     public static Drawable convertDrawableToGrayScale(Drawable drawable) {
