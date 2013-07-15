@@ -267,7 +267,8 @@ public class DownloadService
             public void run() {
                 if (isInCache(trackId))
                 {
-                    pinInCache(trackId);
+                    if (doPin)
+                        pinInCache(trackId);
                 } else
                 {
                     if (startNow)
