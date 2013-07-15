@@ -46,6 +46,8 @@ public class PlayerService extends Service
 	
 	private final static int NOTIFICATION_ID = 23;
 	
+	private final static int PREFETCH_INTERVAL = 10;
+	
 	public final static String EXTRA_PLAYLIST_ITEM_ID = "playlist_item_id";
 	
 	public class TrackInfo {
@@ -61,6 +63,8 @@ public class PlayerService extends Service
 	    
 	    public boolean hasPrevious;
 	    public boolean hasNext;
+	    
+	    public int nextTrackId;
 	}
 	
 	private enum State {
@@ -98,22 +102,28 @@ public class PlayerService extends Service
 	private class ElapsedTimeTask extends TimerTask {
 	    private Runnable mNotifyTask = new Runnable() {
 	        public void run() {
-	            if (mTrackInfo != null) {
-    	            if (mMediaPlayer.isPlaying()) {
-    	                mTrackInfo.position = getCurrentPlayPosition();
-    	            }
-    	            
-    	            for (PlayerListener l: mListeners) {
-    	                if (l != null)
-    	                    l.onPlayProgress(mTrackInfo.position);
-    	            }
-    	        }
+	            for (PlayerListener l: mListeners) {
+	                if (l != null)
+	                    l.onPlayProgress(mTrackInfo.position);
+	            }
 	        }
 	    };
 	    
         public void run() {
             if (mState != State.STOPPED)
             {
+                if (mTrackInfo != null) {
+                    if (mMediaPlayer.isPlaying()) {
+                        mTrackInfo.position = getCurrentPlayPosition();
+                        
+                        if (getCurrentTimeLeft() < PREFETCH_INTERVAL && mTrackInfo.hasNext)
+                        {
+                            Log.d(LOG_TAG, "Prefetching next track");
+                            requestNextTrack(mTrackInfo.nextTrackId);
+                        }
+                    }
+                }
+
                 mMainHandler.post(mNotifyTask);
             }
         }
@@ -257,6 +267,10 @@ public class PlayerService extends Service
         mTrackInfo.position = 0;
         mTrackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
         mTrackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
+        
+        if (mTrackInfo.hasNext)
+            mTrackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
+                getApplicationContext(), playlistEntryUri);
   
         Cursor c = getContentResolver().query(Uri.withAppendedPath(
             MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
@@ -317,6 +331,20 @@ public class PlayerService extends Service
             
             // XXX handle error
             stopPlaying();
+        }
+	}
+	
+	protected void requestNextTrack(final int trackId) {
+        if (mDownloadService == null) {
+            Log.d(LOG_TAG, "Download service not bound yet, waiting...");
+            
+            mMainHandler.postDelayed(new Runnable() {
+                public void run() {
+                    playTrackFromStream(trackId);
+                }
+            }, 100);
+        } else {
+            mDownloadService.startDownload(trackId, false, false);
         }
 	}
 	

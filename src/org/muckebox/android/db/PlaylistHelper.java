@@ -67,7 +67,22 @@ public class PlaylistHelper {
         } finally {
             c.close();
         }
-    }    
+    }
+    
+    public static int getNextTrackId(Context ctx, Uri entryUri) {
+        Uri queryUri = Uri.withAppendedPath(
+            MuckeboxProvider.URI_PLAYLIST_AFTER, entryUri.getLastPathSegment());
+        Cursor c = ctx.getContentResolver().query(queryUri, null, null, null, null);
+        
+        if (! c.moveToFirst())
+            throw new UnsupportedOperationException("No more tracks in playlist");
+            
+        try {
+            return c.getInt(c.getColumnIndex(PlaylistEntry.ALIAS_TRACK_ID));
+        } finally {
+            c.close();
+        }
+    }
     
     public static boolean isFirst(Context ctx, Uri entryUri) {
         Uri queryUri = Uri.withAppendedPath(

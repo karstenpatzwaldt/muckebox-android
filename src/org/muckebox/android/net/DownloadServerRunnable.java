@@ -73,7 +73,7 @@ public class DownloadServerRunnable implements Runnable {
                             os.write(new String("0\r\n\r\n").getBytes());
                             
                             eosSeen = true;
-                            
+
                             break;
                         }
                         

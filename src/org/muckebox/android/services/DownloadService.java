@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Binder;
+import android.os.Looper;
 import android.os.Message;
 import android.text.format.Formatter;
 import android.util.Log;
@@ -98,11 +99,19 @@ public class DownloadService
 	
 	private long mLastTotal;
 	private long mLastTime;
+	
+	private void ensureUiThread() {
+	    if (Looper.myLooper() != Looper.getMainLooper())
+	    {
+	        Log.e(LOG_TAG, "Must run from UI thread!");
+	        throw new UnsupportedOperationException("Not on UI thread");
+	    }
+	}
 
-	public void registerListener(DownloadListener listener, int trackId)
-	{
+	public void registerListener(DownloadListener listener, int trackId) {
+	    ensureUiThread();
+	    
 		DownloadHandle currentDownload = mCurrentDownload;
-
 		DownloadListenerHandle handle = new DownloadListenerHandle();
 		
 		handle.mTrackId = trackId;
@@ -133,6 +142,8 @@ public class DownloadService
 	
 	public void removeListener(DownloadListener listener)
 	{
+	    ensureUiThread();
+	    
 	    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); )
 	    {
 	        if (it.next().mListener == listener)
@@ -326,6 +337,8 @@ public class DownloadService
 	public boolean handleMessage(final Message msg) {
 		final Uri currentUri = mCurrentDownload.mUri;
 		final int trackId = msg.arg1;
+		
+		ensureUiThread();
 		
 		switch (msg.what)
 		{
