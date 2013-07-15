@@ -5,8 +5,8 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import android.util.Log;
 
@@ -18,7 +18,11 @@ public class DownloadServerRunnable implements Runnable {
 
     private boolean mReady = false;
     
-    private Queue<ByteBuffer> mQueue;
+    private BlockingQueue<ByteBuffer> mQueue;
+    
+    private static void d(String text) {
+        Log.d(LOG_TAG, Thread.currentThread().getId() + ": " + text);
+    }
     
     public static String getUrl() {
         return "http://localhost:" + PORT + "/";
@@ -27,7 +31,7 @@ public class DownloadServerRunnable implements Runnable {
     public DownloadServerRunnable(String mimeType) {
         mMimeType = mimeType;
         
-        mQueue = new LinkedList<ByteBuffer>();
+        mQueue = new LinkedBlockingQueue<ByteBuffer>();
     }
 
     @Override
@@ -37,7 +41,7 @@ public class DownloadServerRunnable implements Runnable {
             Socket socket = null;
             OutputStream os = null;
             
-            Log.d(LOG_TAG, "Starting server on " + PORT);
+            d("Starting server on " + PORT);
             
             try {
                 serverSocket = new ServerSocket(PORT);
@@ -47,7 +51,7 @@ public class DownloadServerRunnable implements Runnable {
                 socket = serverSocket.accept();
                 os = socket.getOutputStream();
                 
-                Log.d(LOG_TAG, "Got connection!");
+                d("Got connection!");
             
                 os.write(new String("HTTP/1.1 200 OK\r\n").getBytes());
                 os.write(new String("Content-Type: " + mMimeType + "\r\n").getBytes());
@@ -57,30 +61,21 @@ public class DownloadServerRunnable implements Runnable {
                 
                 boolean eosSeen = false;
                 
-                while (! eosSeen)
-                {
-                    while (mQueue.isEmpty()) {
-                        synchronized (mQueue) {
-                            mQueue.wait();
-                        }
+                while (! eosSeen) {
+                    ByteBuffer buf = mQueue.take();
+
+                    if (buf == null)
+                    {
+                        os.write(new String("0\r\n\r\n").getBytes());
+                        
+                        eosSeen = true;
+
+                        break;
                     }
                     
-                    synchronized (mQueue) {
-                        ByteBuffer buf = mQueue.remove();
-                        
-                        if (buf == null)
-                        {
-                            os.write(new String("0\r\n\r\n").getBytes());
-                            
-                            eosSeen = true;
-
-                            break;
-                        }
-                        
-                        os.write(String.format("%x\r\n", buf.position()).getBytes());
-                        os.write(buf.array(), 0, buf.position());
-                        os.write(new String("\r\n").getBytes());
-                    }
+                    os.write(String.format("%x\r\n", buf.position()).getBytes());
+                    os.write(buf.array(), 0, buf.position());
+                    os.write(new String("\r\n").getBytes());
                 }
             } finally {
                 if (os != null)
@@ -93,19 +88,24 @@ public class DownloadServerRunnable implements Runnable {
                     serverSocket.close();
             }
             
-            Log.d(LOG_TAG, "Finished");
+            d("Finished");
         } catch (InterruptedException e) {
-            // should be ok?
+            d("Got interrupted");
         } catch (IOException e) {
+            Log.e(LOG_TAG, "IOException, maybe ok");
             e.printStackTrace();
         }
     }
     
     public void feed(ByteBuffer buf) {
-        synchronized (mQueue) {
-            mQueue.add(buf);
-            mQueue.notify();
+        try {
+            mQueue.put(buf);
+        } catch (InterruptedException e) {
+            Log.e(LOG_TAG, "Interrupted while putting, should not happen");
         }
+        
+        if (buf == null)
+            d("Got fed with null buffer, should end soon");
     }
     
     public boolean isReady() {

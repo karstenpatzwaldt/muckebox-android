@@ -65,6 +65,7 @@ public class PlayerService extends Service
 	    public boolean hasNext;
 	    
 	    public int nextTrackId;
+	    public boolean nextTrackRequested = false;
 	}
 	
 	private enum State {
@@ -116,10 +117,13 @@ public class PlayerService extends Service
                     if (mMediaPlayer.isPlaying()) {
                         mTrackInfo.position = getCurrentPlayPosition();
                         
-                        if (getCurrentTimeLeft() < PREFETCH_INTERVAL && mTrackInfo.hasNext)
+                        if (getCurrentTimeLeft() < PREFETCH_INTERVAL &&
+                            mTrackInfo.hasNext &&
+                            ! mTrackInfo.nextTrackRequested)
                         {
                             Log.d(LOG_TAG, "Prefetching next track");
                             requestNextTrack(mTrackInfo.nextTrackId);
+                            mTrackInfo.nextTrackRequested = true;
                         }
                     }
                 }
