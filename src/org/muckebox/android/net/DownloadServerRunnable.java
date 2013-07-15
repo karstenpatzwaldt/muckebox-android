@@ -49,10 +49,11 @@ public class DownloadServerRunnable implements Runnable {
                 
                 Log.d(LOG_TAG, "Got connection!");
             
-                os.write(new String("HTTP/1.1 200 OK\n").getBytes());
-                os.write(new String("Content-Type: " + mMimeType + "\n").getBytes());
-                os.write(new String("Connection: close\n").getBytes());
-                os.write(new String("\n").getBytes());
+                os.write(new String("HTTP/1.1 200 OK\r\n").getBytes());
+                os.write(new String("Content-Type: " + mMimeType + "\r\n").getBytes());
+                os.write(new String("Connection: close\r\n").getBytes());
+                os.write(new String("Transfer-Encoding: chunked\r\n").getBytes());
+                os.write(new String("\r\n").getBytes());
                 
                 boolean eosSeen = false;
                 
@@ -69,11 +70,16 @@ public class DownloadServerRunnable implements Runnable {
                         
                         if (buf == null)
                         {
+                            os.write(new String("0\r\n\r\n").getBytes());
+                            
                             eosSeen = true;
+                            
                             break;
                         }
                         
+                        os.write(String.format("%x\r\n", buf.position()).getBytes());
                         os.write(buf.array(), 0, buf.position());
+                        os.write(new String("\r\n").getBytes());
                     }
                 }
             } finally {
