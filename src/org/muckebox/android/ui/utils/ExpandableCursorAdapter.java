@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.View.MeasureSpec;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
