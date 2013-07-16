@@ -349,6 +349,9 @@ public class TrackListFragment extends RefreshableListFragment
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (super.onOptionsItemSelected(item))
+            return true;
+        
     	if (item == mPinAllItem)
     	{
     		Cursor c = mAdapter.getCursor();
