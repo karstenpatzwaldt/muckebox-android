@@ -75,6 +75,9 @@
     
     <string name="error_playback">An error occurred during playback. (%1$d / %2$d)</string>
     
+    <string name="error_audiofocus">Could not get audio focus. Make sure there is no other player running.</string>
+    <string name="error_local_playback">There was an error playing from local storage. I removed the faulty file from storage.</string>
+    
     <!--  TITLES -->
     <string name="title_activity_artist_album_browse_activiy">Albums</string>
     <string name="title_activity_track_browse_activiy">Tracks</string>

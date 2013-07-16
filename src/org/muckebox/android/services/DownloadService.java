@@ -258,6 +258,33 @@ public class DownloadService
 		}
 	}
 	
+	public static void downloadTrack(Context context, int trackId) {
+        Intent intent = new Intent(context, DownloadService.class);
+        
+        intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+        
+        context.startService(intent);
+	}
+	
+	public static void discardTrack(Context context, int trackId) {
+        Intent intent = new Intent(context, DownloadService.class);
+        
+        intent.putExtra(DownloadService.EXTRA_COMMAND,
+                DownloadService.COMMAND_DISCARD);
+        intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+        
+        context.startService(intent);
+	}
+	
+	public static void pinTrack(Context context, int trackId) {
+	    Intent intent = new Intent(context, DownloadService.class);
+
+	    intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+	    intent.putExtra(DownloadService.EXTRA_PIN, true);
+
+	    context.startService(intent);
+	}
+	
 	public void startDownload(final int trackId, final boolean doPin, final boolean startNow) {
 	    if (mCurrentDownload != null && mCurrentDownload.mTrackId == trackId)
 	        return;

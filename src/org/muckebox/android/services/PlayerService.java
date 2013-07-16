@@ -9,14 +9,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.muckebox.android.R;
+import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadServerRunnable;
+import org.muckebox.android.utils.RemoteControlReceiver;
 
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,7 +29,10 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.media.RemoteControlClient;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -54,8 +60,13 @@ public class PlayerService extends Service
 	    public int trackId;
 	    public int playlistEntryId;
 	    
+	    public String album;
+	    public String artist;
+	    public String shortTitle;
 	    public String title;
+	    
 	    public int duration;
+	    public int trackNumber;
 	    
 	    public int position;
 	    
@@ -100,12 +111,23 @@ public class PlayerService extends Service
 	
 	private FileInputStream mCurrentFile = null;
 	
+    private ComponentName mRemoteEventReceiver = null;
+    private RemoteControlClient mRemoteControlClient = null;
+    private AudioManager mAudioManager = null;
+    
+    private boolean mReceiverRegistered = false;
+    private boolean mHasAudioFocus = false;
+	
 	private class ElapsedTimeTask extends TimerTask {
 	    private Runnable mNotifyTask = new Runnable() {
 	        public void run() {
-	            for (PlayerListener l: mListeners) {
-	                if (l != null)
-	                    l.onPlayProgress(mTrackInfo.position);
+	            TrackInfo trackInfo = mTrackInfo;
+	            
+	            if (trackInfo != null) {
+    	            for (PlayerListener l: mListeners) {
+    	                if (l != null)
+    	                    l.onPlayProgress(trackInfo.position);
+    	            }
 	            }
 	        }
 	    };
@@ -132,6 +154,51 @@ public class PlayerService extends Service
             }
         }
 	}
+
+    OnAudioFocusChangeListener mAudioFocusChangeListener = new OnAudioFocusChangeListener() {
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            Log.d(LOG_TAG, "onAudioFocusChange");
+            
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                onFocusLoss();
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                onFocusGained();
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                Log.d(LOG_TAG, "audio focus lost, stopping");
+                onFocusLoss();
+                stop();
+            }
+        }
+    };
+    
+    private void onFocusGained() {
+        if (! mReceiverRegistered) {
+            Log.d(LOG_TAG, "audio focus gained, registering remote");
+            
+            mAudioManager.registerMediaButtonEventReceiver(mRemoteEventReceiver);
+            mAudioManager.registerRemoteControlClient(mRemoteControlClient);
+            
+            mReceiverRegistered = true;
+        }
+        
+        if (mState == State.PAUSED)
+            resume();
+    }
+    
+    private void onFocusLoss() {
+        Log.d(LOG_TAG, "audio focus lost transient, pausing");
+        
+        if (mState == State.PLAYING)
+            pause();
+        
+        if (mReceiverRegistered) {
+            mAudioManager.unregisterRemoteControlClient(mRemoteControlClient);
+            mAudioManager.unregisterMediaButtonEventReceiver(mRemoteEventReceiver);
+            
+            mReceiverRegistered = false;
+        }
+    }
 	
 	@Override
 	public void onCreate() {
@@ -164,20 +231,28 @@ public class PlayerService extends Service
         mHelperThread.start();
         
         mHelperHandler = new Handler(mHelperThread.getLooper());
+        
+        String packageName = getPackageName();
+        String className = RemoteControlReceiver.class.getName();
+        
+        Log.w(LOG_TAG, "package '" + packageName + "', class '" + className + "'");
+        
+        mRemoteEventReceiver = new ComponentName(packageName, className);
+        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 	}
 	
 	@Override
 	public void onDestroy() {
 	    if (isPlaying()) {
 	        Log.e(LOG_TAG, "Player service still playing when destroyed");
-	        stopPlaying();
+	        stop();
 	    }
 	    
 	    mHelperThread.quit();
 	    
 	    if (mMediaPlayer != null)
 	        mMediaPlayer.release();
-	    
+
 	    getBaseContext().unbindService(mConnection);
 
 		Log.d(LOG_TAG, "Service destroyed.");
@@ -205,18 +280,59 @@ public class PlayerService extends Service
 	public int onStartCommand(Intent intent, int flags, int startId) {
 	    if (intent != null)
 	    {
-    	    playTrack(intent.getIntExtra(EXTRA_PLAYLIST_ITEM_ID, 0));
+	        int playlistItem = intent.getIntExtra(EXTRA_PLAYLIST_ITEM_ID, 0);
+	        
+	        Log.d(LOG_TAG, "Got play intent for item " + playlistItem);
+	        
+    	    playTrack(playlistItem);
 	    }
         
 		return Service.START_STICKY;
 	}
 	
+	public static void playPlaylistItem(Context context, int playlistItemId) {
+        Intent intent = new Intent(context, PlayerService.class);
+        
+        intent.putExtra(PlayerService.EXTRA_PLAYLIST_ITEM_ID, playlistItemId);
+        
+        context.startService(intent);
+	}
+	
+	private boolean getAudioFocus() {
+	    if (mHasAudioFocus)
+	        return mHasAudioFocus;
+	    
+	    Log.d(LOG_TAG, "Requesting audio focus");
+	    
+	    mHasAudioFocus = (mAudioManager.requestAudioFocus(mAudioFocusChangeListener,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+	    
+	    if (mHasAudioFocus)
+	        onFocusGained();
+	    
+	    return mHasAudioFocus;
+	}
+	
+	private void dropAudioFocus() {
+	    if (mHasAudioFocus) {
+	        Log.d(LOG_TAG, "Abandoning audio focus");
+
+	        mAudioManager.abandonAudioFocus(mAudioFocusChangeListener);
+	        mHasAudioFocus = false;
+	          
+            onFocusLoss();
+	    }
+	}
+	
 	protected void playTrack(final int playlistEntryId) {
 	    if (mState != State.STOPPED)
-	        stopPlaying();
+	        stop();
 	    
+	    ensureRemoteControl();
+	        
         mState = State.BUFFERING;
-        
+ 
         mHelperHandler.post(new Runnable() {
             public void run() {
                 int trackId = PlaylistHelper.getTrackId(getApplicationContext(),
@@ -239,7 +355,7 @@ public class PlayerService extends Service
                 
                 mMainHandler.post(new Runnable() {
                     public void run() {
-                        playTrackFromFile(filename);
+                        playTrackFromFile(filename, trackId);
                     }
                 });
                 
@@ -258,53 +374,95 @@ public class PlayerService extends Service
         }
 	}
 	
+	private void ensureRemoteControl() {
+	    if (mRemoteControlClient == null) {
+            Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            mediaButtonIntent.setComponent(mRemoteEventReceiver);
+            
+            PendingIntent remotePendingIntent = PendingIntent.getBroadcast(
+                getApplicationContext(), 0, mediaButtonIntent, 0);
+            
+            mRemoteControlClient = new RemoteControlClient(remotePendingIntent);
+            mRemoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_STOPPED);
+	    }
+	}
+	
+	private void updateRemoteControl(TrackInfo trackInfo)
+	{
+	    if (mRemoteControlClient == null)
+	    {
+	        Log.e(LOG_TAG, "Remote control missing!");
+	        return;
+	    }
+	    
+	    mRemoteControlClient.setTransportControlFlags(
+	        (trackInfo.hasPrevious ? RemoteControlClient.FLAG_KEY_MEDIA_PREVIOUS : 0) +
+	        (trackInfo.hasNext ? RemoteControlClient.FLAG_KEY_MEDIA_NEXT : 0) +
+	        RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE +
+	        RemoteControlClient.FLAG_KEY_MEDIA_STOP);
+	        
+	    mRemoteControlClient.editMetadata(true).
+	        putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, trackInfo.artist).
+	        putString(MediaMetadataRetriever.METADATA_KEY_TITLE, trackInfo.title).
+	        putString(MediaMetadataRetriever.METADATA_KEY_ALBUM, trackInfo.album).
+	        putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, trackInfo.duration * 1000).
+	        putLong(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER, trackInfo.trackNumber).
+	        apply();
+	}
+	
 	private void fetchTrackInfo(int playlistEntryId, int trackId, boolean isStreaming) {
         Uri playlistEntryUri = Uri.withAppendedPath(
             MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId));
         
-        mTrackInfo = new TrackInfo();
+        final TrackInfo trackInfo = new TrackInfo();
         
-        mTrackInfo.playlistEntryId = playlistEntryId;
-        mTrackInfo.trackId = trackId;
+        trackInfo.playlistEntryId = playlistEntryId;
+        trackInfo.trackId = trackId;
         
-        mTrackInfo.isStreaming = isStreaming;
-        mTrackInfo.position = 0;
-        mTrackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
-        mTrackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
+        trackInfo.isStreaming = isStreaming;
+        trackInfo.position = 0;
+        trackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
+        trackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
         
-        if (mTrackInfo.hasNext)
-            mTrackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
+        if (trackInfo.hasNext)
+            trackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
                 getApplicationContext(), playlistEntryUri);
   
         Cursor c = getContentResolver().query(Uri.withAppendedPath(
-            MuckeboxProvider.URI_TRACKS, Integer.toString(trackId)), null, null, null, null);
+            MuckeboxProvider.URI_TRACKS_WITH_DETAILS, Integer.toString(trackId)), null, null, null, null);
         
         try {
             if (c.moveToFirst())
             {
-                mTrackInfo.title =
-                    c.getString(c.getColumnIndex(TrackEntry.ALIAS_DISPLAY_ARTIST)) + " - " +
-                    c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
-                mTrackInfo.duration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));
+                trackInfo.album = c.getString(c.getColumnIndex(AlbumEntry.ALIAS_TITLE));
+                trackInfo.artist = c.getString(c.getColumnIndex(TrackEntry.ALIAS_DISPLAY_ARTIST));
+                trackInfo.shortTitle = c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
+                trackInfo.title = trackInfo.artist + " - " + trackInfo.shortTitle;
+                trackInfo.duration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));
+                trackInfo.trackNumber = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_TRACKNUMBER));
                 
-                Log.d(LOG_TAG, "Title is " + mTrackInfo.title);
+                Log.d(LOG_TAG, "Title is " + trackInfo.title);
             } else {
                 Log.e(LOG_TAG, "Could not fetch track info for " + trackId);
             }
-            
+
             mMainHandler.post(new Runnable() {
                 public void run() {
+                    mTrackInfo = trackInfo;
+                    
+                    updateRemoteControl(trackInfo);
+                    
                     for (PlayerListener l: mListeners)
                     {
                         if (l != null)
                         {
-                            l.onNewTrack(mTrackInfo);
+                            l.onNewTrack(trackInfo);
                         }
                     }
                     
                     mNotificationBuilder.
-                        setContentTitle(mTrackInfo.title).
-                        setTicker(mTrackInfo.title);
+                        setContentTitle(trackInfo.title).
+                        setTicker(trackInfo.title);
                     
                     startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
                     
@@ -317,24 +475,32 @@ public class PlayerService extends Service
         }
 	}
 	
-	protected void playTrackFromFile(final String filename) {
+	protected void playTrackFromFile(final String filename, final int trackId) {
 	    Log.d(LOG_TAG, "Playing from local file " + filename);
 	    
 	    try {
             mCurrentFile = openFileInput(filename);
             
             mMediaPlayer.reset();
-            
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mMediaPlayer.setDataSource(mCurrentFile.getFD());
             mMediaPlayer.prepareAsync();
         } catch (IOException e) {
-            Log.e(LOG_TAG, "Could not open file");
+            Log.e(LOG_TAG, "Could not open file " + filename);
             
-            e.printStackTrace();
+            try {
+                mCurrentFile.close();
+                mCurrentFile = null;
+                
+                DownloadService.discardTrack(this, trackId);
+                
+                Toast.makeText(this, getText(
+                    R.string.error_local_playback), Toast.LENGTH_LONG).show();
+            } catch (IOException e1) {
+                // srsly?
+            }
             
-            // XXX handle error
-            stopPlaying();
+            next();
         }
 	}
 	
@@ -369,45 +535,52 @@ public class PlayerService extends Service
         }
 	}
 	
-	public void stopPlaying() {
-	    mState = State.STOPPED;
-	    
-	    mMediaPlayer.reset();
-	    
-        for (PlayerListener l: mListeners)
-            if (l != null)
-                l.onStopPlaying();
-        
-        if (mCurrentFile != null) {
-            try {
-                mCurrentFile.close();
-            } catch (IOException e) {
-                // WTF?
-                e.printStackTrace();
-            }
-        }
-        
-        mCurrentFile = null;
-        
-        if (mServerThread != null)
-            mServerThread.interrupt();
-        
-        mServer = null;
-        mServerThread = null;
-        
-        mTrackInfo = null;
-        
-        mDownloadService.removeListener(this);
-        
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
-        }
-        
-        Log.d(LOG_TAG, "Stopped playing");
-        
-        stopForeground(true);
+	public void stop() {
+	    stop(false);
 	}
+	
+	public void stop(boolean keepFocus) {
+	    mState = State.STOPPED;
+
+	    mMediaPlayer.reset();
+
+	    for (PlayerListener l: mListeners)
+	        if (l != null)
+	            l.onStopPlaying();
+
+	    if (mCurrentFile != null) {
+	        try {
+	            mCurrentFile.close();
+	        } catch (IOException e) {
+	            // WTF?
+	            e.printStackTrace();
+	        }
+	    }
+
+	    mCurrentFile = null;
+
+	    if (mServerThread != null)
+	        mServerThread.interrupt();
+
+	    mServer = null;
+	    mServerThread = null;
+
+	    mDownloadService.removeListener(this);
+
+	    if (mTimer != null) {
+	        mTimer.cancel();
+	        mTimer = null;
+	    }
+
+	    mTrackInfo = null;
+	    
+	    if (! keepFocus)
+	        dropAudioFocus();
+	    
+        stopForeground(true);
+        
+	    Log.d(LOG_TAG, "Stopped playing");
+ 	}
 	
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -439,6 +612,10 @@ public class PlayerService extends Service
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayResumed();
 			
+			if (mRemoteControlClient != null)
+			    mRemoteControlClient.setPlaybackState(
+			        RemoteControlClient.PLAYSTATE_PLAYING);
+			
 			Log.d(LOG_TAG, "Resuming");
 		}
 	}
@@ -452,6 +629,10 @@ public class PlayerService extends Service
 			
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayPaused();
+			
+			if (mRemoteControlClient != null)
+			    mRemoteControlClient.setPlaybackState(
+			        RemoteControlClient.PLAYSTATE_PAUSED);
 			
 			Log.d(LOG_TAG, "Paused");
 		}
@@ -481,7 +662,7 @@ public class PlayerService extends Service
 	                        
 	                        mMainHandler.post(new Runnable() {
 	                            public void run() {
-	                                stopPlaying();
+	                                stop(true);
 	                                playTrack(nextPlaylistEntryId);
 	                            }
 	                        });
@@ -509,6 +690,10 @@ public class PlayerService extends Service
 	
 	public boolean isStopped() {
 	    return mState == State.STOPPED;
+	}
+	
+	public boolean isPaused() {
+	    return mState == State.PAUSED;
 	}
 	
 	public Integer getCurrentTrackLength() {
@@ -549,12 +734,23 @@ public class PlayerService extends Service
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        mp.start();
-        
-        for (PlayerListener l: mListeners)
-            l.onStartPlaying();
-        
-        mState = State.PLAYING;
+        if (getAudioFocus()) {
+            mp.start();
+            
+            for (PlayerListener l: mListeners)
+                l.onStartPlaying();
+            
+            if (mRemoteControlClient != null)
+                mRemoteControlClient.setPlaybackState(
+                    RemoteControlClient.PLAYSTATE_PLAYING);
+            
+            mState = State.PLAYING;
+        } else {
+            Toast.makeText(getApplicationContext(),
+                getText(R.string.error_audiofocus), Toast.LENGTH_LONG).show();
+            
+            stop();
+        }
     }
 
     @Override
@@ -569,7 +765,7 @@ public class PlayerService extends Service
             String.format((String) getText(R.string.error_playback), what, extra),
             Toast.LENGTH_SHORT).show();
         
-        stopPlaying();
+        stop();
         
         return false;
     }
@@ -581,7 +777,9 @@ public class PlayerService extends Service
             if (mTrackInfo.hasNext)
                 next();
             else
-                stopPlaying();
+                stop();
+        } else {
+            stop();
         }
     }
 
@@ -601,7 +799,7 @@ public class PlayerService extends Service
     private void startStreamMediaPlayer() {
         if (mServer == null) {
             Log.e(LOG_TAG, "HTTP server missing");
-            stopPlaying();
+            stop();
             return;
         }
         
@@ -611,7 +809,7 @@ public class PlayerService extends Service
             if (! mServerThread.isAlive())
             {
                 Log.e(LOG_TAG, "HTTP server died! Cannot play.");
-                stopPlaying();
+                stop();
             } else {
                 mMainHandler.postDelayed(new Runnable() {
                     public void run() {
@@ -630,7 +828,7 @@ public class PlayerService extends Service
                 mMediaPlayer.setDataSource(DownloadServerRunnable.getUrl());
                 mMediaPlayer.prepareAsync();
             } catch (IOException e) {
-                stopPlaying();
+                stop();
             }   
         }
     }
@@ -644,16 +842,17 @@ public class PlayerService extends Service
     @Override
     public void onDownloadFinished(long trackId) {
         if (mServer != null)
-            mServer.feed(null);
+            mServer.feed(ByteBuffer.allocate(0));
     }
 
     @Override
     public void onDownloadCanceled(long trackId) {
-        stopPlaying();
+        stop();
     }
 
     @Override
     public void onDownloadFailed(long trackId) {
-        stopPlaying(); 
+        stop(); 
     }
+
 }

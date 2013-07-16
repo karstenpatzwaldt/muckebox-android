@@ -42,8 +42,6 @@ public class AlbumListFragment extends RefreshableListFragment
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
-	
-	boolean mListLoaded = false;
 
 	public static AlbumListFragment newInstanceFromArtist(long artist_id, String title) {
 		AlbumListFragment f = new AlbumListFragment();
@@ -112,7 +110,7 @@ public class AlbumListFragment extends RefreshableListFragment
 	        	titleStrip.setVisibility(View.GONE);
         }
         
-        if (! mListLoaded)
+        if (! RefreshAlbumsTask.wasRunning())
         	onRefreshRequested();
     }
 
@@ -162,7 +160,6 @@ public class AlbumListFragment extends RefreshableListFragment
     @Override
     protected void onRefreshRequested() {
   		new RefreshAlbumsTask().setCallbacks(this).execute();
-  		mListLoaded = true;
     }
 
     public boolean onQueryTextChange(String newText) {

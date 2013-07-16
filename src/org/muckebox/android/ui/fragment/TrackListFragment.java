@@ -3,7 +3,7 @@ package org.muckebox.android.ui.fragment;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheJoin;
+import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheAlbumJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
@@ -23,7 +23,6 @@ import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
-import android.content.Intent;
 import android.content.Loader;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -48,8 +47,10 @@ public class TrackListFragment extends RefreshableListFragment
 	private TrackListCursorAdapter mAdapter;
 	private boolean mListLoaded = false;
 	
-	private HandlerThread mHandlerThread;
-	private Handler mHandler;
+	private HandlerThread mHelperThread;
+	private Handler mHelperHandler;
+	
+	private Handler mMainHandler;
 
 	MenuItem mPinAllItem;
 	MenuItem mRemoveAllItem;
@@ -68,16 +69,17 @@ public class TrackListFragment extends RefreshableListFragment
 				public void onClick(View v) {
                     final int index = getItemIndex(v);
                     
-				    mHandler.post(new Runnable() {
+				    mHelperHandler.post(new Runnable() {
 				        public void run() {
-				            Uri playlistUri = PlaylistHelper.rebuildFromTrackList(
+				            final Uri playlistUri = PlaylistHelper.rebuildFromTrackList(
 				                getActivity(), getCursorUri(), index);
-        					Intent intent = new Intent(getActivity(), PlayerService.class);
-        					
-        					intent.putExtra(PlayerService.EXTRA_PLAYLIST_ITEM_ID,
-        					    Integer.parseInt(playlistUri.getLastPathSegment()));
-        					
-        					getActivity().startService(intent);
+				            
+				            mMainHandler.post(new Runnable() {
+				                public void run() {
+				                    PlayerService.playPlaylistItem(getActivity(),
+				                        Integer.parseInt(playlistUri.getLastPathSegment()));
+				                }
+				            });
 				        }
 				    });
 				    
@@ -87,26 +89,21 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			mDownloadListener = new OnClickListener() {
 				public void onClick(View v) {
-					Intent intent = new Intent(getActivity(), DownloadService.class);
-					
-					intent.putExtra(DownloadService.EXTRA_TRACK_ID,
-							getTrackId(getItemIndex(v)));
-					
-					getActivity().startService(intent);
+				    DownloadService.downloadTrack(getActivity(), getTrackId(getItemIndex(v)));
 					toggleExpanded(v);
 				}
 			};
 			
 			mPinListener = new OnClickListener() {
 				public void onClick(View v) {
-					pinTrack(getTrackId(getItemIndex(v)));
+					DownloadService.pinTrack(getActivity(), getTrackId(getItemIndex(v)));
 					toggleExpanded(v);
 				}
 			};
 			
 			mDiscardListener = new OnClickListener() {
 				public void onClick(View v) {
-					discardTrack(mAdapter.getTrackId(getItemIndex(v)));
+					DownloadService.discardTrack(getActivity(), getTrackId(getItemIndex(v)));
 					toggleExpanded(v);
 				}
 			};
@@ -143,38 +140,20 @@ public class TrackListFragment extends RefreshableListFragment
 	public void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 	    
-	    mHandlerThread = new HandlerThread("TrackListHelper");
-	    mHandlerThread.start();
+	    mHelperThread = new HandlerThread("TrackListHelper");
+	    mHelperThread.start();
 	    
-	    mHandler = new Handler(mHandlerThread.getLooper());
+	    mHelperHandler = new Handler(mHelperThread.getLooper());
+	    mMainHandler = new Handler();
 	}
 	
 	@Override
 	public void onDestroy() {
 	    super.onDestroy();
 	    
-	    mHandlerThread.quit();
+	    mHelperThread.quit();
 	}
-	
-	private void pinTrack(int trackId) {
-		Intent intent = new Intent(getActivity(), DownloadService.class);
-		
-		intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
-		intent.putExtra(DownloadService.EXTRA_PIN, true);
-		
-		getActivity().startService(intent);
-	}
-	
-	private void discardTrack(int trackId) {
-		Intent intent = new Intent(getActivity(), DownloadService.class);
-		
-		intent.putExtra(DownloadService.EXTRA_COMMAND,
-				DownloadService.COMMAND_DISCARD);
-		intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
-		
-		getActivity().startService(intent);
-	}
-	
+
 	private class TracklistViewBinder implements ViewBinder {
         @SuppressLint("DefaultLocale")
 		public boolean setViewValue(View view, Cursor cursor, int columnIndex)
@@ -236,7 +215,7 @@ public class TrackListFragment extends RefreshableListFragment
 				
 				return true;
 			} else if (columnIndex ==
-					cursor.getColumnIndex(TrackDownloadCacheJoin.ALIAS_CANCELABLE))
+					cursor.getColumnIndex(TrackDownloadCacheAlbumJoin.ALIAS_CANCELABLE))
 			{
 				boolean downloading;
 				int pinStatus;
@@ -332,7 +311,7 @@ public class TrackListFragment extends RefreshableListFragment
         			TrackEntry.ALIAS_LENGTH,
         			DownloadEntry.ALIAS_STATUS,
         			CacheEntry.ALIAS_PINNED,
-        			TrackDownloadCacheJoin.ALIAS_CANCELABLE
+        			TrackDownloadCacheAlbumJoin.ALIAS_CANCELABLE
         			},
                 new int[] {
         			R.id.track_list_title,
@@ -378,7 +357,7 @@ public class TrackListFragment extends RefreshableListFragment
     		c.moveToPosition(-1);
     		
     		while (c.moveToNext())
-    			pinTrack(c.getInt(trackIdIndex));
+    			DownloadService.pinTrack(getActivity(), c.getInt(trackIdIndex));
     				
     		return true;
     	} else if (item == mRemoveAllItem)
@@ -389,7 +368,7 @@ public class TrackListFragment extends RefreshableListFragment
     		c.moveToPosition(-1);
     		
     		while (c.moveToNext())
-    			discardTrack(c.getInt(trackIdIndex));
+    			DownloadService.discardTrack(getActivity(), c.getInt(trackIdIndex));
     				
     		return true;
     	}

@@ -64,7 +64,7 @@ public class DownloadServerRunnable implements Runnable {
                 while (! eosSeen) {
                     ByteBuffer buf = mQueue.take();
 
-                    if (buf == null)
+                    if (buf.position() == 0)
                     {
                         os.write(new String("0\r\n\r\n").getBytes());
                         
@@ -103,9 +103,6 @@ public class DownloadServerRunnable implements Runnable {
         } catch (InterruptedException e) {
             Log.e(LOG_TAG, "Interrupted while putting, should not happen");
         }
-        
-        if (buf == null)
-            d("Got fed with null buffer, should end soon");
     }
     
     public boolean isReady() {

@@ -329,12 +329,13 @@ public final class MuckeboxContract {
 		public static final String GROUP_BY = ArtistEntry.FULL_ID;
 	}
 	
-	public static abstract class TrackDownloadCacheJoin implements BaseColumns {
+	public static abstract class TrackDownloadCacheAlbumJoin implements BaseColumns {
 		public static final String TABLE_NAME = TrackEntry.TABLE_NAME + " LEFT OUTER JOIN " +
 				DownloadEntry.TABLE_NAME + " ON (" + TrackEntry.FULL_ID + " = " +
 				DownloadEntry.FULL_TRACK_ID + ") LEFT OUTER JOIN " +
 				CacheEntry.TABLE_NAME + " ON (" + TrackEntry.FULL_ID + " = " +
-				CacheEntry.FULL_TRACK_ID + ")";
+				CacheEntry.FULL_TRACK_ID + ") JOIN " + AlbumEntry.TABLE_NAME + " ON (" +
+				AlbumEntry.FULL_ID + " = " + TrackEntry.FULL_ALBUM_ID + ")";
 		
 		public static final String ALIAS_CANCELABLE = "cancelable";
 		
@@ -343,14 +344,17 @@ public final class MuckeboxContract {
 			
 			TrackEntry.FULL_TITLE + AS + TrackEntry.ALIAS_TITLE,
 			TrackEntry.FULL_DISPLAY_ARTIST + AS + TrackEntry.ALIAS_DISPLAY_ARTIST,
-			TrackEntry.FULL_LENGTH + AS +TrackEntry.ALIAS_LENGTH,
+			TrackEntry.FULL_LENGTH + AS + TrackEntry.ALIAS_LENGTH,
+			TrackEntry.FULL_TRACKNUMBER + AS + TrackEntry.ALIAS_TRACKNUMBER,
 			
 			DownloadEntry.FULL_STATUS + AS + DownloadEntry.ALIAS_STATUS,
 			
 			CacheEntry.FULL_PINNED + AS + CacheEntry.ALIAS_PINNED,
 			
 			"IFNULL(" + DownloadEntry.FULL_STATUS + ", " + CacheEntry.FULL_PINNED + ") "+
-				AS + TrackDownloadCacheJoin.ALIAS_CANCELABLE
+				AS + TrackDownloadCacheAlbumJoin.ALIAS_CANCELABLE,
+				
+			AlbumEntry.FULL_TITLE + AS + AlbumEntry.ALIAS_TITLE
 		};
 		
 		public static final String SORT_ORDER = TrackEntry.SORT_ORDER;

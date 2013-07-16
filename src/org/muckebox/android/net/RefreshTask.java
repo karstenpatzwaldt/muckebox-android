@@ -6,12 +6,19 @@ import android.os.AsyncTask;
 import android.widget.Toast;
 
 public abstract class RefreshTask<Params> extends AsyncTask<Params, Void, Integer> {
-	public interface Callbacks {
-		void onRefreshStarted();
-		
-		void onRefreshFinished(boolean success);
-	}
-	
+    
+    private static boolean mWasRunning = false;
+    
+    public interface Callbacks {
+        void onRefreshStarted();
+        
+        void onRefreshFinished(boolean success);
+    }
+    
+    public static boolean wasRunning() {
+        return mWasRunning;
+    }
+    
 	Callbacks mCallbacks = null;
 	
 	public RefreshTask<Params> setCallbacks(Callbacks callbacks) {
@@ -24,6 +31,8 @@ public abstract class RefreshTask<Params> extends AsyncTask<Params, Void, Intege
 	protected void onPreExecute() {
 		if (mCallbacks != null)
 			mCallbacks.onRefreshStarted();
+		
+		mWasRunning = true;
 	}
 
 	@Override

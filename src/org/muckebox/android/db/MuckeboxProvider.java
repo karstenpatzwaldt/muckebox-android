@@ -52,7 +52,8 @@ public class MuckeboxProvider extends ContentProvider {
 	private static final int TRACKS_ALBUM				= (5 << 16) + 4;
 	
 	private static final int TRACKS_WITH_DETAILS		= (6 << 16);
-	private static final int TRACKS_WITH_DETAILS_ALBUM	= (6 << 16) + 1;
+	private static final int TRACKS_WITH_DETAILS_ID     = (6 << 16) + 1;
+	private static final int TRACKS_WITH_DETAILS_ALBUM	= (6 << 16) + 2;
 	
 	private static final int DOWNLOADS					= (7 << 16);
 	private static final int DOWNLOADS_ID				= (7 << 16) + 1;
@@ -126,6 +127,7 @@ public class MuckeboxProvider extends ContentProvider {
 		mMatcher.addURI(AUTHORITY, "tracks/album/#",			TRACKS_ALBUM);
 		
 		mMatcher.addURI(AUTHORITY, "tracks+details", 			TRACKS_WITH_DETAILS);
+		mMatcher.addURI(AUTHORITY, "tracks+details/#",          TRACKS_WITH_DETAILS_ID);
 		mMatcher.addURI(AUTHORITY, "tracks+details/album/#",	TRACKS_WITH_DETAILS_ALBUM);
 		
 		mMatcher.addURI(AUTHORITY, "downloads", 				DOWNLOADS);
@@ -547,6 +549,11 @@ public class MuckeboxProvider extends ContentProvider {
 			
 		case TRACKS_WITH_DETAILS:
 			switch (match) {
+			case TRACKS_WITH_DETAILS_ID:
+			    selection = TrackEntry.FULL_ID + " = ?";
+			    selectionArgs = new String[] { uri.getLastPathSegment() };
+			    
+			    break;
 			case TRACKS_WITH_DETAILS_ALBUM:
 				selection = TrackEntry.FULL_ALBUM_ID + " = ?";
 				selectionArgs = new String[] { uri.getLastPathSegment() };
@@ -554,10 +561,10 @@ public class MuckeboxProvider extends ContentProvider {
 				break;
 			}
 			
-			result = db.query(TrackDownloadCacheJoin.TABLE_NAME,
-					(projection == null ? TrackDownloadCacheJoin.PROJECTION : projection),
+			result = db.query(TrackDownloadCacheAlbumJoin.TABLE_NAME,
+					(projection == null ? TrackDownloadCacheAlbumJoin.PROJECTION : projection),
 					selection, selectionArgs, null, null, 
-					(sortOrder == null ? TrackDownloadCacheJoin.SORT_ORDER : sortOrder), null);
+					(sortOrder == null ? TrackDownloadCacheAlbumJoin.SORT_ORDER : sortOrder), null);
 			
 			result.setNotificationUri(resolver, URI_TRACKS);
 			

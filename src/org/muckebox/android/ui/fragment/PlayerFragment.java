@@ -13,6 +13,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -91,6 +92,8 @@ public class PlayerFragment
     			new Intent(getActivity(), PlayerService.class),
     			mConnection,
     			Context.BIND_AUTO_CREATE);
+    	
+    	getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
     }
     
     @Override
@@ -246,7 +249,7 @@ public class PlayerFragment
     private void onStopButton() {
         if (mBound)
         {
-            mService.stopPlaying();
+            mService.stop();
         }
     }
 
