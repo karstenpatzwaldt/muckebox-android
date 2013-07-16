@@ -844,15 +844,19 @@ public class PlayerService extends Service
     public void onDownloadFinished(long trackId) {
         if (mServer != null)
             mServer.feed(ByteBuffer.allocate(0));
+        
+        mDownloadService.removeListener(this);
     }
 
     @Override
     public void onDownloadCanceled(long trackId) {
+        mDownloadService.removeListener(this);
         stop();
     }
 
     @Override
     public void onDownloadFailed(long trackId) {
+        mDownloadService.removeListener(this);
         stop(); 
     }
 
