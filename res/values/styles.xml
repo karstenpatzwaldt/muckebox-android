@@ -106,6 +106,7 @@
     	<item name="android:paddingLeft">@dimen/list_horizontal_margin</item>
     	<item name="android:paddingRight">@dimen/list_horizontal_margin</item>
     	<item name="android:background">@android:color/background_light</item>
+    	<item name="android:fastScrollEnabled">true</item>
     </style>
     
     <style name="ButtonList">
