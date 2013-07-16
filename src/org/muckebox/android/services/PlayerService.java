@@ -3,10 +3,10 @@ package org.muckebox.android.services;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
@@ -89,7 +89,8 @@ public class PlayerService extends Service
 	private final IBinder mBinder = new PlayerBinder();
 	
 	private State mState = State.STOPPED;
-	private Set<PlayerListener> mListeners = new HashSet<PlayerListener>();
+	private Set<PlayerListener> mListeners =
+	    new CopyOnWriteArraySet<PlayerListener>();
 	
 	private MediaPlayer mMediaPlayer;
 	

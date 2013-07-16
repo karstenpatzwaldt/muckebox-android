@@ -1,11 +1,11 @@
 package org.muckebox.android.services;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.R;
@@ -71,7 +71,8 @@ public class DownloadService
 		public Queue<ByteBuffer> mBuffers;
 	}
 	
-	private final Set<DownloadListenerHandle> mListeners = new HashSet<DownloadListenerHandle>();
+	private final Set<DownloadListenerHandle> mListeners =
+	    new CopyOnWriteArraySet<DownloadListenerHandle>();
 	
 	private class DownloadHandle {
 		public Thread mThread = null;
@@ -142,15 +143,8 @@ public class DownloadService
 	
 	public void removeListener(DownloadListener listener)
 	{
-	    ensureUiThread();
-	    
-	    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); )
-	    {
-	        if (it.next().mListener == listener)
-	        {
-	            it.remove();
-	        }
-	    }
+	    if (mListeners.contains(listener))
+	        mListeners.remove(listener);
 	}
 	
 	public class DownloadBinder extends Binder {
@@ -424,7 +418,6 @@ public class DownloadService
                     
 			        if (! h.mCatchingUp) {
 			            h.mListener.onDownloadFinished(trackId);
-			            it.remove();
 			        }
 			    }
 		    }
@@ -455,8 +448,6 @@ public class DownloadService
     				
     				if (h.mCatchingUp)
     				    h.mCatchupThread.interrupt();
-    				
-    				it.remove();
 			    }
 			}
 			
@@ -485,8 +476,6 @@ public class DownloadService
 			        
 			        if (h.mCatchingUp)
 			            h.mCatchupThread.interrupt();
-			        
-			        it.remove();
 			    }
 			}
 			
@@ -529,11 +518,8 @@ public class DownloadService
 
                     h.mCatchingUp = false;
 
-		            if (h.mFinished) {
+		            if (h.mFinished)
 		                h.mListener.onDownloadFinished(trackId);
-		                
-		                it.remove();
-		            }
 		        }
 		    }
 		    
@@ -545,10 +531,8 @@ public class DownloadService
 		    for (Iterator<DownloadListenerHandle> it = mListeners.iterator(); it.hasNext(); ) {
 		        DownloadListenerHandle h = it.next();
 		        
-		        if (h.mTrackId == trackId && h.mCatchingUp) {
+		        if (h.mTrackId == trackId && h.mCatchingUp)
 		            h.mListener.onDownloadFailed(trackId);
-		            it.remove();
-		        }
 		    }
 		    
 		    break;
