@@ -2,6 +2,7 @@ package org.muckebox.android.ui.utils;
 
 import org.muckebox.android.R;
 
+import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.database.Cursor;
@@ -47,28 +48,62 @@ public class ExpandableCursorAdapter extends SimpleCursorAdapter {
 		return mIndexExtended;
 	}
 	
-    private void hideItem(View item)
+	private boolean isLast(ListItemState state) {
+	    return (state.index == getCursor().getCount() - 1);
+	}
+	
+    private void hideItem(View item, boolean isSwap)
     {
+        AnimatorSet animatorSet = new AnimatorSet();
     	ListItemState state = (ListItemState) item.getTag(TAG);
     	
 		ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
 				state.totalHeight, state.collapsedHeight);
 
-		anim.setInterpolator(new AccelerateDecelerateInterpolator());
-		anim.start();
+		animatorSet.play(anim);
+		
+		if (isSwap && isLast(state)) {
+		    ListView parent = (ListView) item.getParent();
+		    int bottom = item.getTop() + state.collapsedHeight;
+		    int parentHeight = parent.getHeight();
+		    
+		    if (bottom < parentHeight)
+		    {
+		        ValueAnimator scrollAnim = ValueAnimator.ofObject(new ScrollYAnimator(parent, state.index),
+		            item.getTop(), item.getTop() + (parentHeight - bottom));
+		        
+		        animatorSet.play(anim).with(scrollAnim);
+		    }
+		}
+		
+		animatorSet.start();
 
 		item.setTag(TAG, state);
     }
     
-    private void showItem(View item)
+    private void showItem(View item, boolean isSwap)
     {
     	ListItemState state = (ListItemState) item.getTag(TAG);
 
+    	AnimatorSet animatorSet = new AnimatorSet();
     	ValueAnimator anim = ValueAnimator.ofObject(new HeightEvaluator(item),
 				state.collapsedHeight, state.totalHeight);
 
-		anim.setInterpolator(new AccelerateDecelerateInterpolator());
-		anim.start();
+		animatorSet.play(anim);
+		
+	    ListView parent = (ListView) item.getParent();
+		int bottom = item.getTop() + state.totalHeight;
+		int parentHeight = parent.getHeight();
+		
+		if (bottom > parentHeight)
+		{
+		    ValueAnimator scrollAnim = ValueAnimator.ofObject(new ScrollYAnimator(parent, state.index),
+		        item.getTop(), item.getTop() - (bottom - parentHeight));
+		    
+		    animatorSet.play(anim).with(scrollAnim);
+		}
+		
+		animatorSet.start();
 		
 		item.setTag(TAG, state);
     }
@@ -100,9 +135,10 @@ public class ExpandableCursorAdapter extends SimpleCursorAdapter {
     	if (state.index == indexExtended)
     	{
     		setIndexExtended(-1);
-    		hideItem(parent);
+    		hideItem(parent, false);
     	} else
     	{
+    	    boolean hadExpandedItem = false;
     		int first = state.list.getFirstVisiblePosition();
     		int end = first + state.list.getChildCount();
     		
@@ -111,11 +147,14 @@ public class ExpandableCursorAdapter extends SimpleCursorAdapter {
     			View extendedItem = state.list.getChildAt(indexExtended - first);
     			
     			if (extendedItem != null)
-    				hideItem(extendedItem);
+    			{
+    				hideItem(extendedItem, true);
+    				hadExpandedItem = true;
+    			}
     		}
 
     		setIndexExtended(state.index);
-    		showItem(parent);
+    		showItem(parent, hadExpandedItem);
     	}
     }
 
