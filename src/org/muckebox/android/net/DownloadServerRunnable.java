@@ -62,6 +62,9 @@ public class DownloadServerRunnable implements Runnable {
                 boolean eosSeen = false;
                 
                 while (! eosSeen) {
+                    if (Thread.interrupted())
+                        throw new InterruptedException();
+                    
                     ByteBuffer buf = mQueue.take();
 
                     if (buf.position() == 0)

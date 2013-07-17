@@ -39,7 +39,7 @@ public class DownloadCatchupRunnable implements Runnable {
             do {
                 ByteBuffer buf = ByteBuffer.allocate((int) Math.min(mBytesToRead, BUFFER_SIZE));
                 
-                eofSeen = BufferUtils.readIntoBuffer(input, buf);
+                eofSeen = BufferUtils.readIntoBuffer(input, buf) || Thread.interrupted();
                 
                 if (mHandler != null)
                     mHandler.sendMessage(mHandler.obtainMessage(

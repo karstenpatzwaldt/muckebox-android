@@ -177,6 +177,19 @@ public class DownloadRunnable implements Runnable
 		{
 			String downloadUrl = getDownloadUrl();
 			conn = NetHelper.getDefaultConnection(new URL(downloadUrl));
+			
+			int responseCode = conn.getResponseCode();
+			
+			if (responseCode != 200)
+			{
+			    Log.e(LOG_TAG, "HTTP request failed, response: '" +
+			        conn.getResponseMessage() + "'");
+			    
+			    handleFailure(MESSAGE_DOWNLOAD_FAILED);
+			    
+			    return;
+			}
+			
 			String mimeType = conn.getContentType();
 			InputStream is = conn.getInputStream();
 			
