@@ -186,6 +186,7 @@ public class DownloadRunnable implements Runnable
 			{
 				mOutputStream = Muckebox.getAppContext().openFileOutput(
 				    mOutputPath, Context.MODE_PRIVATE);
+				mOutputStream.flush();
 				
 				Log.d(LOG_TAG, "Saving to " + mOutputPath);
 			}

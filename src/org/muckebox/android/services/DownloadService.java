@@ -80,6 +80,8 @@ public class DownloadService
 		public int mTrackId;
 		public Uri mUri;
 		
+		public boolean mStarted = false;
+		
 		public String mMimeType;
 		public String mFilename;
 		
@@ -119,7 +121,8 @@ public class DownloadService
 		handle.mListener = listener;
 		
 		if (currentDownload != null &&
-		    currentDownload.mTrackId == trackId) {
+		    currentDownload.mTrackId == trackId &&
+		    currentDownload.mStarted) {
 		    handle.mCatchingUp = true;
 		    handle.mBuffers = new LinkedList<ByteBuffer>();
 		    
@@ -367,6 +370,7 @@ public class DownloadService
 		case DownloadRunnable.MESSAGE_DOWNLOAD_STARTED:
 		    DownloadRunnable.FileInfo info = (DownloadRunnable.FileInfo) msg.obj;
 		    
+		    mCurrentDownload.mStarted  = true;
 		    mCurrentDownload.mMimeType = info.mimeType;
 		    mCurrentDownload.mFilename = info.path;
 		    
