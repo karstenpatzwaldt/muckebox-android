@@ -34,11 +34,13 @@ public class PlayerFragment
 {
 	private final static String LOG_TAG = "PlayerFragment";
 	
+	private final static String STATE_COLLAPSED = "collapsed";
+
 	int mTotalHeight;
 	int mTitleHeight;
 	View mView;
 	
-	boolean mCollapsed = false;
+	boolean mCollapsed = true;
 	
 	ImageButton mCollapseButton;
 	
@@ -70,16 +72,8 @@ public class PlayerFragment
         
         measureView();
         attachButtonListeners();
-        
-        return mView;
-    }
-    
-    @Override
-    public void onStart()
-    {
-    	super.onStart();
-    	
-    	simpleCollapse();
+
+        return  mView;
     }
     
     @Override
@@ -94,6 +88,24 @@ public class PlayerFragment
     			Context.BIND_AUTO_CREATE);
     	
     	getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
+    	
+    	if (savedInstanceState != null)
+    	    mCollapsed = savedInstanceState.getBoolean(STATE_COLLAPSED, true);
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        
+        if (mCollapsed)
+            simpleCollapse();
+    }
+    
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        
+        savedInstanceState.putBoolean(STATE_COLLAPSED, mCollapsed);
     }
     
     @Override
@@ -188,11 +200,11 @@ public class PlayerFragment
 	
 	private void simpleCollapse() {
 		ViewGroup.LayoutParams params = mView.getLayoutParams();
-		
+
 		params.height = mTitleHeight;
-		mCollapsed = true;
 		
 		mView.setLayoutParams(params);
+		mCollapseButton.setImageResource(R.drawable.navigation_expand);
 	}
 	
 	private void toggleCollapse()

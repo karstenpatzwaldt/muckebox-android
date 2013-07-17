@@ -43,7 +43,7 @@
             android:id="@+id/player_collapse_button"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:src="@drawable/navigation_expand"
+            android:src="@drawable/navigation_collapse"
             android:contentDescription="@string/collapse" 
             android:gravity="right"
             android:background="@color/blue_transparent"/>
