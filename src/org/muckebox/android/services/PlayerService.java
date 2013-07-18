@@ -16,9 +16,11 @@ import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadServerRunnable;
+import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.utils.RemoteControlReceiver;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
@@ -38,8 +40,10 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 public class PlayerService extends Service
@@ -50,11 +54,18 @@ public class PlayerService extends Service
     DownloadListener {
 	private final static String LOG_TAG = "PlayerService";
 	
-	private final static int NOTIFICATION_ID = 23;
-	
-	private final static int PREFETCH_INTERVAL = 10;
+	private final static int
+	    NOTIFICATION_ID = 23,
+	    PREFETCH_INTERVAL = 10;
 	
 	public final static String EXTRA_PLAYLIST_ITEM_ID = "playlist_item_id";
+	
+	public final static String
+	    ACTION_LOAD = "load",
+	    ACTION_PREVIOUS = "previous",
+	    ACTION_PAUSE = "pause",
+	    ACTION_RESUME = "resume",
+	    ACTION_NEXT = "next";
 	
 	public class TrackInfo {
 	    public int trackId;
@@ -99,8 +110,6 @@ public class PlayerService extends Service
 	private DownloadServerRunnable mServer;
 	private Thread mServerThread;
 
-	private Notification.Builder mNotificationBuilder;
-	
 	private Handler mMainHandler;
 	
 	private HandlerThread mHelperThread;
@@ -118,6 +127,8 @@ public class PlayerService extends Service
     
     private boolean mReceiverRegistered = false;
     private boolean mHasAudioFocus = false;
+    
+    NotificationManager mNotificationManager = null;
 	
 	private class ElapsedTimeTask extends TimerTask {
 	    private Runnable mNotifyTask = new Runnable() {
@@ -207,14 +218,6 @@ public class PlayerService extends Service
 		
 		bindService(new Intent(getBaseContext(), DownloadService.class),
             mConnection, Context.BIND_AUTO_CREATE);
-		
-        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
-        mNotificationBuilder =
-                  new Notification.Builder(this).
-                      setSmallIcon(R.drawable.av_play_dark).
-                      setLargeIcon(bm).
-                      setContentTitle("Playing...").
-                      setOngoing(true);
 
         mMediaPlayer = new MediaPlayer();
         
@@ -240,6 +243,7 @@ public class PlayerService extends Service
         
         mRemoteEventReceiver = new ComponentName(packageName, className);
         mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 	}
 	
 	@Override
@@ -461,11 +465,7 @@ public class PlayerService extends Service
                         }
                     }
                     
-                    mNotificationBuilder.
-                        setContentTitle(trackInfo.title).
-                        setTicker(trackInfo.title);
-                    
-                    startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
+                    PlayerService.this.startAndNotify(trackInfo);
                     
                     mTimer = new Timer();
                     mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
@@ -474,6 +474,71 @@ public class PlayerService extends Service
         } finally {
             c.close();
         }
+	}
+	
+	private void updateNotification() {
+	    TrackInfo trackInfo = mTrackInfo;
+	    
+	    if (trackInfo != null)
+	        mNotificationManager.notify(NOTIFICATION_ID, getNotification(trackInfo));
+	    else
+	        mNotificationManager.cancel(NOTIFICATION_ID);
+	}
+	
+	private void startAndNotify(TrackInfo trackInfo) {
+        startForeground(NOTIFICATION_ID, getNotification(trackInfo));
+	}
+	
+	private Notification getNotification(TrackInfo trackInfo) {
+	    Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+
+	    Notification.Builder builder =
+	        new Notification.Builder(this).
+	        setLargeIcon(bm).
+	        setOngoing(true).
+	        setContentTitle(trackInfo.shortTitle).
+	        setContentText(trackInfo.artist).
+	        setTicker(trackInfo.title);
+	    
+	    if (trackInfo.hasPrevious) {
+	        builder.addAction(R.drawable.av_previous_dark,
+	            getResources().getText(R.string.previous),
+	            getPendingIntent(KeyEvent.KEYCODE_MEDIA_PREVIOUS));
+	    }
+	    
+	    if (mState == State.PLAYING) {
+    	    builder.setSmallIcon(R.drawable.av_play_dark);
+    	    builder.addAction(R.drawable.av_pause_dark,
+    	        getResources().getText(R.string.pause),
+    	        getPendingIntent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
+	    } else {
+	        builder.setSmallIcon(R.drawable.av_pause_dark);
+	        builder.addAction(R.drawable.av_play_dark,
+	            getResources().getText(R.string.resume),
+	            getPendingIntent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
+	    }
+    	    
+	    if (trackInfo.hasNext) {
+	        builder.addAction(R.drawable.av_next_dark,
+	            getResources().getText(R.string.next),
+	            getPendingIntent(KeyEvent.KEYCODE_MEDIA_NEXT));
+	    }
+	    
+	    builder.setContentIntent(PendingIntent.getActivity(
+	        getApplicationContext(), 42, new Intent(this, BrowseActivity.class), 0));
+	    
+	    return builder.build();
+	}
+	
+	private PendingIntent getPendingIntent(int keyCode) {
+        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        
+        mediaButtonIntent.setComponent(mRemoteEventReceiver);
+        mediaButtonIntent.putExtra(Intent.EXTRA_KEY_EVENT,
+            (Parcelable) new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+        
+        return PendingIntent.getBroadcast(
+            getApplicationContext(), 23 + keyCode, mediaButtonIntent, 0);
 	}
 	
 	protected void playTrackFromFile(final String filename, final int trackId) {
@@ -560,8 +625,16 @@ public class PlayerService extends Service
 
 	    mCurrentFile = null;
 
-	    if (mServerThread != null)
+	    if (mServer != null) {
+	        mServer.abort();
 	        mServerThread.interrupt();
+	        
+	        try {
+                mServerThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+	    }
 
 	    mServer = null;
 	    mServerThread = null;
@@ -617,6 +690,8 @@ public class PlayerService extends Service
 			    mRemoteControlClient.setPlaybackState(
 			        RemoteControlClient.PLAYSTATE_PLAYING);
 			
+			updateNotification();
+			
 			Log.d(LOG_TAG, "Resuming");
 		}
 	}
@@ -634,6 +709,8 @@ public class PlayerService extends Service
 			if (mRemoteControlClient != null)
 			    mRemoteControlClient.setPlaybackState(
 			        RemoteControlClient.PLAYSTATE_PAUSED);
+			
+			updateNotification();
 			
 			Log.d(LOG_TAG, "Paused");
 		}
@@ -746,6 +823,9 @@ public class PlayerService extends Service
                     RemoteControlClient.PLAYSTATE_PLAYING);
             
             mState = State.PLAYING;
+            
+            
+            updateNotification();
         } else {
             Toast.makeText(getApplicationContext(),
                 getText(R.string.error_audiofocus), Toast.LENGTH_LONG).show();

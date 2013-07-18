@@ -84,6 +84,8 @@
     
     <!-- BUTTONS -->
     <string name="play">Play</string>
+    <string name="resume">Resume</string>
+    <string name="pause">Pause</string>
     <string name="paused">Paused</string>
    	<string name="previous">Previous</string>
    	<string name="next">Next</string>

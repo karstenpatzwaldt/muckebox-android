@@ -17,6 +17,7 @@ public class DownloadServerRunnable implements Runnable {
     private String mMimeType;
 
     private boolean mReady = false;
+    private boolean mAborted = false;
     
     private BlockingQueue<ByteBuffer> mQueue;
     
@@ -30,7 +31,6 @@ public class DownloadServerRunnable implements Runnable {
     
     public DownloadServerRunnable(String mimeType) {
         mMimeType = mimeType;
-        
         mQueue = new LinkedBlockingQueue<ByteBuffer>();
     }
 
@@ -58,27 +58,19 @@ public class DownloadServerRunnable implements Runnable {
                 os.write(new String("Connection: close\r\n").getBytes());
                 os.write(new String("Transfer-Encoding: chunked\r\n").getBytes());
                 os.write(new String("\r\n").getBytes());
-                
-                boolean eosSeen = false;
-                
-                while (! eosSeen) {
-                    if (Thread.interrupted())
+
+                while (true) {
+                    if (Thread.interrupted() || mAborted)
                         throw new InterruptedException();
                     
                     ByteBuffer buf = mQueue.take();
-
-                    if (buf.position() == 0)
-                    {
-                        os.write(new String("0\r\n\r\n").getBytes());
-                        
-                        eosSeen = true;
-
-                        break;
-                    }
                     
                     os.write(String.format("%x\r\n", buf.position()).getBytes());
                     os.write(buf.array(), 0, buf.position());
                     os.write(new String("\r\n").getBytes());
+
+                    if (buf.position() == 0)
+                        break;
                 }
             } finally {
                 if (os != null)
@@ -106,6 +98,15 @@ public class DownloadServerRunnable implements Runnable {
         } catch (InterruptedException e) {
             Log.e(LOG_TAG, "Interrupted while putting, should not happen");
         }
+    }
+    
+    public void finish() {
+        feed(ByteBuffer.allocate(0));
+    }
+    
+    public void abort() {
+        mAborted = true;
+        finish();
     }
     
     public boolean isReady() {

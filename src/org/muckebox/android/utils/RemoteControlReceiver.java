@@ -26,6 +26,13 @@ public class RemoteControlReceiver extends BroadcastReceiver {
             
             if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
                 KeyEvent keyEvent = (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                
+                if (keyEvent == null)
+                {
+                    Log.e(LOG_TAG, "Key event missing!");
+                    return;
+                }
+                
                 int keyCode = keyEvent.getKeyCode();
 
                 if (keyEvent.getAction() != KeyEvent.ACTION_UP)
