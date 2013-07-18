@@ -34,9 +34,9 @@ public class DownloadCatchupRunnable implements Runnable {
     public void run() {
         try {
             FileInputStream input = Muckebox.getAppContext().openFileInput(mFilename);
-            boolean eofSeen;
+            boolean eofSeen = false;
             
-            do {
+            while (mBytesToRead > 0 && ! eofSeen) {
                 ByteBuffer buf = ByteBuffer.allocate((int) Math.min(mBytesToRead, BUFFER_SIZE));
                 
                 eofSeen = BufferUtils.readIntoBuffer(input, buf) || Thread.interrupted();
@@ -46,7 +46,7 @@ public class DownloadCatchupRunnable implements Runnable {
                         MESSAGE_DATA_RECEIVED, mTrackId, 0, buf));
                 
                 mBytesToRead -= buf.position();
-            } while (mBytesToRead > 0 || eofSeen);
+            }
             
             if (mBytesToRead > 0)
                 Log.e(LOG_TAG, "Could not read all bytes (" + mBytesToRead + " left)");
