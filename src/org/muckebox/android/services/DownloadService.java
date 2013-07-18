@@ -30,12 +30,15 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiManager.WifiLock;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Binder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
@@ -103,6 +106,12 @@ public class DownloadService
 	private long mLastTotal;
 	private long mLastTime;
 	
+	private WifiManager mWifiManager;
+	private WifiLock mWifiLock;
+	
+	private PowerManager mPowerManager;
+	private PowerManager.WakeLock mWakeLock;
+	
 	private void ensureUiThread() {
 	    if (Looper.myLooper() != Looper.getMainLooper())
 	    {
@@ -166,12 +175,21 @@ public class DownloadService
 		mHelperThread.start();
 		
 		mHelperHandler = new Handler(mHelperThread.getLooper());
+		
+		mWifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
+		mWifiLock = mWifiManager.createWifiLock(LOG_TAG);
+		
+		mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
+		mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOG_TAG);
 	}
 	
 	@Override
 	public void onDestroy() {
 		mNotificationManager.cancel(NOTIFICATION_ID);
 		mHelperThread.quit();
+		
+		mWifiLock.release();
+		mWakeLock.release();
 	}
 
 	@Override
@@ -675,6 +693,9 @@ public class DownloadService
 		mCurrentDownload.mTrackId = entry.getTrackId();
 		
 		mCurrentDownload.mThread.start();
+		
+		mWifiLock.acquire();
+		mWakeLock.acquire();
 	}
 	
 	private void stopCurrentDownload() {
@@ -690,6 +711,8 @@ public class DownloadService
 	}
 	
 	private void onDownloadFinished(Integer stringId) {
+	    stopCurrentDownload();
+	    
 		if (stringId == null) {
 			mNotificationManager.cancel(NOTIFICATION_ID);
 		} else {
@@ -702,6 +725,8 @@ public class DownloadService
 		}
 		
 		mCurrentDownload = null;
+		mWifiLock.release();
+		mWakeLock.release();
 		
 		downloadNextOrStop();
 	}
