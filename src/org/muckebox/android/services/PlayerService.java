@@ -453,22 +453,24 @@ public class PlayerService extends Service
 
             mMainHandler.post(new Runnable() {
                 public void run() {
-                    mTrackInfo = trackInfo;
-                    
-                    updateRemoteControl(trackInfo);
-                    
-                    for (PlayerListener l: mListeners)
-                    {
-                        if (l != null)
+                    if (mState != State.STOPPED) {
+                        mTrackInfo = trackInfo;
+                        
+                        updateRemoteControl(trackInfo);
+                        
+                        for (PlayerListener l: mListeners)
                         {
-                            l.onNewTrack(trackInfo);
+                            if (l != null)
+                            {
+                                l.onNewTrack(trackInfo);
+                            }
                         }
+                        
+                        PlayerService.this.startAndNotify(trackInfo);
+                        
+                        mTimer = new Timer();
+                        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
                     }
-                    
-                    PlayerService.this.startAndNotify(trackInfo);
-                    
-                    mTimer = new Timer();
-                    mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
                 }
             });
         } finally {
@@ -842,9 +844,47 @@ public class PlayerService extends Service
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+
+        
+        String whatStr, extraStr;
+        
+        switch (what) {
+        case MediaPlayer.MEDIA_ERROR_UNKNOWN:
+            whatStr = "Unknown error";
+            break;
+        case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
+            whatStr = "Server died";
+            break;
+        default:
+            whatStr = "Unknown error (" + what + ")";
+            break;
+        }
+        
+        switch (extra) {
+        case MediaPlayer.MEDIA_ERROR_IO:
+            extraStr = "IO Error";
+            break;
+        case MediaPlayer.MEDIA_ERROR_MALFORMED:
+            extraStr = "Malformed media";
+            break;
+        case MediaPlayer.MEDIA_ERROR_UNSUPPORTED:
+            extraStr = "Unsupported format";
+            break;
+        case MediaPlayer.MEDIA_ERROR_TIMED_OUT:
+            extraStr = "Timed out";
+            break;
+        default:
+            extraStr = "Unknown extra (" + extra + ")";
+            break;
+        }
+        
         Toast.makeText(this,
-            String.format((String) getText(R.string.error_playback), what, extra),
+            String.format((String) getText(R.string.error_playback) +
+                "(" + whatStr + ", " + extraStr + ")", what, extra),
             Toast.LENGTH_SHORT).show();
+        
+        Log.e(LOG_TAG, "Error " + what + " (" + whatStr +
+            "), extra " + extra + " (" + extraStr + ")");
         
         stop();
         
