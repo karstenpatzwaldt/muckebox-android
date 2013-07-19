@@ -64,6 +64,7 @@ public class MuckeboxProvider extends ContentProvider {
     private static final int CACHE						= (9 << 16);
     private static final int CACHE_ID					= (9 << 16) + 1;
     private static final int CACHE_TRACK				= (9 << 16) + 2;
+    private static final int CACHE_SIZE                 = (9 << 16) + 3;
 
     private static final int PLAYLIST                   = (10 << 16);
     private static final int PLAYLIST_ID                = (10 << 16) + 1;
@@ -98,6 +99,7 @@ public class MuckeboxProvider extends ContentProvider {
 
     public static final Uri URI_CACHE						= Uri.parse(SCHEME + AUTHORITY + "/cache");
     public static final Uri URI_CACHE_TRACK					= Uri.parse(SCHEME + AUTHORITY + "/cache/track");
+    public static final Uri URI_CACHE_SIZE                  = Uri.parse(SCHEME + AUTHORITY + "/cache/size");
 
     public static final Uri URI_PLAYLIST                    = Uri.parse(SCHEME + AUTHORITY + "/playlist");
     public static final Uri URI_PLAYLIST_ENTRY              = Uri.parse(SCHEME + AUTHORITY + "/playlist/entry");
@@ -140,6 +142,7 @@ public class MuckeboxProvider extends ContentProvider {
         mMatcher.addURI(AUTHORITY, "cache", 					CACHE);
         mMatcher.addURI(AUTHORITY, "cache/#", 					CACHE_ID);
         mMatcher.addURI(AUTHORITY, "cache/track/#",				CACHE_TRACK);
+        mMatcher.addURI(AUTHORITY, "cache/size",                CACHE_SIZE);
 
         mMatcher.addURI(AUTHORITY, "playlist/#",                PLAYLIST_ID);
         mMatcher.addURI(AUTHORITY, "playlist/entry/#",          PLAYLIST_ENTRY_ID);
@@ -606,6 +609,8 @@ public class MuckeboxProvider extends ContentProvider {
             break;
 
         case CACHE:
+            String groupBy = CachePlaylistEntry.GROUP_BY;
+            
             switch (match) {
             case CACHE_ID:
                 selection = CacheEntry.FULL_ID + " = ?";
@@ -617,12 +622,17 @@ public class MuckeboxProvider extends ContentProvider {
                 selectionArgs = new String[] { uri.getLastPathSegment() };
 
                 break;
+            case CACHE_SIZE:
+                projection = CacheEntry.SIZE_PROJECTION;
+                groupBy = null;
+                
+                break;
             }
 
-            result = db.query(CacheEntry.TABLE_NAME,
-                (projection == null) ? CacheEntry.PROJECTION : projection,
-                    selection, selectionArgs, null, null,
-                    (sortOrder == null) ? CacheEntry.SORT_ORDER : sortOrder, null);
+            result = db.query(CachePlaylistEntry.TABLE_NAME,
+                (projection == null) ? CachePlaylistEntry.PROJECTION : projection,
+                selection, selectionArgs, groupBy, null,
+                (sortOrder == null) ? CachePlaylistEntry.SORT_ORDER : sortOrder, null);
 
             result.setNotificationUri(resolver, URI_CACHE);
 

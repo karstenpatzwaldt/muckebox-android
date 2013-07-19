@@ -14,6 +14,7 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.ui.activity.DownloadListActivity;
+import org.muckebox.android.utils.CacheCleaner;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.net.DownloadCatchupRunnable;
 import org.muckebox.android.net.DownloadRunnable;
@@ -112,6 +113,8 @@ public class DownloadService
 	private PowerManager mPowerManager;
 	private PowerManager.WakeLock mWakeLock;
 	
+	private CacheCleaner mCacheCleaner;
+	
 	private void ensureUiThread() {
 	    if (Looper.myLooper() != Looper.getMainLooper())
 	    {
@@ -181,6 +184,10 @@ public class DownloadService
 		
 		mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 		mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOG_TAG);
+		
+		mCacheCleaner = new CacheCleaner(mHelperHandler);
+		getContentResolver().registerContentObserver(
+		    MuckeboxProvider.URI_CACHE, true, mCacheCleaner);
 	}
 	
 	@Override
@@ -190,6 +197,8 @@ public class DownloadService
 		
 		mWifiLock.release();
 		mWakeLock.release();
+		
+		getContentResolver().unregisterContentObserver(mCacheCleaner);
 	}
 
 	@Override

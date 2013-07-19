@@ -53,7 +53,7 @@
             android:defaultValue="true"/>
         <EditTextPreference
             android:dependency="caching_enable"
-            android:key="key_cache_size"
+            android:key="cache_size"
             android:title="@string/cache_size_setting_title"
             android:summary="@string/cache_size_setting_summary"
             android:numeric="integer"

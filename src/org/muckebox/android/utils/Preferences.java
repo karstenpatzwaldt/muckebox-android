@@ -37,4 +37,12 @@ public class Preferences {
 	
 	public static void setCurrentPlaylistItem() {
 	}
+	
+	public static boolean getCachingEnabled() {
+	    return getPreferences().getBoolean("caching_enable", true);
+	}
+	
+	public static int getCacheSize() {
+	    return Integer.parseInt(getPreferences().getString("cache_size", "500")) * (1024 * 1024);
+	}
 }

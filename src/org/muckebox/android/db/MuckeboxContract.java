@@ -242,26 +242,28 @@ public final class MuckeboxContract {
 
 		public static final String ALIAS_PINNED					= TABLE_NAME + "_" + SHORT_PINNED;
 		
-		public static final String[] PROJECTION =
-			{
-				FULL_ID,
-				
-				FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
-				
-				FULL_FILENAME + AS + ALIAS_FILENAME,
-				FULL_MIME_TYPE + AS + ALIAS_MIME_TYPE,
-				FULL_SIZE + AS + ALIAS_SIZE,
-				FULL_TIMESTAMP + AS + ALIAS_TIMESTAMP,
-				
-				FULL_TRANSCODED + AS + ALIAS_TRANSCODED,
-				FULL_TRANSCODING_TYPE + AS + ALIAS_TRANSCODING_TYPE,
-				FULL_TRANSCODING_QUALITY + AS + ALIAS_TRANSCODING_QUALITY,
-				
-				FULL_PINNED + AS + ALIAS_PINNED
-			};
+		public static final String[] PROJECTION = {
+		    FULL_ID,
+
+		    FULL_TRACK_ID + AS + ALIAS_TRACK_ID,
+
+		    FULL_FILENAME + AS + ALIAS_FILENAME,
+		    FULL_MIME_TYPE + AS + ALIAS_MIME_TYPE,
+		    FULL_SIZE + AS + ALIAS_SIZE,
+		    FULL_TIMESTAMP + AS + ALIAS_TIMESTAMP,
+
+		    FULL_TRANSCODED + AS + ALIAS_TRANSCODED,
+		    FULL_TRANSCODING_TYPE + AS + ALIAS_TRANSCODING_TYPE,
+		    FULL_TRANSCODING_QUALITY + AS + ALIAS_TRANSCODING_QUALITY,
+
+		    FULL_PINNED + AS + ALIAS_PINNED
+		};
 		
-		// we probably don't need to sort those
-		public static final String SORT_ORDER = null;
+		public static final String[] SIZE_PROJECTION = {
+		    "SUM(" + FULL_SIZE + ") " + AS + ALIAS_SIZE
+		};
+		
+		public static final String SORT_ORDER = FULL_TIMESTAMP + ASC;
 	}
 	
 	public static abstract class PlaylistEntry implements BaseColumns {
@@ -384,5 +386,30 @@ public final class MuckeboxContract {
 			
 			ArtistEntry.FULL_NAME + AS + ArtistEntry.ALIAS_NAME
 		};
+	}
+	
+	public static abstract class CachePlaylistEntry implements BaseColumns {
+	    public static final String TABLE_NAME = CacheEntry.TABLE_NAME + " LEFT OUTER JOIN " +
+	        PlaylistEntry.TABLE_NAME + " ON (" + PlaylistEntry.FULL_TRACK_ID + " = " +
+	        CacheEntry.FULL_TRACK_ID + ")";
+	    
+	    public static final String ALIAS_PLAYING = "playing";
+	    
+	    public static final String[] PROJECTION = {
+	        CacheEntry.FULL_ID,
+	        
+	        CacheEntry.FULL_TIMESTAMP + AS + CacheEntry.ALIAS_TIMESTAMP,
+	        CacheEntry.FULL_SIZE + AS + CacheEntry.ALIAS_SIZE,
+	        CacheEntry.FULL_PINNED + AS + CacheEntry.ALIAS_PINNED,
+	        
+	        CacheEntry.FULL_FILENAME + AS  + CacheEntry.ALIAS_FILENAME,
+	        CacheEntry.FULL_TRACK_ID + AS + CacheEntry.ALIAS_TRACK_ID,
+	        
+	        "IFNULL(SUM(" + PlaylistEntry.FULL_IS_CURRENT + "), 0)" + AS +
+	            ALIAS_PLAYING
+	    };
+	    
+	    public static final String SORT_ORDER = CacheEntry.SORT_ORDER;
+	    public static final String GROUP_BY = CacheEntry.FULL_ID;
 	}
 }
