@@ -629,7 +629,6 @@ public class PlayerService extends Service
 
 	    if (mServer != null) {
 	        mServer.abort();
-	        mServerThread.interrupt();
 	        
 	        try {
                 mServerThread.join();
@@ -963,7 +962,7 @@ public class PlayerService extends Service
     @Override
     public void onDownloadFinished(long trackId) {
         if (mServer != null)
-            mServer.feed(ByteBuffer.allocate(0));
+            mServer.finish();
         
         mDownloadService.removeListener(this);
     }

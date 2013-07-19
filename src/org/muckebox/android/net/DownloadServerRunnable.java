@@ -60,7 +60,7 @@ public class DownloadServerRunnable implements Runnable {
                 os.write(new String("\r\n").getBytes());
 
                 while (true) {
-                    if (Thread.interrupted() || mAborted)
+                    if (mAborted)
                         throw new InterruptedException();
                     
                     ByteBuffer buf = mQueue.take();
@@ -106,6 +106,7 @@ public class DownloadServerRunnable implements Runnable {
     
     public void abort() {
         mAborted = true;
+        mQueue.clear();
         finish();
     }
     
