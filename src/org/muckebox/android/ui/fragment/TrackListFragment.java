@@ -158,18 +158,22 @@ public class TrackListFragment extends RefreshableListFragment
         @SuppressLint("DefaultLocale")
 		public boolean setViewValue(View view, Cursor cursor, int columnIndex)
         {
-			if (columnIndex == cursor.getColumnIndex(TrackEntry.ALIAS_LENGTH))
-			{
-				TextView textview = (TextView) view;
+            ImageView icon;
+            TextView textView;
+            
+            switch (view.getId())
+            {
+            case R.id.track_list_duration:
+				textView = (TextView) view;
 				String text = TimeFormatter.formatDuration(
 				    cursor.getInt(columnIndex));
 				
-				textview.setText(text);
+				textView.setText(text);
 				
 				return true;
-    		} else if (columnIndex == cursor.getColumnIndex(DownloadEntry.ALIAS_STATUS))
-			{
-    			ImageView icon = (ImageView) view;
+				
+            case R.id.track_list_download_status:
+    			icon = (ImageView) view;
     			
     			if (cursor.isNull(columnIndex))
     			{
@@ -184,16 +188,15 @@ public class TrackListFragment extends RefreshableListFragment
 	    				icon.setImageResource(R.drawable.device_access_time);
 	    				break;
 	    			case DownloadEntry.STATUS_VALUE_DOWNLOADING:
-	    				// XXX add download animation
 	    				icon.setImageResource(R.drawable.av_download);
 	    				break;
 	    			}
     			}
 	    			
     			return true;
-			} else if (columnIndex == cursor.getColumnIndex(CacheEntry.ALIAS_PINNED))
-			{
-				ImageView icon = (ImageView) view;
+    			
+            case R.id.track_list_cache_status:
+				icon = (ImageView) view;
 				
 				if (cursor.isNull(columnIndex))
 				{
@@ -214,9 +217,8 @@ public class TrackListFragment extends RefreshableListFragment
 				}
 				
 				return true;
-			} else if (columnIndex ==
-					cursor.getColumnIndex(TrackDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE))
-			{
+				
+            case R.id.track_list_buttons:
 				boolean downloading;
 				int pinStatus;
 				
@@ -255,8 +257,8 @@ public class TrackListFragment extends RefreshableListFragment
 				}
 				
 				return true;
-			} else if (columnIndex ==
-			    cursor.getColumnIndex(TrackDownloadCacheAlbumPlaylistJoin.ALIAS_PLAYING)) {
+				
+            case R.id.track_list_play_status:
 			    int playing = cursor.getInt(columnIndex);
 			    
 			    view.setVisibility(playing > 0 ? View.VISIBLE : View.GONE);
