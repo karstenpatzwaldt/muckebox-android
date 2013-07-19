@@ -17,6 +17,7 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadServerRunnable;
 import org.muckebox.android.ui.activity.BrowseActivity;
+import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
 
 import android.app.Notification;
@@ -24,6 +25,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -416,7 +418,7 @@ public class PlayerService extends Service
 	}
 	
 	private void fetchTrackInfo(int playlistEntryId, int trackId, boolean isStreaming) {
-        Uri playlistEntryUri = Uri.withAppendedPath(
+        final Uri playlistEntryUri = Uri.withAppendedPath(
             MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId));
         
         final TrackInfo trackInfo = new TrackInfo();
@@ -468,6 +470,8 @@ public class PlayerService extends Service
                         
                         PlayerService.this.startAndNotify(trackInfo);
                         
+                        setAsCurrent(playlistEntryUri);
+                        
                         mTimer = new Timer();
                         mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
                     }
@@ -476,6 +480,27 @@ public class PlayerService extends Service
         } finally {
             c.close();
         }
+	}
+	
+	private void setAsCurrent(final Uri playlistEntryUri) {
+	    mHelperHandler.post(new Runnable() {
+	        public void run() {
+	            Uri uri = (playlistEntryUri == null) ?
+	                Uri.withAppendedPath(MuckeboxProvider.URI_PLAYLIST,
+	                    Integer.toString(Preferences.getCurrentPlaylistId())) :
+	                playlistEntryUri;
+	            
+        	    ContentValues values = new ContentValues();
+        	    
+        	    values.put(PlaylistEntry.SHORT_IS_CURRENT, 1);
+        	    
+        	    getContentResolver().update(uri, values, null, null);
+	        }
+	    });
+	}
+	
+	private void clearCurrent() {
+	    setAsCurrent(null);
 	}
 	
 	private void updateNotification() {
@@ -611,6 +636,8 @@ public class PlayerService extends Service
 	    mState = State.STOPPED;
 
 	    mMediaPlayer.reset();
+	    
+	    clearCurrent();
 
 	    for (PlayerListener l: mListeners)
 	        if (l != null)
