@@ -492,7 +492,7 @@ public class PlayerService extends Service
 	            
         	    ContentValues values = new ContentValues();
         	    
-        	    values.put(PlaylistEntry.SHORT_IS_CURRENT, 1);
+        	    values.put(PlaylistEntry.SHORT_IS_CURRENT, (playlistEntryUri == null ? 0 : 1));
         	    
         	    getContentResolver().update(uri, values, null, null);
 	        }

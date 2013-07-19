@@ -3,7 +3,7 @@ package org.muckebox.android.ui.fragment;
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheAlbumJoin;
+import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheAlbumPlaylistJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
@@ -215,7 +215,7 @@ public class TrackListFragment extends RefreshableListFragment
 				
 				return true;
 			} else if (columnIndex ==
-					cursor.getColumnIndex(TrackDownloadCacheAlbumJoin.ALIAS_CANCELABLE))
+					cursor.getColumnIndex(TrackDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE))
 			{
 				boolean downloading;
 				int pinStatus;
@@ -255,6 +255,13 @@ public class TrackListFragment extends RefreshableListFragment
 				}
 				
 				return true;
+			} else if (columnIndex ==
+			    cursor.getColumnIndex(TrackDownloadCacheAlbumPlaylistJoin.ALIAS_PLAYING)) {
+			    int playing = cursor.getInt(columnIndex);
+			    
+			    view.setVisibility(playing > 0 ? View.VISIBLE : View.GONE);
+			    
+			    return true;
 			}
 			
 			return false;
@@ -311,7 +318,8 @@ public class TrackListFragment extends RefreshableListFragment
         			TrackEntry.ALIAS_LENGTH,
         			DownloadEntry.ALIAS_STATUS,
         			CacheEntry.ALIAS_PINNED,
-        			TrackDownloadCacheAlbumJoin.ALIAS_CANCELABLE
+        			TrackDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE,
+        			TrackDownloadCacheAlbumPlaylistJoin.ALIAS_PLAYING
         			},
                 new int[] {
         			R.id.track_list_title,
@@ -320,6 +328,7 @@ public class TrackListFragment extends RefreshableListFragment
         			R.id.track_list_download_status,
         			R.id.track_list_cache_status,
         			R.id.track_list_buttons,
+        			R.id.track_list_play_status
         			}, 0);
         
         mAdapter.setViewBinder(new TracklistViewBinder());

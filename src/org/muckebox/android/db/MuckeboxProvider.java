@@ -406,6 +406,7 @@ public class MuckeboxProvider extends ContentProvider {
             id = db.insert(PlaylistEntry.TABLE_NAME, null, values);
 
             sendNotification(URI_PLAYLIST);
+            sendNotification(URI_TRACKS);
 
             ret = Uri.withAppendedPath(URI_PLAYLIST_ENTRY, Long.toString(id));
 
@@ -562,10 +563,10 @@ public class MuckeboxProvider extends ContentProvider {
                 break;
             }
 
-            result = db.query(TrackDownloadCacheAlbumJoin.TABLE_NAME,
-                (projection == null ? TrackDownloadCacheAlbumJoin.PROJECTION : projection),
-                selection, selectionArgs, null, null, 
-                (sortOrder == null ? TrackDownloadCacheAlbumJoin.SORT_ORDER : sortOrder), null);
+            result = db.query(TrackDownloadCacheAlbumPlaylistJoin.TABLE_NAME,
+                (projection == null ? TrackDownloadCacheAlbumPlaylistJoin.PROJECTION : projection),
+                selection, selectionArgs, TrackDownloadCacheAlbumPlaylistJoin.GROUP_BY, null, 
+                (sortOrder == null ? TrackDownloadCacheAlbumPlaylistJoin.SORT_ORDER : sortOrder), null);
 
             result.setNotificationUri(resolver, URI_TRACKS);
 
@@ -742,6 +743,7 @@ public class MuckeboxProvider extends ContentProvider {
             ret = db.update(PlaylistEntry.TABLE_NAME, values, selection, selectionArgs);
 
             sendNotification(URI_PLAYLIST);
+            sendNotification(URI_TRACKS);
 
             break;
 

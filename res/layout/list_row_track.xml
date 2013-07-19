@@ -38,6 +38,12 @@
 		        android:layout_width="0dp"
 		        android:layout_weight="1" />
 		    
+		    <ImageView
+		        android:id="@+id/track_list_play_status"
+		        android:src="@drawable/av_play"
+		        android:contentDescription="@string/play_status"
+		        style="@style/ListItemStatusIcon" />
+		    
 		    <ImageView 
 		        android:id="@+id/track_list_download_status"
 		        android:src="@drawable/device_access_time"

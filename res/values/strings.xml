@@ -112,6 +112,7 @@
     <string name="download_canceled">Download canceled.</string>
     <string name="download_finished">Download finished.</string>
     
+    <string name="play_status">Play status</string>
     <string name="download_status">Download status</string>
     <string name="cache_status">Cache status</string>
     
