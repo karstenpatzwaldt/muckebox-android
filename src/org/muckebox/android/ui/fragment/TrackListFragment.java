@@ -40,20 +40,19 @@ import android.widget.TextView;
 public class TrackListFragment extends RefreshableListFragment
 	implements OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
-	
-	private static final String ALBUM_ID_ARG = "album_id";
-	private static final String ALBUM_TITLE_ARG = "album_title";
-	
+
 	private TrackListCursorAdapter mAdapter;
-	private boolean mListLoaded = false;
 	
 	private HandlerThread mHelperThread;
 	private Handler mHelperHandler;
 	
 	private Handler mMainHandler;
 
-	MenuItem mPinAllItem;
-	MenuItem mRemoveAllItem;
+	private MenuItem mPinAllItem;
+	private MenuItem mRemoveAllItem;
+	
+	private long mAlbumId = -1;
+	private String mAlbumTitle = null;
 	
 	private class TrackListCursorAdapter extends ExpandableCursorAdapter {
 		private OnClickListener mPlayListener;
@@ -134,24 +133,6 @@ public class TrackListFragment extends RefreshableListFragment
 			
 			return ret;
 		}
-	}
-	
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-	    super.onCreate(savedInstanceState);
-	    
-	    mHelperThread = new HandlerThread("TrackListHelper");
-	    mHelperThread.start();
-	    
-	    mHelperHandler = new Handler(mHelperThread.getLooper());
-	    mMainHandler = new Handler();
-	}
-	
-	@Override
-	public void onDestroy() {
-	    super.onDestroy();
-	    
-	    mHelperThread.quit();
 	}
 
 	private class TracklistViewBinder implements ViewBinder {
@@ -272,34 +253,35 @@ public class TrackListFragment extends RefreshableListFragment
 	
 	public static TrackListFragment newInstanceFromAlbum(long album_id, String title) {
 		TrackListFragment f = new TrackListFragment();
-		Bundle args = new Bundle();
 		
-		args.putLong(ALBUM_ID_ARG, album_id);
-		args.putString(ALBUM_TITLE_ARG, title);
-		f.setArguments(args);
+		f.mAlbumId = album_id;
+		f.mAlbumTitle = title;
 		
 		return f;
 	}
 	
-	public long getAlbumId() {
-		Bundle args = getArguments();
-		
-		if (args == null)
-			return -1;
-		
-		return args.getLong(ALBUM_ID_ARG, -1);
-	}
-	
 	public boolean hasAlbumId() {
-		return getAlbumId() != -1;
+		return mAlbumId != -1;
 	}
-	
-	public String getAlbumTitle() {
-		Bundle args = getArguments();
-		
-		return args.getString(ALBUM_TITLE_ARG, "");
-	}
-	
+	   
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        mHelperThread = new HandlerThread("TrackListHelper");
+        mHelperThread.start();
+        
+        mHelperHandler = new Handler(mHelperThread.getLooper());
+        mMainHandler = new Handler();
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        
+        mHelperThread.quit();
+    }
+
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -335,26 +317,39 @@ public class TrackListFragment extends RefreshableListFragment
         
         mAdapter.setViewBinder(new TracklistViewBinder());
         
+        setListAdapter(mAdapter);
+
+        if (hasAlbumId())
+            reInit(mAlbumId, mAlbumTitle);
+    }
+	
+	public void reInit(long albumId, String albumTitle) {
+	    mAlbumId = albumId;
+	    mAlbumTitle = albumTitle;
+	    
         TextView header = (TextView) getActivity().findViewById(R.id.track_list_title_strip);
         
-        header.setText(getAlbumTitle());
- 
-        setListAdapter(mAdapter);
-        getLoaderManager().initLoader(0, null, this);
-        
-        if (! mListLoaded)
-        	onRefreshRequested();
-    }
+        header.setText(mAlbumTitle);
+	    
+	    getLoaderManager().restartLoader(0, null, this);
+	    
+	    onRefreshRequested();
+	}
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	super.onCreateOptionsMenu(menu, inflater);
     	
-    	inflater.inflate(R.menu.track_list, menu);
-    	
     	mPinAllItem = menu.findItem(R.id.track_list_action_pin);
+    	
+    	if (mPinAllItem == null) {
+    	    inflater.inflate(R.menu.track_list, menu);
+    	    mPinAllItem = menu.findItem(R.id.track_list_action_pin);
+    	}
+    	
     	mRemoveAllItem = menu.findItem(R.id.track_list_action_remove);
     	
+    	mPinAllItem.setVisible(false);
     	mRemoveAllItem.setVisible(false);
     }
     
@@ -391,8 +386,7 @@ public class TrackListFragment extends RefreshableListFragment
     }
 
     protected void onRefreshRequested() {
-		new RefreshTracksTask().setCallbacks(this).execute(getAlbumId());
-		mListLoaded = true;
+		new RefreshTracksTask().setCallbacks(this).execute(mAlbumId);
     }
 
     @Override
@@ -405,7 +399,7 @@ public class TrackListFragment extends RefreshableListFragment
         
         if (hasAlbumId()) {
             ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS_ALBUM.buildUpon().appendPath(
-                    Long.toString(getAlbumId())).build();
+                    Long.toString(mAlbumId)).build();
         } else {
             ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS;
         }
@@ -438,7 +432,7 @@ public class TrackListFragment extends RefreshableListFragment
         	if (oneNotPinned && oneCached)
         		break;
         }
-        
+
         if (mPinAllItem != null)
             mPinAllItem.setVisible(oneNotPinned);
         

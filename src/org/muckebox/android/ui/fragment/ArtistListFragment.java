@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
@@ -69,10 +70,15 @@ public class ArtistListFragment extends RefreshableListFragment
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	super.onCreateOptionsMenu(menu, inflater);
     	
-    	inflater.inflate(R.menu.artist_list, menu);
+    	MenuItem searchItem = menu.findItem(R.id.artist_list_action_search);
+    	
+    	if (searchItem == null) {
+    	    inflater.inflate(R.menu.artist_list, menu);
+    	    searchItem = menu.findItem(R.id.artist_list_action_search);
+    	}
     	
     	LiveSearchView searchAction =
-    			(LiveSearchView) menu.findItem(R.id.artist_list_action_search).getActionView();
+    			(LiveSearchView) searchItem.getActionView();
     	
         searchAction.setOnQueryTextListener(this);
         searchAction.setOnCloseListener(this);

@@ -1,20 +1,21 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    style="@style/FullSize">
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/FullSize"
+    android:orientation="vertical" >
 
     <LinearLayout
         android:id="@+id/fragment_container"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal">
-	
+        android:orientation="horizontal" >
     </LinearLayout>
-	
-  	<fragment
-	    android:name="org.muckebox.android.ui.fragment.PlayerFragment"
-	    android:id="@+id/player"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"/>
+
+    <fragment
+        android:id="@+id/player"
+        android:name="org.muckebox.android.ui.fragment.PlayerFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:layout="@layout/fragment_player" />
 
 </LinearLayout>

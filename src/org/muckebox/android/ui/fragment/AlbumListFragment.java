@@ -5,19 +5,17 @@ import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshAlbumsTask;
+import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,14 +32,16 @@ import android.widget.SearchView.OnQueryTextListener;
 public class AlbumListFragment extends RefreshableListFragment
 	implements OnQueryTextListener, OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
-	private final static String LOG_TAG = "AlbumListFragment";
-	
 	private final static String ARTIST_ID_ARG = "artist_id";
 	private final static String TITLE_ARG = "title";
 	
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
+	
+	public interface OnAlbumSelectedListener {
+	    public void onAlbumSelected(long id, String title);
+	}
 
 	public static AlbumListFragment newInstanceFromArtist(long artist_id, String title) {
 		AlbumListFragment f = new AlbumListFragment();
@@ -129,11 +129,14 @@ public class AlbumListFragment extends RefreshableListFragment
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	super.onCreateOptionsMenu(menu, inflater);
-    	
-    	inflater.inflate(R.menu.album_list, menu);
-    	
+
     	MenuItem searchItem = menu.findItem(R.id.album_list_action_search);
-    	
+        
+    	if (searchItem == null) {
+    	    inflater.inflate(R.menu.album_list, menu);
+    	    searchItem = menu.findItem(R.id.album_list_action_search);
+    	}
+        	
     	if (hasArtistId())
     	{
     		searchItem.setVisible(false);
@@ -195,15 +198,9 @@ public class AlbumListFragment extends RefreshableListFragment
     	
     	String title = artist_name + " - " + album_title;
     	
-    	Log.d(LOG_TAG, "Opening track list for album " + id + "(" + title + ")");
+    	BrowseActivity parent = (BrowseActivity) getActivity();
     	
-    	TrackListFragment tracklist = TrackListFragment.newInstanceFromAlbum(id, title);
-    	FragmentManager fm = getActivity().getFragmentManager();
-    	FragmentTransaction t = fm.beginTransaction();
- 
-    	t.replace(R.id.fragment_container, tracklist);
-    	t.addToBackStack(null);
-    	t.commit();
+    	parent.onAlbumSelected(id,  title);
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {

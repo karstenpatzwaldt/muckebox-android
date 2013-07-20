@@ -72,6 +72,8 @@ public class PlayerFragment
         
         measureView();
         attachButtonListeners();
+        
+        setRetainInstance(true);
 
         return  mView;
     }

@@ -3,7 +3,7 @@
     
     <item
         android:id="@+id/artist_list_action_search"
-        android:showAsAction="ifRoom|collapseActionView"
+        android:showAsAction="ifRoom|collapseActionView|withText"
         android:icon="@drawable/action_search"
         android:title="@string/search"
         android:actionViewClass="org.muckebox.android.ui.widgets.LiveSearchView" />

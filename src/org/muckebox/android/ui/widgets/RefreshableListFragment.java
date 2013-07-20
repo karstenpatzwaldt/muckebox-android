@@ -24,9 +24,12 @@ abstract public class RefreshableListFragment
     	
     	super.onCreateOptionsMenu(menu, inflater);
     	
-      	inflater.inflate(R.menu.refreshable_list, menu);
-      	
-      	mRefreshItem = menu.findItem(R.id.action_refresh);
+    	mRefreshItem = menu.findItem(R.id.action_refresh);
+    	
+    	if (mRefreshItem == null) {
+    	    inflater.inflate(R.menu.refreshable_list, menu);
+    	    mRefreshItem = menu.findItem(R.id.action_refresh);
+    	}
     }
     
     @Override
@@ -43,7 +46,6 @@ abstract public class RefreshableListFragment
     	if (item == mRefreshItem)
     	{
     		onRefreshRequested();
-    		return true;
     	}
     	
     	return super.onOptionsItemSelected(item);

@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/FullSize"
+    android:orientation="vertical"
+        android:showDividers="middle"
+        android:divider="@android:drawable/divider_horizontal_bright" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:showDividers="middle"
+        android:dividerPadding="40dip"
+        android:divider="@android:drawable/divider_horizontal_bright" >
+
+        <LinearLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:orientation="horizontal" />
+
+        <fragment
+            android:id="@+id/tracklist"
+            android:name="org.muckebox.android.ui.fragment.TrackListFragment"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="2"
+            android:background="@android:color/background_light"
+            tools:layout="@layout/fragment_track_browse" />
+    </LinearLayout>
+
+    <fragment
+        android:id="@+id/player"
+        android:name="org.muckebox.android.ui.fragment.PlayerFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:layout="@layout/fragment_player" />
+
+</LinearLayout>
