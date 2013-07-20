@@ -17,7 +17,7 @@ import android.util.Log;
 public class NetHelper {
 	private static final String LOG_TAG = "NetHelper";
 	
-	private static final int TIMEOUT = 15 * 1000;
+	private static final int TIMEOUT = 30 * 1000;
 	
 	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
 		String str_url = getApiUrl(query, id, keys, values);

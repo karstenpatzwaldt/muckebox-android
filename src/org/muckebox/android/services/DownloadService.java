@@ -126,6 +126,8 @@ public class DownloadService
 	public void registerListener(DownloadListener listener, int trackId) {
 	    ensureUiThread();
 	    
+	    removeListener(listener);
+
 		DownloadHandle currentDownload = mCurrentDownload;
 		DownloadListenerHandle handle = new DownloadListenerHandle();
 		
@@ -158,8 +160,19 @@ public class DownloadService
 	
 	public void removeListener(DownloadListener listener)
 	{
-	    if (mListeners.contains(listener))
-	        mListeners.remove(listener);
+	    boolean found;
+	    
+	    do {
+	        found = false;
+	        
+    	    for (DownloadListenerHandle h: mListeners) {
+    	        if (h.mListener == listener) {
+    	            mListeners.remove(h);
+    	            found = true;
+    	            break;
+    	        }
+    	    }
+	    } while (found == true);
 	}
 	
 	public class DownloadBinder extends Binder {

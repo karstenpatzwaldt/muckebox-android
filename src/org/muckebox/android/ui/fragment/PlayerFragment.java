@@ -97,6 +97,8 @@ public class PlayerFragment
     public void onResume() {
         super.onResume();
         
+        attachButtonListeners();
+        
         if (mCollapsed)
             simpleCollapse();
     }

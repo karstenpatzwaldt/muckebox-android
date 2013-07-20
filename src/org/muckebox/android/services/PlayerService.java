@@ -15,7 +15,7 @@ import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
-import org.muckebox.android.net.DownloadServerRunnable;
+import org.muckebox.android.net.DownloadServer;
 import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
@@ -109,8 +109,7 @@ public class PlayerService extends Service
 	
 	private DownloadService mDownloadService;
 	
-	private DownloadServerRunnable mServer;
-	private Thread mServerThread;
+	private DownloadServer mServer;
 
 	private Handler mMainHandler;
 	
@@ -654,18 +653,10 @@ public class PlayerService extends Service
 
 	    mCurrentFile = null;
 
-	    if (mServer != null) {
-	        mServer.abort();
-	        
-	        try {
-                mServerThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-	    }
+	    if (mServer != null)
+	        mServer.quit();
 
 	    mServer = null;
-	    mServerThread = null;
 
 	    mDownloadService.removeListener(this);
 
@@ -933,12 +924,22 @@ public class PlayerService extends Service
     @Override
     public void onDownloadStarted(long trackId, String mimeType) {
         Log.d(LOG_TAG, "Download started for " + trackId + " (" + mimeType + ")");
-        
+
         assert(mServer == null);
         
-        mServer = new DownloadServerRunnable(mimeType);
-        mServerThread = new Thread(mServer);
-        mServerThread.start();
+        if (mServer != null) {
+            Log.w(LOG_TAG, "Got download started message while server running, killing old server");
+            mServer.quit();
+            
+            try {
+                mServer.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        mServer = new DownloadServer(mimeType);
+        mServer.start();
         
         startStreamMediaPlayer();
     }
@@ -953,7 +954,7 @@ public class PlayerService extends Service
         if (! mServer.isReady()) {
             Log.d(LOG_TAG, "HTTP server not ready, retrying");
             
-            if (! mServerThread.isAlive())
+            if (! mServer.isAlive())
             {
                 Log.e(LOG_TAG, "HTTP server died! Cannot play.");
                 stop();
@@ -972,7 +973,7 @@ public class PlayerService extends Service
                 mMediaPlayer.reset();
                 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mMediaPlayer.setDataSource(DownloadServerRunnable.getUrl());
+                mMediaPlayer.setDataSource(DownloadServer.getUrl());
                 mMediaPlayer.prepareAsync();
             } catch (IOException e) {
                 stop();
