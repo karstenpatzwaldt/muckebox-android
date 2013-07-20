@@ -114,7 +114,6 @@ public class DownloadRunnable implements Runnable
             if (mOutputStream != null)
 	        {
 	            mOutputStream.write(data.array(), 0, data.position());
-	            mOutputStream.flush();
 	        }
 
 	        Chunk chunk = new Chunk();

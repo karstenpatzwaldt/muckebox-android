@@ -32,12 +32,15 @@ import android.widget.SearchView.OnQueryTextListener;
 public class AlbumListFragment extends RefreshableListFragment
 	implements OnQueryTextListener, OnCloseListener,
 	LoaderManager.LoaderCallbacks<Cursor> {
-	private final static String ARTIST_ID_ARG = "artist_id";
-	private final static String TITLE_ARG = "title";
-	
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
+	
+	private long mArtistId = -1;
+	private String mTitle;
+	
+	private static final String STATE_ARTIST_ID = "artist_id";
+	private static final String STATE_TITLE = "title";
 	
 	public interface OnAlbumSelectedListener {
 	    public void onAlbumSelected(long id, String title);
@@ -45,45 +48,36 @@ public class AlbumListFragment extends RefreshableListFragment
 
 	public static AlbumListFragment newInstanceFromArtist(long artist_id, String title) {
 		AlbumListFragment f = new AlbumListFragment();
-		Bundle args = new Bundle();
 		
-		args.putLong(ARTIST_ID_ARG, artist_id);
-		args.putString(TITLE_ARG, title);
-		f.setArguments(args);
+		f.mArtistId = artist_id;
+		f.mTitle = title;
 		
 		return f;
 	}
-	
-	public long getArtistId() {
-		Bundle args = getArguments();
-		
-		if (args == null)
-			return -1;
-		
-		return args.getLong(ARTIST_ID_ARG, -1);
-	}
-	
+
 	public boolean hasArtistId() {
-		return getArtistId() != -1;
+		return mArtistId != -1;
 	}
-	
-	public String getTitle() {
-		Bundle args = getArguments();
-		
-		if (args == null)
-			return null;
-		
-		return args.getString(TITLE_ARG, null);
-	}
-	
-	public boolean hasTitle() {
-		return getTitle() != null;
-	}
-	
+
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+	    super.onCreateView(inflater, container, savedInstanceState);
+	    
+        if (savedInstanceState != null) {
+            mArtistId = savedInstanceState.getLong(STATE_ARTIST_ID);
+            mTitle = savedInstanceState.getString(STATE_TITLE);
+        }
+        
         return inflater.inflate(R.layout.fragment_album_browse, container, false);
+	}
+	
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+	    super.onSaveInstanceState(outState);
+
+	    outState.putLong(STATE_ARTIST_ID, mArtistId);
+	    outState.putString(STATE_TITLE, mTitle);
 	}
 	
 	@Override
@@ -102,13 +96,10 @@ public class AlbumListFragment extends RefreshableListFragment
         
         TextView titleStrip = (TextView) getActivity().findViewById(R.id.album_list_title_strip);
         
-        if (titleStrip != null)
-        {
-	        if (hasTitle())
-	        	titleStrip.setText(getTitle());
-	        else
-	        	titleStrip.setVisibility(View.GONE);
-        }
+        if (hasArtistId())
+            titleStrip.setText(mTitle);
+        else
+            titleStrip.setVisibility(View.GONE);
         
         if (! RefreshAlbumsTask.wasRunning())
         	onRefreshRequested();
@@ -207,7 +198,7 @@ public class AlbumListFragment extends RefreshableListFragment
         Uri baseUri;
         
         if (hasArtistId()) {
-        	baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST.buildUpon().appendPath(Long.toString(getArtistId())).build();
+        	baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST.buildUpon().appendPath(Long.toString(mArtistId)).build();
         } else if (mCurFilter != null) {
             baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE.buildUpon().appendPath(mCurFilter).build();
         } else {

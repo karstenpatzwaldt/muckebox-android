@@ -26,9 +26,11 @@ public class BrowseActivity extends Activity
         
         setContentView(R.layout.activity_browse);
         
-        FragmentTransaction tf = getFragmentManager().beginTransaction();
-        tf.add(R.id.fragment_container, new BrowseFragment());
-        tf.commit();
+        if (savedInstanceState == null) {
+            FragmentTransaction tf = getFragmentManager().beginTransaction();
+            tf.add(R.id.fragment_container, new BrowseFragment());
+            tf.commit();
+        }
     }
 
     @Override
