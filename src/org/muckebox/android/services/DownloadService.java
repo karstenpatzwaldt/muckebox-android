@@ -208,8 +208,11 @@ public class DownloadService
 		mNotificationManager.cancel(NOTIFICATION_ID);
 		mHelperThread.quit();
 		
-		mWifiLock.release();
-		mWakeLock.release();
+		if (mWifiLock.isHeld())
+		    mWifiLock.release();
+		
+		if (mWakeLock.isHeld())
+		    mWakeLock.release();
 		
 		getContentResolver().unregisterContentObserver(mCacheCleaner);
 	}
