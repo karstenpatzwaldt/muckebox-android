@@ -54,6 +54,9 @@ public class TrackListFragment extends RefreshableListFragment
 	private long mAlbumId = -1;
 	private String mAlbumTitle = null;
 	
+	private final static String STATE_ALBUM_ID = "album_id";
+	private final static String STATE_ALBUM_TITLE = "album_title";
+	
 	private class TrackListCursorAdapter extends ExpandableCursorAdapter {
 		private OnClickListener mPlayListener;
 		private OnClickListener mDownloadListener;
@@ -268,11 +271,24 @@ public class TrackListFragment extends RefreshableListFragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        if (savedInstanceState != null) {
+            mAlbumId = savedInstanceState.getLong(STATE_ALBUM_ID);
+            mAlbumTitle = savedInstanceState.getString(STATE_ALBUM_TITLE);
+        }
+        
         mHelperThread = new HandlerThread("TrackListHelper");
         mHelperThread.start();
         
         mHelperHandler = new Handler(mHelperThread.getLooper());
         mMainHandler = new Handler();
+    }
+    
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putLong(STATE_ALBUM_ID, mAlbumId);
+        outState.putString(STATE_ALBUM_TITLE, mAlbumTitle);
     }
     
     @Override

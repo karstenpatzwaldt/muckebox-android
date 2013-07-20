@@ -72,8 +72,6 @@ public class PlayerFragment
         
         measureView();
         attachButtonListeners();
-        
-        setRetainInstance(true);
 
         return  mView;
     }
@@ -116,6 +114,7 @@ public class PlayerFragment
     public void onDestroy() {
     	super.onDestroy();
     	
+    	mService.removeListener(this);
     	getActivity().getApplicationContext().unbindService(mConnection);
     }
     
@@ -133,6 +132,15 @@ public class PlayerFragment
     		
     		if (trackInfo != null)
     		    onNewTrack(trackInfo);
+    		
+    		if (mService.isPlaying())
+    		    onPlayResumed();
+    		
+    		if (mService.isPaused())
+    		    onPlayPaused();
+    		
+    		if (mService.isStopped())
+    		    onStopPlaying();
     		
     		Log.d(LOG_TAG, "Bound to service");
     	}
@@ -276,19 +284,19 @@ public class PlayerFragment
 
 	@Override
 	public void onNewTrack(PlayerService.TrackInfo trackInfo) {
-		mTitleText.setText(trackInfo.title);
-		
-       ImageButtonHelper.setImageButtonEnabled(
-            getActivity(), trackInfo.hasNext, mNextButton, R.drawable.av_next);
-       ImageButtonHelper.setImageButtonEnabled(
-           getActivity(), trackInfo.hasPrevious, mPreviousButton, R.drawable.av_previous);
-       ImageButtonHelper.setImageButtonEnabled(
-           getActivity(), true, mStopButton, R.drawable.av_stop);
-		
-		mSeekBar.setEnabled(! trackInfo.isStreaming);
-		mSeekBar.setMax(trackInfo.duration);
-		
-		onPlayProgress(0);
+	    mTitleText.setText(trackInfo.title);
+
+	    ImageButtonHelper.setImageButtonEnabled(
+	        getActivity(), trackInfo.hasNext, mNextButton, R.drawable.av_next);
+	    ImageButtonHelper.setImageButtonEnabled(
+	        getActivity(), trackInfo.hasPrevious, mPreviousButton, R.drawable.av_previous);
+	    ImageButtonHelper.setImageButtonEnabled(
+	        getActivity(), true, mStopButton, R.drawable.av_stop);
+
+	    mSeekBar.setEnabled(! trackInfo.isStreaming);
+	    mSeekBar.setMax(trackInfo.duration);
+
+	    onPlayProgress(0);
 	}
 
 	@Override

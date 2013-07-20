@@ -694,6 +694,10 @@ public class PlayerService extends Service
 		
 		listener.onConnected();
 	}
+	
+	public void removeListener(PlayerListener listener) {
+	    mListeners.remove(listener);
+	}
 
 	public void resume() {
 		if (mState == State.PAUSED)
