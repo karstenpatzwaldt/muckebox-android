@@ -236,10 +236,11 @@ public class DownloadRunnable implements Runnable
 			}
 		} catch (ClosedByInterruptException e)
 		{
+		    Log.w(LOG_TAG, "Download interrupted");
 			handleFailure(MESSAGE_DOWNLOAD_INTERRUPTED);
 		} catch (IOException e)
 		{
-			Log.d(LOG_TAG, "Error downloading");
+			Log.e(LOG_TAG, "Error downloading");
 			e.printStackTrace();
 
 			handleFailure(MESSAGE_DOWNLOAD_FAILED);

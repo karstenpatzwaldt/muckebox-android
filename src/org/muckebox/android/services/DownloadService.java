@@ -193,7 +193,7 @@ public class DownloadService
 		mHelperHandler = new Handler(mHelperThread.getLooper());
 		
 		mWifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
-		mWifiLock = mWifiManager.createWifiLock(LOG_TAG);
+		mWifiLock = mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, LOG_TAG);
 		
 		mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 		mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOG_TAG);

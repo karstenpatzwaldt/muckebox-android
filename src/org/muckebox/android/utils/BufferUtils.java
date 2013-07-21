@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class BufferUtils {
-    
     static public int bytesRemaining(ByteBuffer buf)
     {
         return buf.capacity() - buf.position();
@@ -13,7 +12,7 @@ public class BufferUtils {
     
     static public boolean isFull(ByteBuffer buf)
     {
-        return (buf.position() + 1) >= buf.capacity();
+        return buf.position() >= buf.capacity();
     }
     
     static public boolean isEmpty(ByteBuffer buf)
@@ -35,7 +34,7 @@ public class BufferUtils {
             
             if (bytes_read == -1)
                 return true;
-            
+
             increasePosition(buf, bytes_read);
         }
         
