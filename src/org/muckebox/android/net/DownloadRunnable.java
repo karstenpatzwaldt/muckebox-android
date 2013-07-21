@@ -3,11 +3,15 @@ package org.muckebox.android.net;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.utils.BufferUtils;
 import org.muckebox.android.utils.Preferences;
@@ -168,34 +172,32 @@ public class DownloadRunnable implements Runnable
 	    return ret;
 	}
 	
-	public void run()
-	{
-		HttpURLConnection conn = null;
+	public void run() {
+        HttpClient httpClient = new DefaultHttpClient();
+        HttpGet httpGet = null;
+        
+		try {
+		    httpGet = new HttpGet(getDownloadUrl());
+		    HttpResponse httpResponse = httpClient.execute(httpGet);
+		    StatusLine statusLine = httpResponse.getStatusLine();
 			
-		try
-		{
-			String downloadUrl = getDownloadUrl();
-			conn = NetHelper.getDefaultConnection(new URL(downloadUrl));
-			
-			int responseCode = conn.getResponseCode();
-			
-			if (responseCode != 200)
-			{
+			if (statusLine.getStatusCode() != 200) {
 			    Log.e(LOG_TAG, "HTTP request failed, response: '" +
-			        conn.getResponseMessage() + "'");
+			        statusLine.getReasonPhrase() + "'");
 			    
 			    handleFailure(MESSAGE_DOWNLOAD_FAILED);
 			    
 			    return;
 			}
 			
-			String mimeType = conn.getContentType();
-			InputStream is = conn.getInputStream();
+			HttpEntity httpEntity = httpResponse.getEntity();
 			
-			Log.d(LOG_TAG, "Downloading from " + downloadUrl);
+			String mimeType = httpEntity.getContentType().getValue();
+			InputStream is = httpEntity.getContent();
 			
-			if (mOutputPath != null)
-			{
+			Log.d(LOG_TAG, "Downloading from " + httpGet.getURI());
+			
+			if (mOutputPath != null) {
 				mOutputStream = Muckebox.getAppContext().openFileOutput(
 				    mOutputPath, Context.MODE_PRIVATE);
 				mOutputStream.flush();
@@ -209,15 +211,13 @@ public class DownloadRunnable implements Runnable
 				mHandler.sendMessage(mHandler.obtainMessage(
 						MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, fileInfo));
 
-			while (true)
-			{
+			while (true) {
 				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
 				boolean eosReached = BufferUtils.readIntoBuffer(is, buf);
 				
 				handleReceivedData(buf);
 				
-				if (eosReached)
-				{
+				if (eosReached) {
 					Log.v(LOG_TAG, "Download finished!");
 					
 					Result res = makeResult(mimeType, mBytesTotal);
@@ -229,8 +229,7 @@ public class DownloadRunnable implements Runnable
 					return;
 				}
 				
-				if (Thread.interrupted())
-				{
+				if (Thread.interrupted()) {
 					throw new ClosedByInterruptException();
 				}
 			}
@@ -246,9 +245,9 @@ public class DownloadRunnable implements Runnable
 			handleFailure(MESSAGE_DOWNLOAD_FAILED);
 		} finally
 		{
-			if (conn != null)
-				conn.disconnect();
-			
+		    if (httpGet != null)
+		        httpGet.abort();
+		    
 			closeOutputStream();
 		}
 	}
