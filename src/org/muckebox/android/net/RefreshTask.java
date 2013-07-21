@@ -23,7 +23,7 @@ import android.widget.Toast;
 
 public abstract class RefreshTask<Params> extends AsyncTask<Params, Void, Integer> {
     
-    private static boolean mWasRunning = false;
+    private boolean mWasRunning = false;
     
     public interface Callbacks {
         void onRefreshStarted();
@@ -31,7 +31,7 @@ public abstract class RefreshTask<Params> extends AsyncTask<Params, Void, Intege
         void onRefreshFinished(boolean success);
     }
     
-    public static boolean wasRunning() {
+    public boolean wasRunning() {
         return mWasRunning;
     }
     

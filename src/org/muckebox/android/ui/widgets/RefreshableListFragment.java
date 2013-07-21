@@ -30,6 +30,7 @@ abstract public class RefreshableListFragment
 	
 	private MenuItem mRefreshItem = null;
 	private boolean mIsRefreshing = false;
+	private boolean mWasRunning = false;
 
 	// Clients just implement this to handle the action menu click
 	protected abstract void onRefreshRequested();
@@ -122,10 +123,16 @@ abstract public class RefreshableListFragment
 	@Override
 	public void onRefreshStarted() {
 		setRefreshing(true);
+		
+		mWasRunning = true;
 	}
 	
 	@Override
 	public void onRefreshFinished(boolean success) {
 		setRefreshing(false);
+	}
+	
+	public boolean wasRefreshedOnce() {
+	    return mWasRunning;
 	}
 }

@@ -116,9 +116,6 @@ public class AlbumListFragment extends RefreshableListFragment
             titleStrip.setText(mTitle);
         else
             titleStrip.setVisibility(View.GONE);
-        
-        if (! RefreshAlbumsTask.wasRunning())
-        	onRefreshRequested();
     }
 
     public static class MySearchView extends SearchView {
@@ -214,9 +211,12 @@ public class AlbumListFragment extends RefreshableListFragment
         Uri baseUri;
         
         if (hasArtistId()) {
-        	baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST.buildUpon().appendPath(Long.toString(mArtistId)).build();
+        	baseUri = Uri.withAppendedPath(
+        	    MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST,
+        	    Long.toString(mArtistId));
         } else if (mCurFilter != null) {
-            baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE.buildUpon().appendPath(mCurFilter).build();
+            baseUri = Uri.withAppendedPath(
+                MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE, mCurFilter);
         } else {
             baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST;
         }
@@ -226,6 +226,10 @@ public class AlbumListFragment extends RefreshableListFragment
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
+        
+        if (data.getCount() == 0 && ! wasRefreshedOnce() && mCurFilter == null) {
+            onRefreshRequested();
+        }
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {

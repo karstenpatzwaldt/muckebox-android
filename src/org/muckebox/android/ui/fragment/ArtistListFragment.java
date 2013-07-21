@@ -77,9 +77,6 @@ public class ArtistListFragment extends RefreshableListFragment
         setListAdapter(mAdapter);
 
         getLoaderManager().initLoader(0, null, this);
-
-        if (! mListLoaded)
-            onRefreshRequested();
     }
 
     @Override
@@ -165,6 +162,10 @@ public class ArtistListFragment extends RefreshableListFragment
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
+        
+        if (data.getCount() == 0 && ! wasRefreshedOnce() && mCurFilter == null) {
+            onRefreshRequested();
+        }
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {

@@ -364,8 +364,6 @@ public class TrackListFragment extends RefreshableListFragment
         header.setText(mAlbumTitle);
 	    
 	    getLoaderManager().restartLoader(0, null, this);
-	    
-	    onRefreshRequested();
 	}
 
     @Override
@@ -445,6 +443,10 @@ public class TrackListFragment extends RefreshableListFragment
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
+        
+        if (data.getCount() == 0 && ! wasRefreshedOnce()) {
+            onRefreshRequested();
+        }
         
         data.moveToPosition(-1);
         
