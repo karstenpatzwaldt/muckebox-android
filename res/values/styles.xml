@@ -35,6 +35,8 @@
     	<item name="android:orientation">horizontal</item>
     	<item name="android:padding">@dimen/list_item_padding</item>
     	<item name="android:background">@android:color/transparent</item>
+       	<item name="android:paddingLeft">@dimen/list_horizontal_margin</item>
+    	<item name="android:paddingRight">@dimen/list_horizontal_margin</item>
     </style>
     
     <style name="DividedListItem" parent="ListItem">
@@ -103,10 +105,10 @@
     </style>
     
     <style name="ListFullsize" parent="@style/FullSize">
-       	<item name="android:paddingLeft">@dimen/list_horizontal_margin</item>
-    	<item name="android:paddingRight">@dimen/list_horizontal_margin</item>
     	<item name="android:background">@android:color/transparent</item>
     	<item name="android:fastScrollEnabled">true</item>
+    	<item name="android:divider">@drawable/list_divider</item>
+    	<item name="android:dividerHeight">1dp</item>
     </style>
     
     <style name="ButtonList">
