@@ -75,7 +75,6 @@ public class TrackListFragment extends RefreshableListFragment
 	
 	private class TrackListCursorAdapter extends ExpandableCursorAdapter {
 		private OnClickListener mPlayListener;
-		private OnClickListener mDownloadListener;
 		private OnClickListener mPinListener;
 		private OnClickListener mDiscardListener;
 		
@@ -101,13 +100,6 @@ public class TrackListFragment extends RefreshableListFragment
 				        }
 				    });
 				    
-					toggleExpanded(v);
-				}
-			};
-			
-			mDownloadListener = new OnClickListener() {
-				public void onClick(View v) {
-				    DownloadService.downloadTrack(getActivity(), getTrackId(getItemIndex(v)));
 					toggleExpanded(v);
 				}
 			};
@@ -143,7 +135,6 @@ public class TrackListFragment extends RefreshableListFragment
 			if (ret.getTag() == null)
 			{
 				ret.findViewById(R.id.track_list_play).setOnClickListener(mPlayListener);
-				ret.findViewById(R.id.track_list_download).setOnClickListener(mDownloadListener);
 				ret.findViewById(R.id.track_list_pin).setOnClickListener(mPinListener);
 				ret.findViewById(R.id.track_list_discard).setOnClickListener(mDiscardListener);
 				
@@ -228,8 +219,6 @@ public class TrackListFragment extends RefreshableListFragment
 				downloading = ! cursor.isNull(downloadStatusIndex);
 				pinStatus = cursor.isNull(pinStatusIndex) ? -1 : cursor.getInt(pinStatusIndex);
 				
-				ImageButton downloadButton =
-						(ImageButton) view.findViewById(R.id.track_list_download);
 				ImageButton pinButton =
 						(ImageButton) view.findViewById(R.id.track_list_pin);
 				ImageButton discardButton =
@@ -237,19 +226,16 @@ public class TrackListFragment extends RefreshableListFragment
 				
 				if (! downloading && pinStatus == -1)
 				{
-					downloadButton.setVisibility(View.VISIBLE);
 					pinButton.setVisibility(View.VISIBLE);
 					discardButton.setVisibility(View.GONE);
 				} else if (downloading)
 				{
-					downloadButton.setVisibility(View.GONE);
 					pinButton.setVisibility(View.GONE);
 					discardButton.setVisibility(View.VISIBLE);
 					
 					discardButton.setImageResource(R.drawable.navigation_cancel);
 				} else
 				{
-					downloadButton.setVisibility(View.GONE);
 					pinButton.setVisibility(pinStatus == 0 ? View.VISIBLE : View.GONE);
 					discardButton.setVisibility(View.VISIBLE);
 					

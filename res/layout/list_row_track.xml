@@ -77,13 +77,7 @@
             android:contentDescription="@string/add_to_queue"
             style="@style/TrackListButton" />
             -->
-        
-        <ImageButton
-            android:id="@+id/track_list_download"
-            android:src="@drawable/av_download"
-            android:contentDescription="@string/download"
-            style="@style/TrackListButton" />
-        
+
         <ImageButton
             android:id="@+id/track_list_pin"
             android:src="@drawable/av_make_available_offline"
