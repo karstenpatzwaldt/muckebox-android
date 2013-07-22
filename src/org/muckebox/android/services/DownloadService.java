@@ -73,6 +73,7 @@ public class DownloadService
 	public static final int COMMAND_CHECK_QUEUE 	= 2;
 	public static final int COMMAND_CLEAR 			= 3;
 	public static final int COMMAND_DISCARD 		= 4;
+	public static final int COMMAND_UNPIN           = 5;
 	
 	private static final int NOTIFICATION_ID = 1;
 	
@@ -242,6 +243,7 @@ public class DownloadService
 	public int onStartCommand(final Intent intent, int flags, final int startId)
 	{
 		int command;
+		final int trackId;
 		
 		if (intent != null)
 			command = intent.getIntExtra(EXTRA_COMMAND, COMMAND_DOWNLOAD);
@@ -252,23 +254,11 @@ public class DownloadService
 		{
 		case COMMAND_DISCARD:
 			final int discardTrackId = intent.getIntExtra(EXTRA_TRACK_ID, -1);
-			final Uri discardUri = Uri.withAppendedPath(MuckeboxProvider.URI_DOWNLOADS_TRACK, 
-					Integer.toString(discardTrackId));
-			
 			mHelperHandler.post(new Runnable() {
 				public void run() {
 					removeFromCache(discardTrackId);
-					
-					int rowsAffected = getContentResolver().delete(discardUri, null, null);
-					
-					if (mCurrentDownload != null) {
-						if (rowsAffected > 0)
-							updateNotificationCount();
-								
-						if (mCurrentDownload.mTrackId == discardTrackId)
-							stopCurrentDownload();
-					}
-				}
+					removeFromDownloads(discardTrackId);
+			}
 			});
 			
 			return Service.START_NOT_STICKY;
@@ -288,7 +278,7 @@ public class DownloadService
 			return Service.START_NOT_STICKY;
 
 		case COMMAND_DOWNLOAD:
-			final int trackId = intent.getIntExtra(EXTRA_TRACK_ID, 0);
+			trackId = intent.getIntExtra(EXTRA_TRACK_ID, 0);
 			final boolean doPin = intent.getBooleanExtra(EXTRA_PIN, false);
 			final boolean startNow = intent.getBooleanExtra(EXTRA_START_NOW, false);
 
@@ -304,6 +294,25 @@ public class DownloadService
 			});
 			
 			return Service.START_STICKY;
+			
+		case COMMAND_UNPIN:
+		    trackId = intent.getIntExtra(EXTRA_TRACK_ID, 0);
+		    
+		    mHelperHandler.post(new Runnable() {
+		        public void run() {
+		            ContentValues values = new ContentValues();
+		            
+		            values.put(CacheEntry.SHORT_PINNED, 0);
+		            
+		            getContentResolver().update(
+		                Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK,
+		                    Integer.toString(trackId)), values, null, null);
+		            
+		            removeFromDownloads(trackId);
+		        }
+		    });
+		    
+		    return Service.START_STICKY;
 			
 		default:
 			Log.e(LOG_TAG, "ERROR: unknow command " + command);
@@ -338,6 +347,16 @@ public class DownloadService
 	    intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
 	    intent.putExtra(DownloadService.EXTRA_PIN, true);
 
+	    context.startService(intent);
+	}
+	
+	public static void unpinTrack(Context context, int trackId) {
+	    Intent intent = new Intent(context, DownloadService.class);
+	    
+	    intent.putExtra(DownloadService.EXTRA_COMMAND,
+	        DownloadService.COMMAND_UNPIN);
+	    intent.putExtra(DownloadService.EXTRA_TRACK_ID, trackId);
+	    
 	    context.startService(intent);
 	}
 	
@@ -401,6 +420,21 @@ public class DownloadService
 		{
 			c.close();
 		}
+	}
+	
+	private void removeFromDownloads(int trackId) {
+        final Uri discardUri = Uri.withAppendedPath(MuckeboxProvider.URI_DOWNLOADS_TRACK, 
+            Integer.toString(trackId));
+    
+        int rowsAffected = getContentResolver().delete(discardUri, null, null);
+        
+        if (mCurrentDownload != null) {
+            if (rowsAffected > 0)
+                updateNotificationCount();
+                    
+            if (mCurrentDownload.mTrackId == trackId)
+                stopCurrentDownload();
+        }
 	}
 	
 	private void markAsDownloading(Uri downloadEntryUri) {

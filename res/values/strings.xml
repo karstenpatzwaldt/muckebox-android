@@ -95,6 +95,7 @@
     <string name="expand">Expand</string>
     <string name="add_to_queue">Add to queue</string>
     <string name="pin_to_device">Pin to device</string>
+    <string name="unpin_from_device">Unpin from device</string>
     <string name="discard">Discard</string>
     
     <string name="pin_all">Pin all</string>

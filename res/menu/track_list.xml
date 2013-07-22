@@ -8,7 +8,7 @@
         android:title="@string/pin_all" />
     
     <item
-        android:id="@+id/track_list_action_remove"
+        android:id="@+id/track_list_action_unpin"
         android:showAsAction="always|withText"
         android:icon="@drawable/navigation_cancel"
         android:title="@string/unpin_all" />

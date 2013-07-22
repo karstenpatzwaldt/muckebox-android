@@ -5,6 +5,6 @@
         android:id="@+id/download_list_action_clear"
         android:showAsAction="always|withText"
         android:icon="@drawable/navigation_cancel"
-        android:title="@string/search" />
+        android:title="@string/stop" />
 
 </menu>

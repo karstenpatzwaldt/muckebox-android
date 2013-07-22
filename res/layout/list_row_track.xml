@@ -85,9 +85,9 @@
             style="@style/TrackListButton" />
         
         <ImageButton
-            android:id="@+id/track_list_discard"
-            android:src="@drawable/content_discard"
-            android:contentDescription="@string/discard"
+            android:id="@+id/track_list_unpin"
+            android:src="@drawable/navigation_cancel"
+            android:contentDescription="@string/unpin_from_device"
             style="@style/TrackListButton" />
         
     </LinearLayout>

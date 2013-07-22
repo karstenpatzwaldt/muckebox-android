@@ -65,7 +65,7 @@ public class TrackListFragment extends RefreshableListFragment
 	private Handler mMainHandler;
 
 	private MenuItem mPinAllItem;
-	private MenuItem mRemoveAllItem;
+	private MenuItem mUnpinAllItem;
 	
 	private long mAlbumId = -1;
 	private String mAlbumTitle = null;
@@ -73,11 +73,13 @@ public class TrackListFragment extends RefreshableListFragment
 	private final static String STATE_ALBUM_ID = "album_id";
 	private final static String STATE_ALBUM_TITLE = "album_title";
 	
+    private OnClickListener mPlayListener;
+    private OnClickListener mPinListener;
+    private OnClickListener mUnpinListener;
+    private OnClickListener mDiscardListener;
+    
 	private class TrackListCursorAdapter extends ExpandableCursorAdapter {
-		private OnClickListener mPlayListener;
-		private OnClickListener mPinListener;
-		private OnClickListener mDiscardListener;
-		
+
 		public TrackListCursorAdapter(Context context, int layout, Cursor c,
 				String[] from, int[] to, int flags) {
 			super(context, layout, c, from, to, flags);
@@ -111,11 +113,18 @@ public class TrackListFragment extends RefreshableListFragment
 				}
 			};
 			
-			mDiscardListener = new OnClickListener() {
+			mUnpinListener = new OnClickListener() {
 				public void onClick(View v) {
-					DownloadService.discardTrack(getActivity(), getTrackId(getItemIndex(v)));
+					DownloadService.unpinTrack(getActivity(), getTrackId(getItemIndex(v)));
 					toggleExpanded(v);
 				}
+			};
+			
+			mDiscardListener = new OnClickListener() {
+			    public void onClick(View v) {
+			        DownloadService.discardTrack(getActivity(), getTrackId(getItemIndex(v)));
+			        toggleExpanded(v);
+			    }
 			};
 		}
 
@@ -136,7 +145,7 @@ public class TrackListFragment extends RefreshableListFragment
 			{
 				ret.findViewById(R.id.track_list_play).setOnClickListener(mPlayListener);
 				ret.findViewById(R.id.track_list_pin).setOnClickListener(mPinListener);
-				ret.findViewById(R.id.track_list_discard).setOnClickListener(mDiscardListener);
+				ret.findViewById(R.id.track_list_unpin).setOnClickListener(mUnpinListener);
 				
 				ret.setTag(true);
 			}
@@ -221,25 +230,25 @@ public class TrackListFragment extends RefreshableListFragment
 				
 				ImageButton pinButton =
 						(ImageButton) view.findViewById(R.id.track_list_pin);
-				ImageButton discardButton =
-						(ImageButton) view.findViewById(R.id.track_list_discard);
+				ImageButton unpinButton =
+						(ImageButton) view.findViewById(R.id.track_list_unpin);
 				
 				if (! downloading && pinStatus == -1)
 				{
 					pinButton.setVisibility(View.VISIBLE);
-					discardButton.setVisibility(View.GONE);
+					unpinButton.setVisibility(View.GONE);
 				} else if (downloading)
 				{
 					pinButton.setVisibility(View.GONE);
-					discardButton.setVisibility(View.VISIBLE);
+					unpinButton.setVisibility(View.VISIBLE);
 					
-					discardButton.setImageResource(R.drawable.navigation_cancel);
+					unpinButton.setOnClickListener(mDiscardListener);
 				} else
 				{
 					pinButton.setVisibility(pinStatus == 0 ? View.VISIBLE : View.GONE);
-					discardButton.setVisibility(View.VISIBLE);
+					unpinButton.setVisibility(pinStatus == 1 ? View.VISIBLE : View.GONE);
 					
-					discardButton.setImageResource(R.drawable.content_discard);
+					unpinButton.setOnClickListener(mUnpinListener);
 				}
 				
 				return true;
@@ -363,10 +372,10 @@ public class TrackListFragment extends RefreshableListFragment
     	    mPinAllItem = menu.findItem(R.id.track_list_action_pin);
     	}
     	
-    	mRemoveAllItem = menu.findItem(R.id.track_list_action_remove);
+    	mUnpinAllItem = menu.findItem(R.id.track_list_action_unpin);
     	
     	mPinAllItem.setVisible(false);
-    	mRemoveAllItem.setVisible(false);
+    	mUnpinAllItem.setVisible(false);
     }
     
     @Override
@@ -385,7 +394,7 @@ public class TrackListFragment extends RefreshableListFragment
     			DownloadService.pinTrack(getActivity(), c.getInt(trackIdIndex));
     				
     		return true;
-    	} else if (item == mRemoveAllItem)
+    	} else if (item == mUnpinAllItem)
     	{
     		Cursor c = mAdapter.getCursor();
     		int trackIdIndex = c.getColumnIndex(TrackEntry.SHORT_ID);
@@ -393,7 +402,7 @@ public class TrackListFragment extends RefreshableListFragment
     		c.moveToPosition(-1);
     		
     		while (c.moveToNext())
-    			DownloadService.discardTrack(getActivity(), c.getInt(trackIdIndex));
+    			DownloadService.unpinTrack(getActivity(), c.getInt(trackIdIndex));
     				
     		return true;
     	}
@@ -435,29 +444,26 @@ public class TrackListFragment extends RefreshableListFragment
         }
         
         data.moveToPosition(-1);
-        
-        boolean oneCached = false;
+
         boolean oneNotPinned = false;
         
-        int cachedIndex = data.getColumnIndex(CacheEntry.ALIAS_PINNED);
+        int pinnedIndex = data.getColumnIndex(CacheEntry.ALIAS_PINNED);
         int downloadingIndex = data.getColumnIndex(DownloadEntry.ALIAS_STATUS);
         
         while (data.moveToNext())
         {
-        	if (data.isNull(cachedIndex) && data.isNull(downloadingIndex))
+        	if ((data.isNull(pinnedIndex) || data.getInt(pinnedIndex) == 0) &&
+        	    data.isNull(downloadingIndex)) {
         		oneNotPinned = true;
-        	else
-        		oneCached = true;
-        	
-        	if (oneNotPinned && oneCached)
         		break;
+        	}
         }
 
         if (mPinAllItem != null)
             mPinAllItem.setVisible(oneNotPinned);
         
-        if (mRemoveAllItem != null)
-            mRemoveAllItem.setVisible(oneCached);
+        if (mUnpinAllItem != null)
+            mUnpinAllItem.setVisible(! oneNotPinned);
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
