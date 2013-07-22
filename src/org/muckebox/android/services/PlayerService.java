@@ -354,6 +354,11 @@ public class PlayerService extends Service
 	    ensureRemoteControl();
 	        
         mState = State.BUFFERING;
+        
+        for (PlayerListener l: mListeners) {
+            if (l != null)
+                l.onStartBuffering();
+        }
  
         mHelperHandler.post(new Runnable() {
             public void run() {
@@ -725,13 +730,7 @@ public class PlayerService extends Service
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayResumed();
 			
-			if (mRemoteControlClient != null)
-			    mRemoteControlClient.setPlaybackState(
-			        RemoteControlClient.PLAYSTATE_PLAYING);
-			
-			updateNotification();
-			
-			Log.d(LOG_TAG, "Resuming");
+			onResumed();
 		}
 	}
 	
@@ -745,14 +744,28 @@ public class PlayerService extends Service
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayPaused();
 			
-			if (mRemoteControlClient != null)
-			    mRemoteControlClient.setPlaybackState(
-			        RemoteControlClient.PLAYSTATE_PAUSED);
-			
-			updateNotification();
-			
-			Log.d(LOG_TAG, "Paused");
+			onPaused();
 		}
+	}
+	
+	private void onPaused() {
+        if (mRemoteControlClient != null)
+            mRemoteControlClient.setPlaybackState(
+                RemoteControlClient.PLAYSTATE_PAUSED);
+        
+        updateNotification();
+        
+        Log.d(LOG_TAG, "Paused");
+	}
+	
+	private void onResumed() {
+        if (mRemoteControlClient != null)
+            mRemoteControlClient.setPlaybackState(
+                RemoteControlClient.PLAYSTATE_PLAYING);
+        
+        updateNotification();
+        
+        Log.d(LOG_TAG, "Resuming");
 	}
 	
 	public void previous() {
@@ -811,6 +824,10 @@ public class PlayerService extends Service
 	
 	public boolean isPaused() {
 	    return mState == State.PAUSED;
+	}
+	
+	public boolean isBuffering() {
+	    return mState == State.BUFFERING;
 	}
 	
 	public Integer getCurrentTrackLength() {
@@ -875,7 +892,28 @@ public class PlayerService extends Service
 
     @Override
     public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        // TODO Add notifications for buffering etc.
+        switch (what) {
+        case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+            for (PlayerListener l: mListeners) {
+                if (l != null)
+                    l.onStartBuffering();
+            }
+            
+            onPaused();
+            
+            return true;
+            
+        case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+            for (PlayerListener l: mListeners) {
+                if (l != null)
+                    l.onPlayResumed();
+            }
+            
+            onResumed();
+            
+            return true;
+        }
+        
         return false;
     }
 

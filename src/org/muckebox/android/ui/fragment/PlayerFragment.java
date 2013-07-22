@@ -73,6 +73,8 @@ public class PlayerFragment
 	
 	PlayerService mService = null;
 	boolean mBound = false;
+	
+	private String mCurrentTitle = "";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -300,7 +302,12 @@ public class PlayerFragment
 
 	@Override
 	public void onNewTrack(PlayerService.TrackInfo trackInfo) {
-	    mTitleText.setText(trackInfo.title);
+	    mCurrentTitle = trackInfo.title;
+	    
+	    if (! mService.isBuffering()) {
+    	    mTitleText.setText(mCurrentTitle); 
+            mPlayIndicator.setImageResource(R.drawable.av_pause);
+	    }
 
 	    ImageButtonHelper.setImageButtonEnabled(
 	        getActivity(), trackInfo.hasNext, mNextButton, R.drawable.av_next);
@@ -317,7 +324,8 @@ public class PlayerFragment
 
 	@Override
 	public void onStartBuffering() {
-	    mPlayIndicator.setImageResource(R.drawable.device_access_time);
+	    mPlayIndicator.setImageResource(R.drawable.av_pause);
+	    mTitleText.setText(R.string.status_buffering);
 	}
 
 	@Override
@@ -358,6 +366,7 @@ public class PlayerFragment
        ImageButtonHelper.setImageButtonEnabled(
             getActivity(), true, mPlayPauseButton, R.drawable.av_pause);
 		mPlayIndicator.setImageResource(R.drawable.av_play);
+		mTitleText.setText(mCurrentTitle);
 	}
 	
 	@Override

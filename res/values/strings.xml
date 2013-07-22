@@ -102,6 +102,7 @@
     
     <string name="status_downloading">Downloading&#8230;</string>
     <string name="status_queued">Queued</string>
+    <string name="status_buffering">Buffering&#8230;</string>
     
     <string name="download_started">Download started</string>
     
