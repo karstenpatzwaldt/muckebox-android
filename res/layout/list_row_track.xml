@@ -64,13 +64,16 @@
    	    style="@style/ClosedButtonList"
    	    android:paddingLeft="@dimen/activity_horizontal_margin" >
         
+   	    <View style="@style/TrackListButtonSeparator"/>
+   	    
         <ImageButton 
             android:src="@drawable/av_play"
             android:contentDescription="@string/play"
             android:id="@+id/track_list_play"
             style="@style/TrackListButton" />
         
-        <!--  
+   	    <View style="@style/TrackListButtonSeparator"/>
+   	            <!--  
         <ImageButton
             android:id="@+id/track_list_add_to_queue"
             android:src="@drawable/av_add_to_queue"
@@ -83,13 +86,15 @@
             android:src="@drawable/av_make_available_offline"
             android:contentDescription="@string/pin_to_device"
             style="@style/TrackListButton" />
-        
-        <ImageButton
+
+   	    <ImageButton
             android:id="@+id/track_list_unpin"
             android:src="@drawable/navigation_cancel"
             android:contentDescription="@string/unpin_from_device"
             style="@style/TrackListButton" />
-        
+   	    
+   	    <View style="@style/TrackListButtonSeparator"/>
+   	            
     </LinearLayout>
     
 </LinearLayout>
