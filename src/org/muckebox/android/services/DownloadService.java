@@ -761,7 +761,9 @@ public class DownloadService
 				.setProgress(0,  0, false)
 				.setContentTitle(getResources().getText(stringId))
 				.setContentText("")
-				.setOngoing(false);
+				.setOngoing(false)
+				.setSmallIcon(R.drawable.alerts_and_states_error_dark)
+				.setContentInfo("");
 			mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 		}
 		
@@ -809,8 +811,8 @@ public class DownloadService
 		int count = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS,
 				null, null, null, null, null).getCount();
 		
-		mNotificationBuilder.setContentTitle(
-				getResources().getQuantityString(R.plurals.downloading, count, count));
+		mNotificationBuilder.setContentInfo(Integer.toString(count));
+		mNotificationBuilder.setContentTitle(getText(R.string.status_downloading));
 		mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 	}
 	
