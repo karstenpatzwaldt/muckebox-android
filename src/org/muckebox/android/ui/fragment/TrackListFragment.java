@@ -27,6 +27,7 @@ import org.muckebox.android.net.RefreshTracksTask;
 import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
+import org.muckebox.android.ui.utils.ImageButtonHelper;
 import org.muckebox.android.ui.utils.TimeFormatter;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
@@ -146,6 +147,11 @@ public class TrackListFragment extends RefreshableListFragment
 				ret.findViewById(R.id.track_list_play).setOnClickListener(mPlayListener);
 				ret.findViewById(R.id.track_list_pin).setOnClickListener(mPinListener);
 				ret.findViewById(R.id.track_list_unpin).setOnClickListener(mUnpinListener);
+
+				ImageButtonHelper.setImageViewDisabled(
+				    getActivity(),
+				    (ImageView) ret.findViewById(R.id.track_list_play_status),
+				    R.drawable.av_play);
 				
 				ret.setTag(true);
 			}
@@ -185,10 +191,12 @@ public class TrackListFragment extends RefreshableListFragment
 	    			switch (cursor.getInt(columnIndex))
 	    			{
 	    			case DownloadEntry.STATUS_VALUE_QUEUED:
-	    				icon.setImageResource(R.drawable.device_access_time);
+	    			    ImageButtonHelper.setImageViewDisabled(
+	    			        getActivity(), icon, R.drawable.device_access_time);
 	    				break;
 	    			case DownloadEntry.STATUS_VALUE_DOWNLOADING:
-	    				icon.setImageResource(R.drawable.av_download);
+	    			    ImageButtonHelper.setImageViewDisabled(
+	    			        getActivity(), icon, R.drawable.av_download);
 	    				break;
 	    			}
     			}
@@ -208,10 +216,12 @@ public class TrackListFragment extends RefreshableListFragment
 					switch (cursor.getInt(columnIndex))
 					{
 					case 0:
-						icon.setImageResource(R.drawable.navigation_accept);
+					    ImageButtonHelper.setImageViewDisabled(
+					        getActivity(), icon, R.drawable.navigation_accept);
 						break;
 					case 1:
-						icon.setImageResource(R.drawable.av_make_available_offline);
+					    ImageButtonHelper.setImageViewDisabled(
+                            getActivity(), icon, R.drawable.av_make_available_offline);
 						break;
 					}
 				}

@@ -306,7 +306,8 @@ public class PlayerFragment
 	    
 	    if (! mService.isBuffering()) {
     	    mTitleText.setText(mCurrentTitle); 
-            mPlayIndicator.setImageResource(R.drawable.av_pause);
+            ImageButtonHelper.setImageViewDisabled(getActivity(),
+                mPlayIndicator, R.drawable.av_pause);
 	    }
 
 	    ImageButtonHelper.setImageButtonEnabled(
@@ -324,7 +325,8 @@ public class PlayerFragment
 
 	@Override
 	public void onStartBuffering() {
-	    mPlayIndicator.setImageResource(R.drawable.av_pause);
+	    ImageButtonHelper.setImageViewDisabled(getActivity(),
+	        mPlayIndicator, R.drawable.av_pause);
 	    mTitleText.setText(R.string.status_buffering);
 	}
 
@@ -347,7 +349,8 @@ public class PlayerFragment
             getActivity(), false, mPreviousButton, R.drawable.av_previous);		
 		
 		mPlaytimeText.setText(R.string.null_null);
-		mPlayIndicator.setImageResource(R.drawable.av_stop);
+		ImageButtonHelper.setImageViewDisabled(getActivity(),
+		    mPlayIndicator, R.drawable.av_stop);
 		
 		mSeekBar.setProgress(0);
 		mSeekBar.setEnabled(false);
@@ -358,14 +361,16 @@ public class PlayerFragment
        ImageButtonHelper.setImageButtonEnabled(
             getActivity(), true, mPlayPauseButton, R.drawable.av_play);
 	       
-		mPlayIndicator.setImageResource(R.drawable.av_pause);
+		ImageButtonHelper.setImageViewDisabled(getActivity(),
+		    mPlayIndicator, R.drawable.av_pause);
 	}
 
 	@Override
 	public void onPlayResumed() {
        ImageButtonHelper.setImageButtonEnabled(
             getActivity(), true, mPlayPauseButton, R.drawable.av_pause);
-		mPlayIndicator.setImageResource(R.drawable.av_play);
+		ImageButtonHelper.setImageViewDisabled(getActivity(),
+		    mPlayIndicator, R.drawable.av_play);
 		mTitleText.setText(mCurrentTitle);
 	}
 	
