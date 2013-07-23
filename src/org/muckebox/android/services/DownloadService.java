@@ -845,8 +845,10 @@ public class DownloadService
 		int count = getContentResolver().query(MuckeboxProvider.URI_DOWNLOADS,
 				null, null, null, null, null).getCount();
 		
-		mNotificationBuilder.setContentInfo(Integer.toString(count));
-		mNotificationBuilder.setContentTitle(getText(R.string.status_downloading));
+		mNotificationBuilder.
+		    setContentInfo(Integer.toString(count)).
+		    setContentTitle(getText(R.string.status_downloading)).
+		    setSmallIcon(android.R.drawable.stat_sys_download);
 		mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 	}
 	
