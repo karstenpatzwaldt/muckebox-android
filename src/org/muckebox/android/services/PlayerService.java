@@ -32,6 +32,7 @@ import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadServer;
+import org.muckebox.android.net.PreannounceTask;
 import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
@@ -366,7 +367,7 @@ public class PlayerService extends Service
                     Uri.withAppendedPath(MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId)));
                 boolean isStreaming = playTrackFromAnywhere(trackId);
                 
-                fetchTrackInfo(playlistEntryId, trackId, isStreaming);
+                fetchTrackInfo(playlistEntryId, trackId, isStreaming);               
             }
         });
 	}
@@ -451,9 +452,13 @@ public class PlayerService extends Service
         trackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
         trackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
         
-        if (trackInfo.hasNext)
+        if (trackInfo.hasNext) {
             trackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
                 getApplicationContext(), playlistEntryUri);
+            
+            if (isStreaming && Preferences.getTranscodingEnabled())
+                new PreannounceTask().execute(trackInfo.nextTrackId);
+        }
   
         Cursor c = getContentResolver().query(Uri.withAppendedPath(
             MuckeboxProvider.URI_TRACKS_WITH_DETAILS, Integer.toString(trackId)), null, null, null, null);
