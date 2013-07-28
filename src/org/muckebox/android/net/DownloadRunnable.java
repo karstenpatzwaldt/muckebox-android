@@ -41,6 +41,8 @@ public class DownloadRunnable implements Runnable
 	private static final String LOG_TAG = "DownloadRunnable";
 	
 	private final static int BUFFER_SIZE = 32 * 1024;
+	private final static int RETRY_COUNT = 5;
+	private final static int RETRY_INTERVAL = 5;
 
 	private boolean mTranscodingEnabled;
 	private String mTranscodingType;
@@ -148,6 +150,25 @@ public class DownloadRunnable implements Runnable
 
 	}
 	
+	private void ensureOutputStream(String mimeType) throws IOException {
+	    if (mOutputStream == null) {
+
+            if (mOutputPath != null) {
+                mOutputStream = Muckebox.getAppContext().openFileOutput(
+                    mOutputPath, Context.MODE_PRIVATE);
+                mOutputStream.flush();
+                
+                Log.d(LOG_TAG, "Saving to " + mOutputPath);
+            }
+            
+            FileInfo fileInfo = makeFileInfo(mimeType, mOutputPath);
+    
+            if (mHandler != null)
+                mHandler.sendMessage(mHandler.obtainMessage(
+                        MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, fileInfo));
+	    }
+	}
+	
 	public void closeOutputStream()
 	{
 		if (mOutputStream != null)
@@ -188,67 +209,95 @@ public class DownloadRunnable implements Runnable
 	    return ret;
 	}
 	
-	public void run() {
+	public boolean downloadFile() throws IOException {
         HttpClient httpClient = new DefaultHttpClient();
         HttpGet httpGet = null;
-        
+       
+        try {
+            httpGet = new HttpGet(getDownloadUrl());
+            httpGet.addHeader("Range", String.format("bytes=%d-", mBytesTotal));
+            
+            HttpResponse httpResponse = httpClient.execute(httpGet);
+            StatusLine statusLine = httpResponse.getStatusLine();
+            
+            if (statusLine.getStatusCode() != 200) {
+                Log.e(LOG_TAG, "HTTP request failed, response: '" +
+                    statusLine.getReasonPhrase() + "'");
+
+                return false;
+            }
+            
+            HttpEntity httpEntity = httpResponse.getEntity();
+            
+            String mimeType = httpEntity.getContentType().getValue();
+            InputStream is = httpEntity.getContent();
+            
+            Log.d(LOG_TAG, "Downloading from " + httpGet.getURI());
+            
+            ensureOutputStream(mimeType);
+            
+            while (true) {
+                ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
+                boolean eosReached = BufferUtils.readIntoBuffer(is, buf);
+                
+                handleReceivedData(buf);
+                
+                if (eosReached) {
+                    Log.v(LOG_TAG, "Download finished!");
+                    
+                    Result res = makeResult(mimeType, mBytesTotal);
+                    
+                    if (mHandler != null)
+                        mHandler.sendMessage(mHandler.obtainMessage(
+                            MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0, res));
+                    
+                    return true;
+                }
+                
+                if (Thread.interrupted()) {
+                    throw new ClosedByInterruptException();
+                }
+            }
+        } finally {
+            if (httpGet != null)
+                httpGet.abort();
+        }
+	}
+	
+	public void run() {
+	    int retriesLeft = RETRY_COUNT;
+	    int lastProgress = mBytesTotal;
+	    boolean done = false;
+	    
 		try {
-		    httpGet = new HttpGet(getDownloadUrl());
-		    HttpResponse httpResponse = httpClient.execute(httpGet);
-		    StatusLine statusLine = httpResponse.getStatusLine();
-			
-			if (statusLine.getStatusCode() != 200) {
-			    Log.e(LOG_TAG, "HTTP request failed, response: '" +
-			        statusLine.getReasonPhrase() + "'");
-			    
-			    handleFailure(MESSAGE_DOWNLOAD_FAILED);
-			    
-			    return;
-			}
-			
-			HttpEntity httpEntity = httpResponse.getEntity();
-			
-			String mimeType = httpEntity.getContentType().getValue();
-			InputStream is = httpEntity.getContent();
-			
-			Log.d(LOG_TAG, "Downloading from " + httpGet.getURI());
-			
-			if (mOutputPath != null) {
-				mOutputStream = Muckebox.getAppContext().openFileOutput(
-				    mOutputPath, Context.MODE_PRIVATE);
-				mOutputStream.flush();
-				
-				Log.d(LOG_TAG, "Saving to " + mOutputPath);
-			}
-			
-			FileInfo fileInfo = makeFileInfo(mimeType, mOutputPath);
+		    while (! done) {
+		        try {
+        		    if (downloadFile()) {
+        		        done = true;
+        		    } else {
+        		        throw new IOException();
+        		    }
+		        } catch (ClosedByInterruptException e) {
+		            throw e;
+		        } catch (IOException e) {
+		            if (retriesLeft == 0)
+		                throw e;
+		            
+		            if (mBytesTotal > lastProgress) {
+		                lastProgress = mBytesTotal;
+		                retriesLeft = RETRY_COUNT;
+		            } else {
+		                retriesLeft--;
+		            }
 
-			if (mHandler != null)
-				mHandler.sendMessage(mHandler.obtainMessage(
-						MESSAGE_DOWNLOAD_STARTED, (int) mTrackId, 0, fileInfo));
-
-			while (true) {
-				ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
-				boolean eosReached = BufferUtils.readIntoBuffer(is, buf);
-				
-				handleReceivedData(buf);
-				
-				if (eosReached) {
-					Log.v(LOG_TAG, "Download finished!");
-					
-					Result res = makeResult(mimeType, mBytesTotal);
-					
-					if (mHandler != null)
-						mHandler.sendMessage(mHandler.obtainMessage(
-							MESSAGE_DOWNLOAD_FINISHED, (int) mTrackId, 0, res));
-					
-					return;
-				}
-				
-				if (Thread.interrupted()) {
-					throw new ClosedByInterruptException();
-				}
-			}
+	                Log.w(LOG_TAG, "Download failed, retrying after " + RETRY_INTERVAL + " seconds");
+	                
+                    Thread.sleep(RETRY_INTERVAL * 1000);
+		        }
+		    }
+		} catch (InterruptedException e) {
+		    Log.w(LOG_TAG, "Download interrupted");
+		    handleFailure(MESSAGE_DOWNLOAD_INTERRUPTED);
 		} catch (ClosedByInterruptException e)
 		{
 		    Log.w(LOG_TAG, "Download interrupted");
@@ -261,9 +310,6 @@ public class DownloadRunnable implements Runnable
 			handleFailure(MESSAGE_DOWNLOAD_FAILED);
 		} finally
 		{
-		    if (httpGet != null)
-		        httpGet.abort();
-		    
 			closeOutputStream();
 		}
 	}
