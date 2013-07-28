@@ -74,7 +74,7 @@ public class PlayerService extends Service
 	
 	private final static int
 	    NOTIFICATION_ID = 23,
-	    PREFETCH_INTERVAL = 10;
+	    PREFETCH_INTERVAL = 15;
 	
 	public final static String EXTRA_PLAYLIST_ITEM_ID = "playlist_item_id";
 	
@@ -623,7 +623,7 @@ public class PlayerService extends Service
             
             mMainHandler.postDelayed(new Runnable() {
                 public void run() {
-                    playTrackFromStream(trackId);
+                    requestNextTrack(trackId);
                 }
             }, 100);
         } else {

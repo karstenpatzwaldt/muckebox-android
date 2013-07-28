@@ -232,7 +232,7 @@ public class DownloadRunnable implements Runnable
             String mimeType = httpEntity.getContentType().getValue();
             InputStream is = httpEntity.getContent();
             
-            Log.d(LOG_TAG, "Downloading from " + httpGet.getURI());
+            Log.d(LOG_TAG, "Downloading from " + httpGet.getURI() + " (offset " + mBytesTotal + ")");
             
             ensureOutputStream(mimeType);
             
@@ -267,13 +267,12 @@ public class DownloadRunnable implements Runnable
 	public void run() {
 	    int retriesLeft = RETRY_COUNT;
 	    int lastProgress = mBytesTotal;
-	    boolean done = false;
-	    
+
 		try {
-		    while (! done) {
+		    while (true) {
 		        try {
         		    if (downloadFile()) {
-        		        done = true;
+        		        break;
         		    } else {
         		        throw new IOException();
         		    }
