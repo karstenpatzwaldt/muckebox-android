@@ -135,4 +135,8 @@ abstract public class RefreshableListFragment
 	public boolean wasRefreshedOnce() {
 	    return mWasRunning;
 	}
+	
+	public void resetRefreshed() {
+	    mWasRunning = false;
+	}
 }

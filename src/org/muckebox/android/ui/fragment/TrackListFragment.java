@@ -368,6 +368,7 @@ public class TrackListFragment extends RefreshableListFragment
         
         header.setText(mAlbumTitle);
 	    
+        resetRefreshed();
 	    getLoaderManager().restartLoader(0, null, this);
 	}
 
