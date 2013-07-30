@@ -76,6 +76,9 @@ public class RefreshTracksTask extends RefreshTask<Long> {
 					values.put(TrackEntry.SHORT_DISPLAY_ARTIST, o.getString("displayartist"));
 					values.put(TrackEntry.SHORT_DATE, o.getString("date"));
 					
+					operations.add(ContentProviderOperation.newDelete(
+					    Uri.withAppendedPath(MuckeboxProvider.URI_TRACKS,
+					        Integer.toString(o.getInt("id")))).build());
 					operations.add(ContentProviderOperation.newInsert(MuckeboxProvider.URI_TRACKS).
 							withValues(values).build());
 				}
