@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
+import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
@@ -467,7 +468,7 @@ public class PlayerService extends Service
             if (c.moveToFirst())
             {
                 trackInfo.album = c.getString(c.getColumnIndex(AlbumEntry.ALIAS_TITLE));
-                trackInfo.artist = c.getString(c.getColumnIndex(TrackEntry.ALIAS_DISPLAY_ARTIST));
+                trackInfo.artist = c.getString(c.getColumnIndex(ArtistEntry.ALIAS_NAME));
                 trackInfo.shortTitle = c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
                 trackInfo.title = trackInfo.artist + " - " + trackInfo.shortTitle;
                 trackInfo.duration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));

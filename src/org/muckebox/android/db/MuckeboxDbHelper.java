@@ -63,7 +63,6 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 			TrackEntry.SHORT_LABEL + TEXT_TYPE + SEP +
 			TrackEntry.SHORT_CATALOGNUMBER + TEXT_TYPE + SEP +
 			TrackEntry.SHORT_LENGTH + INT_TYPE + SEP +
-			TrackEntry.SHORT_DISPLAY_ARTIST + TEXT_TYPE + SEP +
 			TrackEntry.SHORT_DATE + TEXT_TYPE +
 			")";
 	private static final String SQL_DROP_TRACK_TABLE =
@@ -121,7 +120,7 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	private static final String SQL_DROP_PLAYLIST_TABLE =
 	    "DROP TABLE IF EXISTS " + PlaylistEntry.TABLE_NAME;
 	
-	private static final int DB_VERSION = 2;
+	private static final int DB_VERSION = 1;
 	private static final String DB_NAME = "muckebox.db";
 	
 	public MuckeboxDbHelper(Context context) {

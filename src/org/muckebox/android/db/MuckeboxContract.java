@@ -86,7 +86,6 @@ public final class MuckeboxContract {
 		public static final String SHORT_CATALOGNUMBER	= "catalognumber";
 		
 		public static final String SHORT_LENGTH			= "length";
-		public static final String SHORT_DISPLAY_ARTIST	= "display_artist";
 		public static final String SHORT_DATE			= "date";
 		
 		public static final String FULL_ID				= TABLE_NAME + "." + SHORT_ID;
@@ -98,7 +97,6 @@ public final class MuckeboxContract {
 		public static final String FULL_LABEL			= TABLE_NAME + "." + SHORT_LABEL;
 		public static final String FULL_CATALOGNUMBER	= TABLE_NAME + "." + SHORT_CATALOGNUMBER;
 		public static final String FULL_LENGTH			= TABLE_NAME + "." + SHORT_LENGTH;
-		public static final String FULL_DISPLAY_ARTIST	= TABLE_NAME + "." + SHORT_DISPLAY_ARTIST;
 		public static final String FULL_DATE			= TABLE_NAME + "." + SHORT_DATE;		
 		
 		public static final String ALIAS_ID				= TABLE_NAME + "_" + SHORT_ID;
@@ -110,7 +108,6 @@ public final class MuckeboxContract {
 		public static final String ALIAS_LABEL			= TABLE_NAME + "_" + SHORT_LABEL;
 		public static final String ALIAS_CATALOGNUMBER	= TABLE_NAME + "_" + SHORT_CATALOGNUMBER;
 		public static final String ALIAS_LENGTH			= TABLE_NAME + "_" + SHORT_LENGTH;
-		public static final String ALIAS_DISPLAY_ARTIST	= TABLE_NAME + "_" + SHORT_DISPLAY_ARTIST;
 		public static final String ALIAS_DATE			= TABLE_NAME + "_" + SHORT_DATE;
 		
 		public static final String[] PROJECTION = {
@@ -126,7 +123,6 @@ public final class MuckeboxContract {
 			FULL_CATALOGNUMBER + AS + ALIAS_CATALOGNUMBER,
 			
 			FULL_LENGTH + AS + ALIAS_LENGTH,
-			FULL_DISPLAY_ARTIST + AS + ALIAS_DISPLAY_ARTIST,
 			FULL_DATE + AS + ALIAS_DATE
 		};
 		
@@ -347,7 +343,7 @@ public final class MuckeboxContract {
 		public static final String GROUP_BY = ArtistEntry.FULL_ID;
 	}
 	
-	public static abstract class TrackDownloadCacheAlbumPlaylistJoin implements BaseColumns {
+	public static abstract class TrackArtistDownloadCacheAlbumPlaylistJoin implements BaseColumns {
 		public static final String TABLE_NAME = TrackEntry.TABLE_NAME + " LEFT OUTER JOIN " +
 				DownloadEntry.TABLE_NAME + " ON (" + TrackEntry.FULL_ID + " = " +
 				DownloadEntry.FULL_TRACK_ID + ") LEFT OUTER JOIN " +
@@ -355,7 +351,9 @@ public final class MuckeboxContract {
 				CacheEntry.FULL_TRACK_ID + ") LEFT OUTER JOIN " +
                 PlaylistEntry.TABLE_NAME + " ON (" + PlaylistEntry.FULL_TRACK_ID + " = " +
                 TrackEntry.FULL_ID + ")  JOIN " + AlbumEntry.TABLE_NAME + " ON (" +
-				AlbumEntry.FULL_ID + " = " + TrackEntry.FULL_ALBUM_ID + ")";
+				AlbumEntry.FULL_ID + " = " + TrackEntry.FULL_ALBUM_ID + ") JOIN " +
+                ArtistEntry.TABLE_NAME + " ON (" + ArtistEntry.FULL_ID + " = " +
+				TrackEntry.FULL_ARTIST_ID + ")";
 		
 		public static final String ALIAS_CANCELABLE = "cancelable";
 		public static final String ALIAS_PLAYING = "playing";
@@ -364,16 +362,17 @@ public final class MuckeboxContract {
 			TrackEntry.FULL_ID,
 			
 			TrackEntry.FULL_TITLE + AS + TrackEntry.ALIAS_TITLE,
-			TrackEntry.FULL_DISPLAY_ARTIST + AS + TrackEntry.ALIAS_DISPLAY_ARTIST,
 			TrackEntry.FULL_LENGTH + AS + TrackEntry.ALIAS_LENGTH,
 			TrackEntry.FULL_TRACKNUMBER + AS + TrackEntry.ALIAS_TRACKNUMBER,
+			
+			ArtistEntry.FULL_NAME + AS + ArtistEntry.ALIAS_NAME,
 			
 			DownloadEntry.FULL_STATUS + AS + DownloadEntry.ALIAS_STATUS,
 			
 			CacheEntry.FULL_PINNED + AS + CacheEntry.ALIAS_PINNED,
 			
 			"IFNULL(" + DownloadEntry.FULL_STATUS + ", " + CacheEntry.FULL_PINNED + ") "+
-				AS + TrackDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE,
+				AS + TrackArtistDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE,
 				
 			AlbumEntry.FULL_TITLE + AS + AlbumEntry.ALIAS_TITLE,
 			

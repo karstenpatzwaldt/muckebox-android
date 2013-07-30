@@ -73,7 +73,6 @@ public class RefreshHelper {
                 values.put(TrackEntry.SHORT_CATALOGNUMBER, o.getString("catalognumber"));
                 
                 values.put(TrackEntry.SHORT_LENGTH, o.getInt("length"));
-                values.put(TrackEntry.SHORT_DISPLAY_ARTIST, o.getString("displayartist"));
                 values.put(TrackEntry.SHORT_DATE, o.getString("date"));
                 
                 operations.add(ContentProviderOperation.newDelete(

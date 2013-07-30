@@ -581,10 +581,10 @@ public class MuckeboxProvider extends ContentProvider {
                 break;
             }
 
-            result = db.query(TrackDownloadCacheAlbumPlaylistJoin.TABLE_NAME,
-                (projection == null ? TrackDownloadCacheAlbumPlaylistJoin.PROJECTION : projection),
-                selection, selectionArgs, TrackDownloadCacheAlbumPlaylistJoin.GROUP_BY, null, 
-                (sortOrder == null ? TrackDownloadCacheAlbumPlaylistJoin.SORT_ORDER : sortOrder), null);
+            result = db.query(TrackArtistDownloadCacheAlbumPlaylistJoin.TABLE_NAME,
+                (projection == null ? TrackArtistDownloadCacheAlbumPlaylistJoin.PROJECTION : projection),
+                selection, selectionArgs, TrackArtistDownloadCacheAlbumPlaylistJoin.GROUP_BY, null, 
+                (sortOrder == null ? TrackArtistDownloadCacheAlbumPlaylistJoin.SORT_ORDER : sortOrder), null);
 
             result.setNotificationUri(resolver, URI_TRACKS);
 

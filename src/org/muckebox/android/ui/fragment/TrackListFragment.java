@@ -17,9 +17,10 @@
 package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
+import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.db.MuckeboxContract.TrackDownloadCacheAlbumPlaylistJoin;
+import org.muckebox.android.db.MuckeboxContract.TrackArtistDownloadCacheAlbumPlaylistJoin;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
@@ -335,12 +336,12 @@ public class TrackListFragment extends RefreshableListFragment
                 R.layout.list_row_track, null,
                 new String[] {
         			TrackEntry.ALIAS_TITLE,
-        			TrackEntry.ALIAS_DISPLAY_ARTIST,
+        			ArtistEntry.ALIAS_NAME,
         			TrackEntry.ALIAS_LENGTH,
         			DownloadEntry.ALIAS_STATUS,
         			CacheEntry.ALIAS_PINNED,
-        			TrackDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE,
-        			TrackDownloadCacheAlbumPlaylistJoin.ALIAS_PLAYING
+        			TrackArtistDownloadCacheAlbumPlaylistJoin.ALIAS_CANCELABLE,
+        			TrackArtistDownloadCacheAlbumPlaylistJoin.ALIAS_PLAYING
         			},
                 new int[] {
         			R.id.track_list_title,
