@@ -63,6 +63,7 @@ abstract public class RefreshableListFragment
     	if (item == mRefreshItem)
     	{
     		onRefreshRequested();
+    		return false;
     	}
     	
     	return super.onOptionsItemSelected(item);

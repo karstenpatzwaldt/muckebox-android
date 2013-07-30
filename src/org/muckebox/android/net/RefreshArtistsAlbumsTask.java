@@ -16,10 +16,16 @@
 
 package org.muckebox.android.net;
 
-public class RefreshArtistsTask extends RefreshTask<Void> {
-	@Override
-	protected Integer doInBackground(Void... nothing)
-	{
-	    return RefreshHelper.refreshArtists();
-	}
+public class RefreshArtistsAlbumsTask extends RefreshTask<Void> {
+
+    @Override
+    protected Integer doInBackground(Void... nothing) {
+        Integer ret = RefreshHelper.refreshArtists();
+        
+        if (ret != null)
+            return ret;
+        
+        return RefreshHelper.refreshAlbums();
+    }
+
 }

@@ -20,7 +20,7 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
-import org.muckebox.android.net.RefreshArtistsTask;
+import org.muckebox.android.net.RefreshArtistsAlbumsTask;
 import org.muckebox.android.ui.widgets.LiveSearchView;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
@@ -55,8 +55,6 @@ public class ArtistListFragment extends RefreshableListFragment
 	SimpleCursorAdapter mAdapter;
 	SearchView mSearchView;
 	String mCurFilter;
-	
-	boolean mListLoaded = false;
 	
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -98,8 +96,7 @@ public class ArtistListFragment extends RefreshableListFragment
     }
     
     protected void onRefreshRequested() {
-    	new RefreshArtistsTask().setCallbacks(this).execute();
-    	mListLoaded = true;
+    	new RefreshArtistsAlbumsTask().setCallbacks(this).execute();
     }
     
     public boolean onQueryTextChange(String newText) {

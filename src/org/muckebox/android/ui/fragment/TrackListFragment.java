@@ -422,7 +422,8 @@ public class TrackListFragment extends RefreshableListFragment
     }
 
     protected void onRefreshRequested() {
-		new RefreshTracksTask().setCallbacks(this).execute(mAlbumId);
+        if (hasAlbumId())
+            new RefreshTracksTask().setCallbacks(this).execute(mAlbumId);
     }
 
     @Override

@@ -20,7 +20,7 @@ import org.muckebox.android.R;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
-import org.muckebox.android.net.RefreshAlbumsTask;
+import org.muckebox.android.net.RefreshArtistsAlbumsTask;
 import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.ui.widgets.RefreshableListFragment;
 
@@ -166,7 +166,7 @@ public class AlbumListFragment extends RefreshableListFragment
 
     @Override
     protected void onRefreshRequested() {
-  		new RefreshAlbumsTask().setCallbacks(this).execute();
+  		new RefreshArtistsAlbumsTask().setCallbacks(this).execute();
     }
 
     public boolean onQueryTextChange(String newText) {
