@@ -105,6 +105,7 @@ public class DownloadService
 		
 		public String mMimeType;
 		public String mFilename;
+		public boolean mDoPin = false;
 		
 		public long mBytesReceived = 0;
 		
@@ -432,7 +433,8 @@ public class DownloadService
             if (rowsAffected > 0)
                 updateNotificationCount();
                     
-            if (mCurrentDownload.mTrackId == trackId)
+            if (mCurrentDownload.mTrackId == trackId &&
+                mCurrentDownload.mThread.isAlive())
                 stopCurrentDownload();
         }
 	}
@@ -766,6 +768,7 @@ public class DownloadService
 				entry.getTrackId(), mMyHandler, getDownloadPath(entry)));
 		mCurrentDownload.mUri = entry.getUri();
 		mCurrentDownload.mTrackId = entry.getTrackId();
+		mCurrentDownload.mDoPin = entry.doPin();
 		
 		mCurrentDownload.mThread.start();
 		
@@ -779,6 +782,16 @@ public class DownloadService
 				mCurrentDownload.mStopping = true;
 				mCurrentDownload.mThread.interrupt();
 				mCurrentDownload.mThread.join();
+				
+				if (! mCurrentDownload.mDoPin) {
+				    final int trackId = mCurrentDownload.mTrackId;
+				    
+				    mHelperHandler.post(new Runnable() {
+				        public void run() {
+				            removeFromDownloads(trackId);
+				        }
+				    });
+				}
 			} catch (InterruptedException e) {
 				Log.d(LOG_TAG, "SHOULD NOT HAPPEN");
 			}
