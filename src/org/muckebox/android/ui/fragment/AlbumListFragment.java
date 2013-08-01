@@ -115,7 +115,7 @@ public class AlbumListFragment extends RefreshableListFragment
         if (hasArtistId())
             titleStrip.setText(mTitle);
         else
-            titleStrip.setVisibility(View.GONE);
+            titleStrip.setText(R.string.title_albums);
     }
 
     public static class MySearchView extends SearchView {
@@ -132,8 +132,6 @@ public class AlbumListFragment extends RefreshableListFragment
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	super.onCreateOptionsMenu(menu, inflater);
-
     	MenuItem searchItem = menu.findItem(R.id.album_list_action_search);
         
     	if (searchItem == null) {
@@ -153,6 +151,8 @@ public class AlbumListFragment extends RefreshableListFragment
 	        
 	        searchItem.setActionView(mSearchView);
     	}
+    	
+        super.onCreateOptionsMenu(menu, inflater);
     }
    
     @Override

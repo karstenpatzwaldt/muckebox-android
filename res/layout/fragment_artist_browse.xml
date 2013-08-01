@@ -1,6 +1,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/LinearVerticalFullsize" >
-
+    
+    <TextView
+        android:id="@+id/artist_list_title_strip"
+        android:text="@string/title_artists"
+       	style="@style/TextTitleStrip" />
+    
     <ListView
         android:id="@android:id/list"
         style="@style/ListFullsize" />

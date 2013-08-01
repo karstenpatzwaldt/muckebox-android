@@ -17,18 +17,27 @@
 package org.muckebox.android.ui.activity;
 
 import org.muckebox.android.R;
-import org.muckebox.android.ui.fragment.BrowseFragment;
+import org.muckebox.android.ui.fragment.ArtistListFragment;
+import org.muckebox.android.ui.fragment.DownloadListFragment;
+import org.muckebox.android.ui.fragment.SettingsFragment;
 import org.muckebox.android.ui.fragment.TrackListFragment;
 import org.muckebox.android.ui.fragment.AlbumListFragment;
 
-import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.app.Activity;
+import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 public class BrowseActivity extends Activity
     implements AlbumListFragment.OnAlbumSelectedListener {
@@ -36,37 +45,111 @@ public class BrowseActivity extends Activity
     
     private final static String LOG_TAG = "BrowseActivity";
     
+    private ListView mBrowseList;
+    private ListView mOtherList;
+    private DrawerLayout mDrawer;
+    
+    private ActionBarDrawerToggle mDrawerToggle;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         setContentView(R.layout.activity_browse);
         
-        if (savedInstanceState == null) {
+        if (savedInstanceState == null)
+        {
             FragmentTransaction tf = getFragmentManager().beginTransaction();
-            tf.add(R.id.fragment_container, new BrowseFragment());
+            tf.add(R.id.fragment_container, new ArtistListFragment());
             tf.commit();
         }
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.browse, menu);
-        return true;
+        mBrowseList = (ListView) findViewById(R.id.drawer_browse_list);
+        mBrowseList.setAdapter(new ArrayAdapter<String>(this,
+            R.layout.list_row_drawer, R.id.drawer_list_row_title,
+            getResources().getStringArray(R.array.drawer_browse_entries)));
+        
+        mBrowseList.setOnItemClickListener(new ListView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Fragment target = null;
+
+                switch (position) {
+                case 0:
+                    target = new ArtistListFragment();
+                    break;
+                case 1:
+                    target = new AlbumListFragment();
+                    break;
+                }
+                
+                switchFragment(target);
+                mDrawer.closeDrawers();
+            }
+        });
+        
+        mOtherList = (ListView) findViewById(R.id.drawer_other_list);
+        mOtherList.setAdapter(new ArrayAdapter<String>(this,
+            R.layout.list_row_drawer, R.id.drawer_list_row_title,
+            getResources().getStringArray(R.array.drawer_other_entries)));
+        
+        mOtherList.setOnItemClickListener(new ListView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Fragment target = null;
+
+                switch (position) {
+                case 0:
+                    target = new DownloadListFragment();
+                    break;
+                case 1:
+                    target = new SettingsFragment();
+                    break;
+                }
+                
+                switchFragment(target);
+                mDrawer.closeDrawers();
+            }
+        });
+       
+        mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawer.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+            }
+        });
+        
+        mDrawerToggle = new ActionBarDrawerToggle(
+            this, mDrawer, R.drawable.ic_drawer,
+            R.string.drawer_open, R.string.drawer_close);
+        
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);
+    }
+    
+    private void switchFragment(Fragment newFragment) {
+        FragmentTransaction tf = getFragmentManager().beginTransaction();
+        tf.replace(R.id.fragment_container, newFragment);
+        tf.commit();
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
 	{
-    	switch (item.getItemId()) {
-    	case R.id.action_settings:
-    		Intent i = new Intent(BrowseActivity.this, SettingsActivity.class);
-    		startActivity(i);
-    		return true;
-    	}
-    	
-    	return false;
+        return mDrawerToggle.onOptionsItemSelected(item);
 	}
+    
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        
+        mDrawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
     
     @Override
     public void onAlbumSelected(long id, String title) {

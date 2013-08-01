@@ -79,8 +79,6 @@ public class ArtistListFragment extends RefreshableListFragment
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	super.onCreateOptionsMenu(menu, inflater);
-    	
     	MenuItem searchItem = menu.findItem(R.id.artist_list_action_search);
     	
     	if (searchItem == null) {
@@ -93,6 +91,8 @@ public class ArtistListFragment extends RefreshableListFragment
     	
         searchAction.setOnQueryTextListener(this);
         searchAction.setOnCloseListener(this);
+        
+        super.onCreateOptionsMenu(menu, inflater);
     }
     
     protected void onRefreshRequested() {

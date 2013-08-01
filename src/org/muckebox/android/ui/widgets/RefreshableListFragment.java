@@ -39,14 +39,14 @@ abstract public class RefreshableListFragment
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
     	stopRefreshAnimation();
     	
-    	super.onCreateOptionsMenu(menu, inflater);
-    	
     	mRefreshItem = menu.findItem(R.id.action_refresh);
     	
     	if (mRefreshItem == null) {
     	    inflater.inflate(R.menu.refreshable_list, menu);
     	    mRefreshItem = menu.findItem(R.id.action_refresh);
     	}
+    	
+        super.onCreateOptionsMenu(menu, inflater);
     }
     
     @Override
