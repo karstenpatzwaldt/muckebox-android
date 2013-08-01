@@ -41,7 +41,6 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
-import android.widget.TextView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 
@@ -109,13 +108,11 @@ public class AlbumListFragment extends RefreshableListFragment
         setListAdapter(mAdapter);
 
         getLoaderManager().initLoader(0, null, this);
-        
-        TextView titleStrip = (TextView) getActivity().findViewById(R.id.album_list_title_strip);
-        
+
         if (hasArtistId())
-            titleStrip.setText(mTitle);
+            getActivity().setTitle(mTitle);
         else
-            titleStrip.setText(R.string.title_albums);
+            getActivity().setTitle(R.string.title_albums);
     }
 
     public static class MySearchView extends SearchView {

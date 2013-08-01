@@ -29,7 +29,7 @@ import org.muckebox.android.db.DownloadEntryCursor;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
-import org.muckebox.android.ui.activity.DownloadListActivity;
+import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.utils.CacheCleaner;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.net.DownloadCatchupRunnable;
@@ -833,8 +833,9 @@ public class DownloadService
 					setContentText(Formatter.formatFileSize(getApplicationContext(), 0)).
 					setOngoing(true);
 		
-		Intent notifyIntent = new Intent(this, DownloadListActivity.class);
-		notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		Intent notifyIntent = new Intent(this, BrowseActivity.class);
+		notifyIntent.setAction(BrowseActivity.ACTION_DOWNLOADS);
+		notifyIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 		PendingIntent pendingNotifyIntent = PendingIntent.getActivity(
 				        this,
 				        0,

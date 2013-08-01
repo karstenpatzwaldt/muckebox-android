@@ -75,6 +75,8 @@ public class ArtistListFragment extends RefreshableListFragment
         setListAdapter(mAdapter);
 
         getLoaderManager().initLoader(0, null, this);
+        
+        getActivity().setTitle(R.string.title_artists);
     }
 
     @Override

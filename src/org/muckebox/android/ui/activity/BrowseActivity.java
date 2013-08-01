@@ -23,6 +23,7 @@ import org.muckebox.android.ui.fragment.SettingsFragment;
 import org.muckebox.android.ui.fragment.TrackListFragment;
 import org.muckebox.android.ui.fragment.AlbumListFragment;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.app.Activity;
@@ -42,6 +43,7 @@ import android.widget.ListView;
 public class BrowseActivity extends Activity
     implements AlbumListFragment.OnAlbumSelectedListener {
     public final static String ACTION_PLAYLIST = "playlist";
+    public final static String ACTION_DOWNLOADS = "downloads";
     
     private final static String LOG_TAG = "BrowseActivity";
     
@@ -57,11 +59,20 @@ public class BrowseActivity extends Activity
         
         setContentView(R.layout.activity_browse);
         
-        if (savedInstanceState == null)
+        Intent intent = getIntent();
+        
+        if (intent.getAction().equals(ACTION_DOWNLOADS))
         {
             FragmentTransaction tf = getFragmentManager().beginTransaction();
-            tf.add(R.id.fragment_container, new ArtistListFragment());
+            tf.add(R.id.fragment_container, new DownloadListFragment());
             tf.commit();
+        } else {
+            if (savedInstanceState == null)
+            {
+                FragmentTransaction tf = getFragmentManager().beginTransaction();
+                tf.add(R.id.fragment_container, new ArtistListFragment());
+                tf.commit();
+            }
         }
 
         mBrowseList = (ListView) findViewById(R.id.drawer_browse_list);

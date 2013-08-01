@@ -364,10 +364,8 @@ public class TrackListFragment extends RefreshableListFragment
 	public void reInit(long albumId, String albumTitle) {
 	    mAlbumId = albumId;
 	    mAlbumTitle = albumTitle;
-	    
-        TextView header = (TextView) getActivity().findViewById(R.id.track_list_title_strip);
-        
-        header.setText(mAlbumTitle);
+
+        getActivity().setTitle(mAlbumTitle);
 	    
         resetRefreshed();
 	    getLoaderManager().restartLoader(0, null, this);

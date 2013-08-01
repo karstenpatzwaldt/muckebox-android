@@ -169,6 +169,8 @@ public class DownloadListFragment extends ListFragment
         setListAdapter(mAdapter);
 
         getLoaderManager().initLoader(0, null, this);
+        
+        getActivity().setTitle(R.string.title_activity_downloads);
 	}
 	
     @Override
