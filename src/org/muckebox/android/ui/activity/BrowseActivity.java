@@ -64,7 +64,7 @@ public class BrowseActivity extends Activity
         if (intent.getAction().equals(ACTION_DOWNLOADS))
         {
             FragmentTransaction tf = getFragmentManager().beginTransaction();
-            tf.add(R.id.fragment_container, new DownloadListFragment());
+            tf.replace(R.id.fragment_container, new DownloadListFragment());
             tf.commit();
         } else {
             if (savedInstanceState == null)
@@ -139,6 +139,7 @@ public class BrowseActivity extends Activity
     private void switchFragment(Fragment newFragment) {
         FragmentTransaction tf = getFragmentManager().beginTransaction();
         tf.replace(R.id.fragment_container, newFragment);
+        tf.addToBackStack(null);
         tf.commit();
     }
     
