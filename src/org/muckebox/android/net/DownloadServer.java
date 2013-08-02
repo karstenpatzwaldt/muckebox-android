@@ -18,6 +18,7 @@ package org.muckebox.android.net;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -46,7 +47,9 @@ import android.util.Log;
 
 public class DownloadServer extends Thread {
     private static final String LOG_TAG = "DownloadServer";
-    private static final int PORT = 2342;
+    
+    private static final int PORT_MIN = 10000;
+    private static final int PORT_MAX = 20000;
     
     private String mMimeType;
 
@@ -54,6 +57,8 @@ public class DownloadServer extends Thread {
     private boolean mStopped = false;
     
     private ServerSocket mServerSocket;
+    private int mPort;
+    private static int mLastPort = 0;
     
     private BlockingQueue<ByteBuffer> mQueue;
     private BasicHttpProcessor mHttpProcessor;
@@ -88,13 +93,13 @@ public class DownloadServer extends Thread {
             response.setEntity(entity);
         }
     }
-    
+ 
     private static void d(String text) {
         Log.d(LOG_TAG, Thread.currentThread().getId() + ": " + text);
     }
     
-    public static String getUrl() {
-        return "http://localhost:" + PORT + "/";
+    public String getUrl() {
+        return "http://localhost:" + mPort + "/";
     }
     
     public DownloadServer(String mimeType) {
@@ -103,20 +108,34 @@ public class DownloadServer extends Thread {
         mMimeType = mimeType;
         mQueue = new LinkedBlockingQueue<ByteBuffer>();
         
+        mPort = getRandomPort();
+        
         initHttpServer();
+    }
+    
+    private int getRandomPort() {
+        int ret;
+        
+        do {
+            ret = PORT_MIN + (int) (Math.random() * ((PORT_MAX - PORT_MIN) + 1));
+        } while (ret == mLastPort);
+        
+        mLastPort = ret;
+        
+        return ret;
     }
 
     @Override
     public void run() {
         super.run();
-        
+
         try {
-            d("Starting server on " + PORT);
+            d("Starting server on " + mPort);
+            
+            mServerSocket = new ServerSocket(mPort, 0, InetAddress.getByName("localhost"));
+            mServerSocket.setReuseAddress(true);
             
             try {
-                mServerSocket = new ServerSocket(PORT);
-                mServerSocket.setReuseAddress(true);
-                
                 mReady = true;
                 
                 while (! mStopped) {

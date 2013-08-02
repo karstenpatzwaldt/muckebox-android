@@ -325,7 +325,7 @@ public class PlayerWrapper
                 mMediaPlayer.reset();
                 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mMediaPlayer.setDataSource(DownloadServer.getUrl());
+                mMediaPlayer.setDataSource(mServer.getUrl());
                 mMediaPlayer.prepareAsync();
                 
                 mPreparing = true;
@@ -455,7 +455,12 @@ public class PlayerWrapper
         Log.e(LOG_TAG, "Error " + what + " (" + whatStr +
             "), extra " + extra + " (" + extraStr + ")");
         
-        stop();
+        mMainHandler.post(new Runnable() {
+            public void run() {
+                mPreparing = false;
+                stop();
+            }
+        });
         
         return false;
     }
