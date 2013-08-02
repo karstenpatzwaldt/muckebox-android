@@ -16,24 +16,14 @@
 
 package org.muckebox.android.services;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.R;
-import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
-import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
-import org.muckebox.android.db.MuckeboxContract.CacheEntry;
+import org.muckebox.android.audio.PlayerWrapper;
 import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
-import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
-import org.muckebox.android.net.DownloadServer;
-import org.muckebox.android.net.PreannounceTask;
 import org.muckebox.android.ui.activity.BrowseActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
@@ -53,7 +43,6 @@ import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaMetadataRetriever;
-import android.media.MediaPlayer;
 import android.media.RemoteControlClient;
 import android.net.Uri;
 import android.os.Binder;
@@ -61,17 +50,12 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Parcelable;
-import android.os.PowerManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Toast;
 
 public class PlayerService extends Service
-    implements MediaPlayer.OnPreparedListener, 
-    MediaPlayer.OnCompletionListener, 
-    MediaPlayer.OnErrorListener, 
-    MediaPlayer.OnInfoListener,
-    DownloadListener {
+    implements PlayerWrapper.Listener {
 	private final static String LOG_TAG = "PlayerService";
 	
 	private final static int
@@ -87,29 +71,6 @@ public class PlayerService extends Service
 	    ACTION_RESUME = "resume",
 	    ACTION_NEXT = "next";
 	
-	public class TrackInfo {
-	    public int trackId;
-	    public int playlistEntryId;
-	    
-	    public String album;
-	    public String artist;
-	    public String shortTitle;
-	    public String title;
-	    
-	    public int duration;
-	    public int trackNumber;
-	    
-	    public int position;
-	    
-	    public boolean isStreaming;
-	    
-	    public boolean hasPrevious;
-	    public boolean hasNext;
-	    
-	    public int nextTrackId;
-	    public boolean nextTrackRequested = false;
-	}
-	
 	private enum State {
 		STOPPED, 
 		PAUSED,
@@ -122,24 +83,12 @@ public class PlayerService extends Service
 	private State mState = State.STOPPED;
 	private Set<PlayerListener> mListeners =
 	    new CopyOnWriteArraySet<PlayerListener>();
-	
-	private MediaPlayer mMediaPlayer;
-	
-	private DownloadService mDownloadService;
-	
-	private DownloadServer mServer;
 
 	private Handler mMainHandler;
 	
 	private HandlerThread mHelperThread;
 	private Handler mHelperHandler;
-	
-	private TrackInfo mTrackInfo;
-	
-	private Timer mTimer;
-	
-	private FileInputStream mCurrentFile = null;
-	
+
     private ComponentName mRemoteEventReceiver = null;
     private RemoteControlClient mRemoteControlClient = null;
     private AudioManager mAudioManager = null;
@@ -147,46 +96,13 @@ public class PlayerService extends Service
     private boolean mReceiverRegistered = false;
     private boolean mHasAudioFocus = false;
     
+    private DownloadService mDownloadService;
+    
+    private PlayerWrapper mCurrentPlayer = null;
+    
     NotificationManager mNotificationManager = null;
-	
-	private class ElapsedTimeTask extends TimerTask {
-	    private Runnable mNotifyTask = new Runnable() {
-	        public void run() {
-	            TrackInfo trackInfo = mTrackInfo;
-	            
-	            if (trackInfo != null) {
-    	            for (PlayerListener l: mListeners) {
-    	                if (l != null)
-    	                    l.onPlayProgress(trackInfo.position);
-    	            }
-	            }
-	        }
-	    };
-	    
-        public void run() {
-            if (mState != State.STOPPED)
-            {
-                if (mTrackInfo != null) {
-                    if (mMediaPlayer.isPlaying()) {
-                        mTrackInfo.position = getCurrentPlayPosition();
-                        
-                        if (getCurrentTimeLeft() < PREFETCH_INTERVAL &&
-                            mTrackInfo.hasNext &&
-                            ! mTrackInfo.nextTrackRequested)
-                        {
-                            Log.d(LOG_TAG, "Prefetching next track");
-                            requestNextTrack(mTrackInfo.nextTrackId);
-                            mTrackInfo.nextTrackRequested = true;
-                        }
-                    }
-                }
 
-                mMainHandler.post(mNotifyTask);
-            }
-        }
-	}
-
-    OnAudioFocusChangeListener mAudioFocusChangeListener = new OnAudioFocusChangeListener() {
+    private OnAudioFocusChangeListener mAudioFocusChangeListener = new OnAudioFocusChangeListener() {
         @Override
         public void onAudioFocusChange(int focusChange) {
             Log.d(LOG_TAG, "onAudioFocusChange");
@@ -200,6 +116,24 @@ public class PlayerService extends Service
                 onFocusLoss();
                 stop();
             }
+        }
+    };
+    
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service)
+        {
+            DownloadService.DownloadBinder binder =
+                    (DownloadService.DownloadBinder) service;
+            mDownloadService = binder.getService();
+
+            Log.d(LOG_TAG, "Bound to download service");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName className) {
+            mDownloadService = null;
+            
+            Log.d(LOG_TAG, "Unbound from download service");
         }
     };
     
@@ -235,18 +169,8 @@ public class PlayerService extends Service
 	public void onCreate() {
 		Log.d(LOG_TAG, "Service created.");
 		
-		bindService(new Intent(getBaseContext(), DownloadService.class),
+		bindService(new Intent(this, DownloadService.class),
             mConnection, Context.BIND_AUTO_CREATE);
-
-        mMediaPlayer = new MediaPlayer();
-        
-        mMediaPlayer.setWakeMode(getApplicationContext(),
-            PowerManager.PARTIAL_WAKE_LOCK);
-        
-        mMediaPlayer.setOnPreparedListener(this);
-        mMediaPlayer.setOnCompletionListener(this);
-        mMediaPlayer.setOnInfoListener(this);
-        mMediaPlayer.setOnErrorListener(this);
         
         mMainHandler = new Handler(getMainLooper());
         
@@ -273,32 +197,11 @@ public class PlayerService extends Service
 	    }
 	    
 	    mHelperThread.quit();
-	    
-	    if (mMediaPlayer != null)
-	        mMediaPlayer.release();
 
 	    getBaseContext().unbindService(mConnection);
 
 		Log.d(LOG_TAG, "Service destroyed.");
 	}
-	
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder service)
-        {
-            DownloadService.DownloadBinder binder =
-                    (DownloadService.DownloadBinder) service;
-            mDownloadService = binder.getService();
-
-            Log.d(LOG_TAG, "Bound to download service");
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName className) {
-            mDownloadService = null;
-            
-            Log.d(LOG_TAG, "Unbound from download service");
-        }
-    };
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -354,55 +257,33 @@ public class PlayerService extends Service
 	        stop();
 	    
 	    ensureRemoteControl();
-	        
-        mState = State.BUFFERING;
-        
-        for (PlayerListener l: mListeners) {
-            if (l != null)
-                l.onStartBuffering();
-        }
- 
-        mHelperHandler.post(new Runnable() {
-            public void run() {
-                int trackId = PlaylistHelper.getTrackId(getApplicationContext(),
-                    Uri.withAppendedPath(MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId)));
-                boolean isStreaming = playTrackFromAnywhere(trackId);
-                
-                fetchTrackInfo(playlistEntryId, trackId, isStreaming);               
+	       
+	    if (getAudioFocus()) {
+            mState = State.BUFFERING;
+            
+            for (PlayerListener l: mListeners) {
+                if (l != null)
+                    l.onStartBuffering();
             }
-        });
+            
+            mHelperHandler.post(new Runnable() {
+                public void run() {
+                    int trackId = PlaylistHelper.getTrackId(getApplicationContext(),
+                        Uri.withAppendedPath(MuckeboxProvider.URI_PLAYLIST_ENTRY,
+                            Integer.toString(playlistEntryId)));
+    
+                    mCurrentPlayer = new PlayerWrapper(getApplicationContext(),
+                        mDownloadService, playlistEntryId, trackId);
+                    mCurrentPlayer.setListener(PlayerService.this);
+                    mCurrentPlayer.play();          
+                }
+            });
+	    } else {
+	        Toast.makeText(this, getText(R.string.error_audiofocus),
+	            Toast.LENGTH_LONG).show();
+	    }
 	}
-	
-	private boolean playTrackFromAnywhere(final int trackId) {
-        Cursor c = getContentResolver().query(
-            Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK, Integer.toString(trackId)),
-                null, null, null, null);
-        
-        try {
-            if (c.moveToFirst()) {
-                final String filename = c.getString(c.getColumnIndex(CacheEntry.ALIAS_FILENAME));
-                
-                mMainHandler.post(new Runnable() {
-                    public void run() {
-                        playTrackFromFile(filename, trackId);
-                    }
-                });
-                
-                return false;
-            } else {
-                mMainHandler.post(new Runnable() {
-                    public void run() {
-                        playTrackFromStream(trackId);
-                    }
-                });
-                
-                return true;
-            }
-        } finally {
-            c.close();
-        }
-	}
-	
+
 	private void ensureRemoteControl() {
 	    if (mRemoteControlClient == null) {
             Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
@@ -416,7 +297,7 @@ public class PlayerService extends Service
 	    }
 	}
 	
-	private void updateRemoteControl(TrackInfo trackInfo)
+	private void updateRemoteControl(PlayerWrapper.TrackInfo trackInfo)
 	{
 	    if (mRemoteControlClient == null)
 	    {
@@ -437,75 +318,6 @@ public class PlayerService extends Service
 	        putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, trackInfo.duration * 1000).
 	        putLong(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER, trackInfo.trackNumber).
 	        apply();
-	}
-	
-	private void fetchTrackInfo(int playlistEntryId, int trackId, boolean isStreaming) {
-        final Uri playlistEntryUri = Uri.withAppendedPath(
-            MuckeboxProvider.URI_PLAYLIST_ENTRY, Integer.toString(playlistEntryId));
-        
-        final TrackInfo trackInfo = new TrackInfo();
-        
-        trackInfo.playlistEntryId = playlistEntryId;
-        trackInfo.trackId = trackId;
-        
-        trackInfo.isStreaming = isStreaming;
-        trackInfo.position = 0;
-        trackInfo.hasNext = ! PlaylistHelper.isLast(getApplicationContext(), playlistEntryUri);
-        trackInfo.hasPrevious = ! PlaylistHelper.isFirst(getApplicationContext(), playlistEntryUri);
-        
-        if (trackInfo.hasNext) {
-            trackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
-                getApplicationContext(), playlistEntryUri);
-            
-            if (isStreaming && Preferences.getTranscodingEnabled())
-                new PreannounceTask().execute(trackInfo.nextTrackId);
-        }
-  
-        Cursor c = getContentResolver().query(Uri.withAppendedPath(
-            MuckeboxProvider.URI_TRACKS_WITH_DETAILS, Integer.toString(trackId)), null, null, null, null);
-        
-        try {
-            if (c.moveToFirst())
-            {
-                trackInfo.album = c.getString(c.getColumnIndex(AlbumEntry.ALIAS_TITLE));
-                trackInfo.artist = c.getString(c.getColumnIndex(ArtistEntry.ALIAS_NAME));
-                trackInfo.shortTitle = c.getString(c.getColumnIndex(TrackEntry.ALIAS_TITLE));
-                trackInfo.title = trackInfo.artist + " - " + trackInfo.shortTitle;
-                trackInfo.duration = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_LENGTH));
-                trackInfo.trackNumber = c.getInt(c.getColumnIndex(TrackEntry.ALIAS_TRACKNUMBER));
-                
-                Log.d(LOG_TAG, "Title is " + trackInfo.title);
-            } else {
-                Log.e(LOG_TAG, "Could not fetch track info for " + trackId);
-            }
-
-            mMainHandler.post(new Runnable() {
-                public void run() {
-                    if (mState != State.STOPPED) {
-                        mTrackInfo = trackInfo;
-                        
-                        updateRemoteControl(trackInfo);
-                        
-                        for (PlayerListener l: mListeners)
-                        {
-                            if (l != null)
-                            {
-                                l.onNewTrack(trackInfo);
-                            }
-                        }
-                        
-                        PlayerService.this.startAndNotify(trackInfo);
-                        
-                        setAsCurrent(playlistEntryUri);
-                        
-                        mTimer = new Timer();
-                        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
-                    }
-                }
-            });
-        } finally {
-            c.close();
-        }
 	}
 	
 	private void setAsCurrent(final Uri playlistEntryUri) {
@@ -530,7 +342,10 @@ public class PlayerService extends Service
 	}
 	
 	private void updateNotification() {
-	    TrackInfo trackInfo = mTrackInfo;
+	    PlayerWrapper.TrackInfo trackInfo = null;
+	    
+	    if (mCurrentPlayer != null)
+	        trackInfo = mCurrentPlayer.getTrackInfo();
 	    
 	    if (trackInfo != null)
 	        mNotificationManager.notify(NOTIFICATION_ID, getNotification(trackInfo));
@@ -538,11 +353,11 @@ public class PlayerService extends Service
 	        mNotificationManager.cancel(NOTIFICATION_ID);
 	}
 	
-	private void startAndNotify(TrackInfo trackInfo) {
+	private void startAndNotify(PlayerWrapper.TrackInfo trackInfo) {
         startForeground(NOTIFICATION_ID, getNotification(trackInfo));
 	}
 	
-	private Notification getNotification(TrackInfo trackInfo) {
+	private Notification getNotification(PlayerWrapper.TrackInfo trackInfo) {
 	    Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
 
 	    Notification.Builder builder =
@@ -594,35 +409,6 @@ public class PlayerService extends Service
             getApplicationContext(), 23 + keyCode, mediaButtonIntent, 0);
 	}
 	
-	protected void playTrackFromFile(final String filename, final int trackId) {
-	    Log.d(LOG_TAG, "Playing from local file " + filename);
-	    
-	    try {
-            mCurrentFile = openFileInput(filename);
-            
-            mMediaPlayer.reset();
-            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mMediaPlayer.setDataSource(mCurrentFile.getFD());
-            mMediaPlayer.prepareAsync();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "Could not open file " + filename);
-            
-            try {
-                mCurrentFile.close();
-                mCurrentFile = null;
-                
-                DownloadService.discardTrack(this, trackId);
-                
-                Toast.makeText(this, getText(
-                    R.string.error_local_playback), Toast.LENGTH_LONG).show();
-            } catch (IOException e1) {
-                // srsly?
-            }
-            
-            next();
-        }
-	}
-	
 	protected void requestNextTrack(final int trackId) {
         if (mDownloadService == null) {
             Log.d(LOG_TAG, "Download service not bound yet, waiting...");
@@ -636,24 +422,7 @@ public class PlayerService extends Service
             mDownloadService.startDownload(trackId, false, false);
         }
 	}
-	
-	protected void playTrackFromStream(final int trackId) {
-        if (mDownloadService == null) {
-            Log.d(LOG_TAG, "Download service not bound yet, waiting...");
-            
-            mMainHandler.postDelayed(new Runnable() {
-                public void run() {
-                    playTrackFromStream(trackId);
-                }
-            }, 100);
-        } else {
-            Log.d(LOG_TAG, "Start playing streamed track " + trackId);
-            
-            mDownloadService.registerListener(this, trackId);
-            mDownloadService.startDownload(trackId, false, true);
-        }
-	}
-	
+
 	public void stop() {
 	    stop(false);
 	}
@@ -661,39 +430,17 @@ public class PlayerService extends Service
 	public void stop(boolean keepFocus) {
 	    mState = State.STOPPED;
 
-	    mMediaPlayer.reset();
+	    if (mCurrentPlayer != null)
+	        mCurrentPlayer.destroy();
 	    
+	    mCurrentPlayer = null;
+
 	    clearCurrent();
 
 	    for (PlayerListener l: mListeners)
 	        if (l != null)
 	            l.onStopPlaying();
 
-	    if (mCurrentFile != null) {
-	        try {
-	            mCurrentFile.close();
-	        } catch (IOException e) {
-	            // WTF?
-	            e.printStackTrace();
-	        }
-	    }
-
-	    mCurrentFile = null;
-
-	    if (mServer != null)
-	        mServer.quit();
-
-	    mServer = null;
-
-	    mDownloadService.removeListener(this);
-
-	    if (mTimer != null) {
-	        mTimer.cancel();
-	        mTimer = null;
-	    }
-
-	    mTrackInfo = null;
-	    
 	    if (! keepFocus)
 	        dropAudioFocus();
 	    
@@ -731,8 +478,8 @@ public class PlayerService extends Service
 		{
 			mState = State.PLAYING;
 			
-			mMediaPlayer.start();
-			
+			mCurrentPlayer.resume();
+
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayResumed();
 			
@@ -745,7 +492,7 @@ public class PlayerService extends Service
 		{
 			mState = State.PAUSED;
 			
-			mMediaPlayer.pause();
+			mCurrentPlayer.pause();
 			
 			for (PlayerListener l: mListeners)
 				if (l != null) l.onPlayPaused();
@@ -789,7 +536,7 @@ public class PlayerService extends Service
 	                Cursor c = getContentResolver().query(
 	                    Uri.withAppendedPath(
 	                        (isNext ? MuckeboxProvider.URI_PLAYLIST_AFTER : MuckeboxProvider.URI_PLAYLIST_BEFORE),
-	                        Integer.toString(mTrackInfo.playlistEntryId)),
+	                        Long.toString(mCurrentPlayer.getPlaylistEntryId())),
 	                        null, null, null, null);
 
 	                try {
@@ -816,7 +563,7 @@ public class PlayerService extends Service
 	
 	public void seek(int targetSeconds) {
 	    if (mState == State.PLAYING || mState == State.PAUSED) {
-	        mMediaPlayer.seekTo(targetSeconds * 1000);
+	        mCurrentPlayer.seek(targetSeconds);
 	    }
 	}
 
@@ -837,15 +584,15 @@ public class PlayerService extends Service
 	}
 	
 	public Integer getCurrentTrackLength() {
-	    if (mTrackInfo != null)
-	        return mTrackInfo.duration;
+	    if (mCurrentPlayer != null)
+	        return mCurrentPlayer.getTrackLength();
 	    
-	    return null;
+	    return 0;
 	}
 	
 	public Integer getCurrentPlayPosition() {
 	    if (mState == State.PLAYING || mState == State.PAUSED)
-	        return mMediaPlayer.getCurrentPosition() / 1000;
+	        return mCurrentPlayer.getPlayPosition();
 	    
 	    return 0;
 	}
@@ -862,213 +609,80 @@ public class PlayerService extends Service
 	}
 	
 	public String getCurrentTrackTitle() {
-	    if (mTrackInfo != null)
-	        return mTrackInfo.title;
+	    if (mCurrentPlayer != null)
+	        return mCurrentPlayer.getTrackTitle();
 	    
 	    return null;
 	}
 	
-	public TrackInfo getCurrentTrackInfo() {
-	    return mTrackInfo;
+	public PlayerWrapper.TrackInfo getCurrentTrackInfo() {
+	    if (mCurrentPlayer != null)
+	        return mCurrentPlayer.getTrackInfo();
+	    
+	    return null;
 	}
 
+	@Override
+	public void onStartPlaying(PlayerWrapper player) {
+        for (PlayerListener l: mListeners)
+            l.onStartPlaying();
+        
+        if (mRemoteControlClient != null)
+            mRemoteControlClient.setPlaybackState(
+                RemoteControlClient.PLAYSTATE_PLAYING);
+        
+        mState = State.PLAYING;
+        
+        updateNotification();
+    }
+
     @Override
-    public void onPrepared(MediaPlayer mp) {
-        if (getAudioFocus()) {
-            mp.start();
-            
-            for (PlayerListener l: mListeners)
-                l.onStartPlaying();
-            
-            if (mRemoteControlClient != null)
-                mRemoteControlClient.setPlaybackState(
-                    RemoteControlClient.PLAYSTATE_PLAYING);
-            
-            mState = State.PLAYING;
-            
-            
-            updateNotification();
-        } else {
-            Toast.makeText(getApplicationContext(),
-                getText(R.string.error_audiofocus), Toast.LENGTH_LONG).show();
-            
+    public void onCompletion(PlayerWrapper player) {
+        if (player.getTrackInfo().hasNext)
+            next();
+        else
             stop();
-        }
-    }
-
-    @Override
-    public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        switch (what) {
-        case MediaPlayer.MEDIA_INFO_BUFFERING_START:
-            for (PlayerListener l: mListeners) {
-                if (l != null)
-                    l.onStartBuffering();
-            }
-            
-            onPaused();
-            
-            return true;
-            
-        case MediaPlayer.MEDIA_INFO_BUFFERING_END:
-            for (PlayerListener l: mListeners) {
-                if (l != null)
-                    l.onPlayResumed();
-            }
-            
-            onResumed();
-            
-            return true;
-        }
-        
-        return false;
-    }
-
-    @Override
-    public boolean onError(MediaPlayer mp, int what, int extra) {
-
-        
-        String whatStr, extraStr;
-        
-        switch (what) {
-        case MediaPlayer.MEDIA_ERROR_UNKNOWN:
-            whatStr = "Unknown error";
-            break;
-        case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
-            whatStr = "Server died";
-            break;
-        default:
-            whatStr = "Unknown error (" + what + ")";
-            break;
-        }
-        
-        switch (extra) {
-        case MediaPlayer.MEDIA_ERROR_IO:
-            extraStr = "IO Error";
-            break;
-        case MediaPlayer.MEDIA_ERROR_MALFORMED:
-            extraStr = "Malformed media";
-            break;
-        case MediaPlayer.MEDIA_ERROR_UNSUPPORTED:
-            extraStr = "Unsupported format";
-            break;
-        case MediaPlayer.MEDIA_ERROR_TIMED_OUT:
-            extraStr = "Timed out";
-            break;
-        default:
-            extraStr = "Unknown extra (" + extra + ")";
-            break;
-        }
-        
-        Toast.makeText(this,
-            String.format((String) getText(R.string.error_playback) +
-                "(" + whatStr + ", " + extraStr + ")", what, extra),
-            Toast.LENGTH_SHORT).show();
-        
-        Log.e(LOG_TAG, "Error " + what + " (" + whatStr +
-            "), extra " + extra + " (" + extraStr + ")");
-        
-        stop();
-        
-        return false;
-    }
-
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        if (mTrackInfo != null)
-        {
-            if (mTrackInfo.hasNext)
-                next();
-            else
-                stop();
-        } else {
-            stop();
-        }
-    }
-
-    @Override
-    public void onDownloadStarted(long trackId, String mimeType) {
-        Log.d(LOG_TAG, "Download started for " + trackId + " (" + mimeType + ")");
-
-        assert(mServer == null);
-        
-        if (mServer != null) {
-            Log.w(LOG_TAG, "Got download started message while server running, killing old server");
-            mServer.quit();
-            
-            try {
-                mServer.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        
-        mServer = new DownloadServer(mimeType);
-        mServer.start();
-        
-        startStreamMediaPlayer();
     }
     
-    private void startStreamMediaPlayer() {
-        if (mServer == null) {
-            Log.e(LOG_TAG, "HTTP server missing");
-            stop();
-            return;
+    @Override
+    public void onBufferingStarted(PlayerWrapper player) {
+        for (PlayerListener l: mListeners) {
+            if (l != null)
+                l.onStartBuffering();
         }
         
-        if (! mServer.isReady()) {
-            Log.d(LOG_TAG, "HTTP server not ready, retrying");
-            
-            if (! mServer.isAlive())
+        onPaused();
+    }
+    
+    @Override
+    public void onBufferingFinished(PlayerWrapper player) {
+        for (PlayerListener l: mListeners) {
+            if (l != null)
+                l.onPlayResumed();
+        }
+        
+        onResumed();
+    }
+
+    @Override
+    public void onTrackInfo(PlayerWrapper wrapper, PlayerWrapper.TrackInfo trackInfo) {
+        updateRemoteControl(trackInfo);
+        
+        for (PlayerListener l: mListeners)
+        {
+            if (l != null)
             {
-                Log.e(LOG_TAG, "HTTP server died! Cannot play.");
-                stop();
-            } else {
-                mMainHandler.postDelayed(new Runnable() {
-                    public void run() {
-                        startStreamMediaPlayer();
-                    }
-                }, 50);
+                l.onNewTrack(trackInfo);
             }
-        } else {
-            try
-            {
-                Log.d(LOG_TAG, "Start playing!");
-                
-                mMediaPlayer.reset();
-                
-                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mMediaPlayer.setDataSource(DownloadServer.getUrl());
-                mMediaPlayer.prepareAsync();
-            } catch (IOException e) {
-                stop();
-            }   
         }
-    }
-
-    @Override
-    public void onDataReceived(long trackId, ByteBuffer buffer) {
-        if (mServer != null)
-            mServer.feed(buffer);
-    }
-
-    @Override
-    public void onDownloadFinished(long trackId) {
-        if (mServer != null)
-            mServer.finish();
         
-        mDownloadService.removeListener(this);
+        PlayerService.this.startAndNotify(trackInfo);
+        
+        setAsCurrent(mCurrentPlayer.getPlaylistEntryUri());
     }
-
+    
     @Override
-    public void onDownloadCanceled(long trackId) {
-        mDownloadService.removeListener(this);
+    public void onStop(PlayerWrapper player) {
         stop();
     }
-
-    @Override
-    public void onDownloadFailed(long trackId) {
-        mDownloadService.removeListener(this);
-        stop(); 
-    }
-
 }

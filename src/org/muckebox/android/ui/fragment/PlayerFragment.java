@@ -16,7 +16,11 @@
 
 package org.muckebox.android.ui.fragment;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.muckebox.android.R;
+import org.muckebox.android.audio.PlayerWrapper;
 import org.muckebox.android.services.PlayerListener;
 import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
@@ -31,6 +35,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -71,6 +76,9 @@ public class PlayerFragment
 	TextView mTitleText;
 	TextView mPlaytimeText;
 	
+	private Timer mTimer;
+	private Handler mMainHandler;
+	
 	PlayerService mService = null;
 	boolean mBound = false;
 	
@@ -109,6 +117,8 @@ public class PlayerFragment
     	
     	if (savedInstanceState != null)
     	    mCollapsed = savedInstanceState.getBoolean(STATE_COLLAPSED, true);
+    	
+    	mMainHandler = new Handler();
     }
     
     @Override
@@ -134,6 +144,8 @@ public class PlayerFragment
     	
     	mService.removeListener(this);
     	getActivity().getApplicationContext().unbindService(mConnection);
+    	
+    	stopProgressTimer();
     }
     
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -146,7 +158,7 @@ public class PlayerFragment
     		
     		mService.registerListener(PlayerFragment.this);
     		
-    		PlayerService.TrackInfo trackInfo = mService.getCurrentTrackInfo();
+    		PlayerWrapper.TrackInfo trackInfo = mService.getCurrentTrackInfo();
     		
     		if (trackInfo != null)
     		    onNewTrack(trackInfo);
@@ -171,6 +183,18 @@ public class PlayerFragment
 			Log.d(LOG_TAG, "Unbound from service");
 		}
     };
+    
+    private class ElapsedTimeTask extends TimerTask {
+        private Runnable mNotifyTask = new Runnable() {
+            public void run() {
+                updateProgress(mService.getCurrentPlayPosition());
+            }
+        };
+
+        public void run() {
+            mMainHandler.post(mNotifyTask);
+        }
+    }
     
     private void attachButtonListeners() {
     	mCollapseButton = (ImageButton) mView.findViewById(R.id.player_collapse_button);
@@ -260,6 +284,25 @@ public class PlayerFragment
 		anim.start();
 	}
 	
+	private void updateProgress(int position) {
+        int timeRemaining = mService.getCurrentTimeLeft();
+        
+        mPlaytimeText.setText(TimeFormatter.formatDuration(timeRemaining));
+        mSeekBar.setProgress(position);
+	}
+	
+	private void startProgressTimer() {
+        mTimer = new Timer();
+        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
+	}
+	
+	private void stopProgressTimer() {
+	    if (mTimer != null) {
+	        mTimer.cancel();
+	        mTimer = null;
+	    }
+	}
+	
     private void onPlayPauseButton()
     {
     	if (mBound)
@@ -301,7 +344,7 @@ public class PlayerFragment
 	}
 
 	@Override
-	public void onNewTrack(PlayerService.TrackInfo trackInfo) {
+	public void onNewTrack(PlayerWrapper.TrackInfo trackInfo) {
 	    mCurrentTitle = trackInfo.title;
 	    
 	    if (! mService.isBuffering()) {
@@ -319,8 +362,8 @@ public class PlayerFragment
 
 	    mSeekBar.setEnabled(! trackInfo.isStreaming);
 	    mSeekBar.setMax(trackInfo.duration);
-
-	    onPlayProgress(0);
+	    
+	    updateProgress(0);
 	}
 
 	@Override
@@ -354,6 +397,8 @@ public class PlayerFragment
 		
 		mSeekBar.setProgress(0);
 		mSeekBar.setEnabled(false);
+		
+		stopProgressTimer();
 	}
 
 	@Override
@@ -363,6 +408,8 @@ public class PlayerFragment
 	       
 		ImageButtonHelper.setImageViewDisabled(getActivity(),
 		    mPlayIndicator, R.drawable.av_pause);
+		
+		stopProgressTimer();
 	}
 
 	@Override
@@ -372,14 +419,8 @@ public class PlayerFragment
 		ImageButtonHelper.setImageViewDisabled(getActivity(),
 		    mPlayIndicator, R.drawable.av_play);
 		mTitleText.setText(mCurrentTitle);
-	}
-	
-	@Override
-	public void onPlayProgress(int secondsElapsed) {
-        int timeRemaining = mService.getCurrentTimeLeft();
-        
-        mPlaytimeText.setText(TimeFormatter.formatDuration(timeRemaining));
-        mSeekBar.setProgress(secondsElapsed);
+		
+		startProgressTimer();
 	}
 
     @Override

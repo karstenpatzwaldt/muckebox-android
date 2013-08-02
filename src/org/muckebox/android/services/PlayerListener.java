@@ -16,10 +16,12 @@
 
 package org.muckebox.android.services;
 
+import org.muckebox.android.audio.PlayerWrapper;
+
 public interface PlayerListener {
 	void onConnected();
 	
-	void onNewTrack(PlayerService.TrackInfo trackInfo);
+	void onNewTrack(PlayerWrapper.TrackInfo trackInfo);
 	
 	void onStartBuffering();
 	
@@ -29,6 +31,4 @@ public interface PlayerListener {
 	void onPlayResumed();
 
 	void onStopPlaying();
-	
-	void onPlayProgress(int secondsElapsed);
 }
