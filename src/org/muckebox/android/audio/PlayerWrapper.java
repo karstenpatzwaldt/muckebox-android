@@ -220,6 +220,14 @@ public class PlayerWrapper
         return mMediaPlayer.getCurrentPosition() / 1000;
     }
     
+    public void prefetchNextTrack() {
+        if (! mTrackInfo.nextTrackRequested) {
+            mDownloadService.startDownload(
+                mTrackInfo.nextTrackId, false, false);
+            mTrackInfo.nextTrackRequested = true;
+        }
+    }
+    
     private boolean playTrackFromAnywhere(final int trackId) {
         Cursor c = mContext.getContentResolver().query(
             Uri.withAppendedPath(MuckeboxProvider.URI_CACHE_TRACK, Integer.toString(trackId)),
@@ -379,7 +387,7 @@ public class PlayerWrapper
             c.close();
         }
     }
-    
+
     @Override
     public void onPrepared(MediaPlayer mp) {
         if (mStopRequested) {

@@ -17,6 +17,8 @@
 package org.muckebox.android.services;
 
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.R;
@@ -99,6 +101,7 @@ public class PlayerService extends Service
     private DownloadService mDownloadService;
     
     private PlayerWrapper mCurrentPlayer = null;
+    private Timer mTimer = null;
     
     NotificationManager mNotificationManager = null;
 
@@ -136,6 +139,14 @@ public class PlayerService extends Service
             Log.d(LOG_TAG, "Unbound from download service");
         }
     };
+    
+    private class PrefetchTask extends TimerTask {
+        public void run() {
+            if (mCurrentPlayer != null) {
+                mCurrentPlayer.prefetchNextTrack();
+            }
+        }
+    }
     
     private void onFocusGained() {
         if (! mReceiverRegistered) {
@@ -408,20 +419,6 @@ public class PlayerService extends Service
         return PendingIntent.getBroadcast(
             getApplicationContext(), 23 + keyCode, mediaButtonIntent, 0);
 	}
-	
-	protected void requestNextTrack(final int trackId) {
-        if (mDownloadService == null) {
-            Log.d(LOG_TAG, "Download service not bound yet, waiting...");
-            
-            mMainHandler.postDelayed(new Runnable() {
-                public void run() {
-                    requestNextTrack(trackId);
-                }
-            }, 100);
-        } else {
-            mDownloadService.startDownload(trackId, false, false);
-        }
-	}
 
 	public void stop() {
 	    stop(false);
@@ -445,6 +442,7 @@ public class PlayerService extends Service
 	        dropAudioFocus();
 	    
         stopForeground(true);
+        stopPrefetchTimer();
         
 	    Log.d(LOG_TAG, "Stopped playing");
  	}
@@ -507,6 +505,7 @@ public class PlayerService extends Service
                 RemoteControlClient.PLAYSTATE_PAUSED);
         
         updateNotification();
+        stopPrefetchTimer();
         
         Log.d(LOG_TAG, "Paused");
 	}
@@ -517,6 +516,7 @@ public class PlayerService extends Service
                 RemoteControlClient.PLAYSTATE_PLAYING);
         
         updateNotification();
+        startPrefetchTimer();
         
         Log.d(LOG_TAG, "Resuming");
 	}
@@ -564,6 +564,7 @@ public class PlayerService extends Service
 	public void seek(int targetSeconds) {
 	    if (mState == State.PLAYING || mState == State.PAUSED) {
 	        mCurrentPlayer.seek(targetSeconds);
+	        startPrefetchTimer();
 	    }
 	}
 
@@ -620,6 +621,25 @@ public class PlayerService extends Service
 	        return mCurrentPlayer.getTrackInfo();
 	    
 	    return null;
+	}
+	
+	private void startPrefetchTimer() {
+	    int delay = mCurrentPlayer.getTrackLength() -
+	        mCurrentPlayer.getPlayPosition() - PREFETCH_INTERVAL;
+	    
+	    if (delay > 0) {
+	        stopPrefetchTimer();
+	        
+            mTimer = new Timer();
+            mTimer.schedule(new PrefetchTask(), delay * 1000);
+	    }
+	}
+	
+	private void stopPrefetchTimer() {
+	    if (mTimer != null) {
+	        mTimer.cancel();
+	        mTimer = null;
+	    }
 	}
 
 	@Override

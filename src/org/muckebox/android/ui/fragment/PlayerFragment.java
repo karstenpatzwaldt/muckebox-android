@@ -293,7 +293,7 @@ public class PlayerFragment
 	
 	private void startProgressTimer() {
         mTimer = new Timer();
-        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 1000, 1000);
+        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 200, 200);
 	}
 	
 	private void stopProgressTimer() {
