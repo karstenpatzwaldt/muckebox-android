@@ -222,6 +222,8 @@ public class PlayerWrapper
     
     public void prefetchNextTrack() {
         if (! mTrackInfo.nextTrackRequested) {
+            Log.v(LOG_TAG, "Requesting next track (" +
+                mTrackInfo.nextTrackId + ")");
             mDownloadService.startDownload(
                 mTrackInfo.nextTrackId, false, false);
             mTrackInfo.nextTrackRequested = true;

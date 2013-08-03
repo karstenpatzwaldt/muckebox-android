@@ -624,14 +624,16 @@ public class PlayerService extends Service
 	}
 	
 	private void startPrefetchTimer() {
-	    int delay = mCurrentPlayer.getTrackLength() -
+	    long delay = mCurrentPlayer.getTrackLength() -
 	        mCurrentPlayer.getPlayPosition() - PREFETCH_INTERVAL;
+	    
+	    delay *= 1000;
 	    
 	    if (delay > 0) {
 	        stopPrefetchTimer();
 	        
             mTimer = new Timer();
-            mTimer.schedule(new PrefetchTask(), delay * 1000);
+            mTimer.schedule(new PrefetchTask(), delay);
 	    }
 	}
 	
@@ -654,6 +656,7 @@ public class PlayerService extends Service
         mState = State.PLAYING;
         
         updateNotification();
+        startPrefetchTimer();
     }
 
     @Override
