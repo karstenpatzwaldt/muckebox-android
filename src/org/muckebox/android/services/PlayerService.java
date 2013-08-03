@@ -599,7 +599,13 @@ public class PlayerService extends Service
 	}
 	
 	public Integer getCurrentTimeLeft() {
-	    int ret = getCurrentTrackLength() - getCurrentPlayPosition();
+	    Integer length = getCurrentTrackLength();
+	    Integer position = getCurrentPlayPosition();
+	    
+	    if (length == null || position == null)
+	        return 0;
+	    
+	    int ret = length - position;
 	    
 	    if (ret < 0) {
 	        Log.e(LOG_TAG, "Current time remaining < 0");
@@ -624,16 +630,20 @@ public class PlayerService extends Service
 	}
 	
 	private void startPrefetchTimer() {
-	    long delay = mCurrentPlayer.getTrackLength() -
-	        mCurrentPlayer.getPlayPosition() - PREFETCH_INTERVAL;
+	    Integer length = mCurrentPlayer.getTrackLength();
+	    Integer position = mCurrentPlayer.getPlayPosition();
 	    
-	    delay *= 1000;
-	    
-	    if (delay > 0) {
-	        stopPrefetchTimer();
-	        
-            mTimer = new Timer();
-            mTimer.schedule(new PrefetchTask(), delay);
+	    if (length != null && position != null) {
+    	    long delay = length - position - PREFETCH_INTERVAL;
+    	    
+    	    delay *= 1000;
+    	    
+    	    if (delay > 0) {
+    	        stopPrefetchTimer();
+    	        
+                mTimer = new Timer();
+                mTimer.schedule(new PrefetchTask(), delay);
+    	    }
 	    }
 	}
 	
