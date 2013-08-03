@@ -10,6 +10,8 @@
     <string name="title_albums">Albums</string>
     <string name="refresh">Refresh</string>
     
+    <string name="icon">Icon</string>
+    
     <string name="drawer_open">Open drawer</string>
     <string name="drawer_close">Close drawer</string>
     
