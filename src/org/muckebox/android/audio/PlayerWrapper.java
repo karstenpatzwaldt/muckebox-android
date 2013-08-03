@@ -409,8 +409,12 @@ public class PlayerWrapper
     
     @Override
     public void onCompletion(MediaPlayer mp) {
-        if (mListener != null)
-            mListener.onCompletion(this);
+        mMainHandler.post(new Runnable() {
+            public void run() {
+                if (mListener != null)
+                    mListener.onCompletion(PlayerWrapper.this);
+            }
+        });
     }
     
     @Override
@@ -469,14 +473,22 @@ public class PlayerWrapper
     public boolean onInfo(MediaPlayer mp, int what, int extra) {
         switch (what) {
         case MediaPlayer.MEDIA_INFO_BUFFERING_START:
-            if (mListener != null)
-                mListener.onBufferingStarted(this);
+            mMainHandler.post(new Runnable() {
+                public void run() {
+                    if (mListener != null)
+                        mListener.onBufferingStarted(PlayerWrapper.this);
+                }
+            });
 
             return true;
             
         case MediaPlayer.MEDIA_INFO_BUFFERING_END:
-            if (mListener != null)
-                mListener.onBufferingFinished(this);
+            mMainHandler.post(new Runnable() {
+                public void run() {
+                    if (mListener != null)
+                        mListener.onBufferingFinished(PlayerWrapper.this);
+                }
+            });
             
             return true;
         }
