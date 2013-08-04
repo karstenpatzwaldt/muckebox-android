@@ -4,4 +4,5 @@
     <drawable name="background_transparent">@android:color/transparent</drawable>
     <color name="title_gray">#ffdddddd</color>
     <color name="very_light_gray">#ffededed</color>
+    <color name="fragment_separator">#ffd2d2d2</color>
 </resources>
