@@ -112,8 +112,10 @@ public class PlayerService extends Service
             
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                 onFocusLoss();
+                pause();
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 onFocusGained();
+                resume();
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
                 Log.d(LOG_TAG, "audio focus lost, stopping");
                 onFocusLoss();
@@ -149,6 +151,8 @@ public class PlayerService extends Service
     }
     
     private void onFocusGained() {
+        mHasAudioFocus = true;
+        
         if (! mReceiverRegistered) {
             Log.d(LOG_TAG, "audio focus gained, registering remote");
             
@@ -157,16 +161,12 @@ public class PlayerService extends Service
             
             mReceiverRegistered = true;
         }
-        
-        if (mState == State.PAUSED)
-            resume();
     }
     
     private void onFocusLoss() {
         Log.d(LOG_TAG, "audio focus lost transient, pausing");
         
-        if (mState == State.PLAYING)
-            pause();
+        mHasAudioFocus = false;
         
         if (mReceiverRegistered) {
             mAudioManager.unregisterRemoteControlClient(mRemoteControlClient);
@@ -246,8 +246,12 @@ public class PlayerService extends Service
             AudioManager.STREAM_MUSIC,
             AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
 	    
-	    if (mHasAudioFocus)
+	    if (mHasAudioFocus) {
 	        onFocusGained();
+	    } else {
+            Toast.makeText(this, getText(R.string.error_audiofocus),
+                Toast.LENGTH_LONG).show();
+	    }
 	    
 	    return mHasAudioFocus;
 	}
@@ -289,9 +293,6 @@ public class PlayerService extends Service
                     mCurrentPlayer.play();          
                 }
             });
-	    } else {
-	        Toast.makeText(this, getText(R.string.error_audiofocus),
-	            Toast.LENGTH_LONG).show();
 	    }
 	}
 
@@ -403,8 +404,11 @@ public class PlayerService extends Service
 	            getPendingIntent(KeyEvent.KEYCODE_MEDIA_NEXT));
 	    }
 	    
+	    Intent contentIntent = new Intent(this, BrowseActivity.class);
+	    contentIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+	    
 	    builder.setContentIntent(PendingIntent.getActivity(
-	        getApplicationContext(), 42, new Intent(this, BrowseActivity.class), 0));
+	        getApplicationContext(), 42, contentIntent, 0));
 	    
 	    return builder.build();
 	}
@@ -474,14 +478,16 @@ public class PlayerService extends Service
 	public void resume() {
 		if (mState == State.PAUSED)
 		{
-			mState = State.PLAYING;
-			
-			mCurrentPlayer.resume();
-
-			for (PlayerListener l: mListeners)
-				if (l != null) l.onPlayResumed();
-			
-			onResumed();
+		    if (getAudioFocus()) {
+    			mState = State.PLAYING;
+    			
+    			mCurrentPlayer.resume();
+    
+    			for (PlayerListener l: mListeners)
+    				if (l != null) l.onPlayResumed();
+    			
+    			onResumed();
+		    }
 		}
 	}
 	
@@ -506,6 +512,7 @@ public class PlayerService extends Service
         
         updateNotification();
         stopPrefetchTimer();
+        dropAudioFocus();
         
         Log.d(LOG_TAG, "Paused");
 	}

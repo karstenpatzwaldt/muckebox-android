@@ -112,7 +112,7 @@ public class BrowseActivity extends Activity
         
         Intent intent = getIntent();
         
-        if (intent.getAction().equals(ACTION_DOWNLOADS))
+        if (ACTION_DOWNLOADS.equals(intent.getAction()))
         {
             FragmentTransaction tf = getFragmentManager().beginTransaction();
             tf.replace(R.id.fragment_container, new DownloadListFragment());
