@@ -34,17 +34,23 @@ abstract public class RefreshableListFragment
 
 	// Clients just implement this to handle the action menu click
 	protected abstract void onRefreshRequested();
+	
+	protected boolean isRefreshable() {
+	    return true;
+	}
 
 	@Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	stopRefreshAnimation();
-    	
-    	mRefreshItem = menu.findItem(R.id.action_refresh);
-    	
-    	if (mRefreshItem == null) {
-    	    inflater.inflate(R.menu.refreshable_list, menu);
-    	    mRefreshItem = menu.findItem(R.id.action_refresh);
-    	}
+	    if (isRefreshable()) {
+        	stopRefreshAnimation();
+        	
+        	mRefreshItem = menu.findItem(R.id.action_refresh);
+        	
+        	if (mRefreshItem == null) {
+        	    inflater.inflate(R.menu.refreshable_list, menu);
+        	    mRefreshItem = menu.findItem(R.id.action_refresh);
+        	}
+	    }
     	
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -60,11 +66,13 @@ abstract public class RefreshableListFragment
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-    	if (item == mRefreshItem)
-    	{
-    		onRefreshRequested();
-    		return false;
-    	}
+        if (isRefreshable()) {
+        	if (item == mRefreshItem)
+        	{
+        		onRefreshRequested();
+        		return false;
+        	}
+        }
     	
     	return super.onOptionsItemSelected(item);
     }
@@ -100,12 +108,14 @@ abstract public class RefreshableListFragment
 	public void onPrepareOptionsMenu(Menu menu) {
 		super.onPrepareOptionsMenu(menu);
 		
-		if (mIsRefreshing)
-		{
-			startRefreshAnimation();
-		} else
-		{
-			stopRefreshAnimation();
+		if (isRefreshable()) {
+    		if (mIsRefreshing)
+    		{
+    			startRefreshAnimation();
+    		} else
+    		{
+    			stopRefreshAnimation();
+    		}
 		}
 	}
 	

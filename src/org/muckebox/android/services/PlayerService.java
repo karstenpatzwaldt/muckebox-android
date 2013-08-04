@@ -405,6 +405,7 @@ public class PlayerService extends Service
 	    }
 	    
 	    Intent contentIntent = new Intent(this, BrowseActivity.class);
+	    contentIntent.setAction(BrowseActivity.ACTION_PLAYLIST);
 	    contentIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 	    
 	    builder.setContentIntent(PendingIntent.getActivity(

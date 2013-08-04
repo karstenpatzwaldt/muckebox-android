@@ -4,5 +4,13 @@
     <ListView
         android:id="@android:id/list"
         style="@style/ListFullsize" />
+    
+    <TextView
+        android:id="@android:id/empty"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:text="@string/empty"
+        android:gravity="center"
+        android:textSize="@dimen/list_primary_text_size" />
 
 </LinearLayout>

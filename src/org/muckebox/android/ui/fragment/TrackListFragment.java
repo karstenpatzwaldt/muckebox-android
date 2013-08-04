@@ -51,6 +51,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
@@ -65,6 +66,8 @@ public class TrackListFragment extends RefreshableListFragment
 	private Handler mHelperHandler;
 	
 	private Handler mMainHandler;
+	
+	private ListView mList;
 
 	private MenuItem mPinAllItem;
 	private MenuItem mUnpinAllItem;
@@ -72,8 +75,11 @@ public class TrackListFragment extends RefreshableListFragment
 	private long mAlbumId = -1;
 	private String mAlbumTitle = null;
 	
+	private long mPlaylistId = -1;
+	
 	private final static String STATE_ALBUM_ID = "album_id";
 	private final static String STATE_ALBUM_TITLE = "album_title";
+	private final static String STATE_PLAYLIST_ID = "playlist_id";
 	
     private OnClickListener mPlayListener;
     private OnClickListener mPinListener;
@@ -288,6 +294,23 @@ public class TrackListFragment extends RefreshableListFragment
 	public boolean hasAlbumId() {
 		return mAlbumId != -1;
 	}
+	
+	public static TrackListFragment newInstanceFromPlaylist(long playlistId) {
+	    TrackListFragment f = new TrackListFragment();
+	    
+	    f.mPlaylistId = playlistId;
+	    
+	    return f;
+	}
+	
+	public boolean hasPlaylistId() {
+	    return mPlaylistId != -1;
+	}
+	
+	@Override
+	protected boolean isRefreshable() {
+	    return ! hasPlaylistId();
+	}
 	   
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -296,6 +319,7 @@ public class TrackListFragment extends RefreshableListFragment
         if (savedInstanceState != null) {
             mAlbumId = savedInstanceState.getLong(STATE_ALBUM_ID);
             mAlbumTitle = savedInstanceState.getString(STATE_ALBUM_TITLE);
+            mPlaylistId = savedInstanceState.getLong(STATE_PLAYLIST_ID);
         }
         
         mHelperThread = new HandlerThread("TrackListHelper");
@@ -311,6 +335,7 @@ public class TrackListFragment extends RefreshableListFragment
 
         outState.putLong(STATE_ALBUM_ID, mAlbumId);
         outState.putString(STATE_ALBUM_TITLE, mAlbumTitle);
+        outState.putLong(STATE_PLAYLIST_ID, mPlaylistId);
     }
     
     @Override
@@ -323,7 +348,11 @@ public class TrackListFragment extends RefreshableListFragment
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_track_browse, container, false);
+        View ret = inflater.inflate(R.layout.fragment_track_browse, container, false);
+        
+        mList = (ListView) ret.findViewById(android.R.id.list);
+        
+        return ret;
 	}
 
 	@Override
@@ -359,6 +388,9 @@ public class TrackListFragment extends RefreshableListFragment
 
         if (hasAlbumId())
             reInit(mAlbumId, mAlbumTitle);
+        
+        if (hasPlaylistId())
+            reInit(mPlaylistId);
     }
 	
 	public void reInit(long albumId, String albumTitle) {
@@ -368,6 +400,15 @@ public class TrackListFragment extends RefreshableListFragment
         getActivity().setTitle(mAlbumTitle);
 	    
         resetRefreshed();
+	    getLoaderManager().restartLoader(0, null, this);
+	}
+	
+	public void reInit(long playlistId) {
+	    mPlaylistId = playlistId;
+	    
+	    getActivity().setTitle(getString(R.string.title_now_playing));
+	    
+	    resetRefreshed();
 	    getLoaderManager().restartLoader(0, null, this);
 	}
 
@@ -435,7 +476,10 @@ public class TrackListFragment extends RefreshableListFragment
         
         if (hasAlbumId()) {
             ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS_ALBUM.buildUpon().appendPath(
-                    Long.toString(mAlbumId)).build();
+                Long.toString(mAlbumId)).build();
+        } else if (hasPlaylistId()) {
+            ret = MuckeboxProvider.URI_PLAYLIST_WITH_DETAILS.buildUpon().appendPath(
+                Long.toString(mPlaylistId)).build();
         } else {
             ret = MuckeboxProvider.URI_TRACKS_WITH_DETAILS;
         }
@@ -444,14 +488,24 @@ public class TrackListFragment extends RefreshableListFragment
     }
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        TextView emptyText = (TextView) mList.getEmptyView();
+        
+        emptyText.setText("");
+        
         return new CursorLoader(getActivity(), getCursorUri(), null, null, null, null);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
         
-        if (data.getCount() == 0 && ! wasRefreshedOnce()) {
-            onRefreshRequested();
+        if (data.getCount() == 0) {
+            TextView emptyText = (TextView) mList.getEmptyView();
+            
+            emptyText.setText(R.string.empty);
+            
+            if (! wasRefreshedOnce()) {
+                onRefreshRequested();
+            }
         }
         
         data.moveToPosition(-1);

@@ -22,6 +22,7 @@ import org.muckebox.android.ui.fragment.DownloadListFragment;
 import org.muckebox.android.ui.fragment.SettingsFragment;
 import org.muckebox.android.ui.fragment.TrackListFragment;
 import org.muckebox.android.ui.fragment.AlbumListFragment;
+import org.muckebox.android.utils.Preferences;
 
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -68,7 +69,8 @@ public class BrowseActivity extends Activity
     
     private static final DrawerEntry DRAWER_BROWSE_ENTRIES[] = new DrawerEntry[] {
         new DrawerEntry(R.drawable.social_group, R.string.title_artists),
-        new DrawerEntry(R.drawable.collections_collection, R.string.title_albums)
+        new DrawerEntry(R.drawable.collections_collection, R.string.title_albums),
+        new DrawerEntry(R.drawable.av_play, R.string.title_now_playing)
     };
     
     private static final DrawerEntry DRAWER_OTHER_ENTRIES[] = new DrawerEntry[] {
@@ -117,6 +119,13 @@ public class BrowseActivity extends Activity
             FragmentTransaction tf = getFragmentManager().beginTransaction();
             tf.replace(R.id.fragment_container, new DownloadListFragment());
             tf.commit();
+        } else if (ACTION_PLAYLIST.equals(intent.getAction())) {
+            Fragment fragment = TrackListFragment.newInstanceFromPlaylist(
+                Preferences.getCurrentPlaylistId());
+            
+            FragmentTransaction tf = getFragmentManager().beginTransaction();
+            tf.replace(R.id.fragment_container, fragment);
+            tf.commit();
         } else {
             if (savedInstanceState == null)
             {
@@ -139,6 +148,10 @@ public class BrowseActivity extends Activity
                     break;
                 case R.string.title_albums:
                     target = new AlbumListFragment();
+                    break;
+                case R.string.title_now_playing:
+                    target = TrackListFragment.newInstanceFromPlaylist(
+                        Preferences.getCurrentPlaylistId());
                     break;
                 }
                 

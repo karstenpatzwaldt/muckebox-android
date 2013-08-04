@@ -86,6 +86,9 @@ public class MuckeboxProvider extends ContentProvider {
     private static final int PLAYLIST_ENTRY_ID          = (10 << 16) + 2;
     private static final int PLAYLIST_AFTER             = (10 << 16) + 3;
     private static final int PLAYLIST_BEFORE            = (10 << 16) + 4;
+    
+    private static final int PLAYLIST_WITH_DETAILS      = (11 << 16);
+    private static final int PLAYLIST_WITH_DETAILS_ID   = (11 << 16) + 1;
 
     public static final Uri URI_ARTISTS						= Uri.parse(SCHEME + AUTHORITY + "/artists");
     public static final Uri URI_ARTISTS_NAME				= Uri.parse(SCHEME + AUTHORITY + "/artists/name");
@@ -120,6 +123,8 @@ public class MuckeboxProvider extends ContentProvider {
     public static final Uri URI_PLAYLIST_ENTRY              = Uri.parse(SCHEME + AUTHORITY + "/playlist/entry");
     public static final Uri URI_PLAYLIST_BEFORE             = Uri.parse(SCHEME + AUTHORITY + "/playlist/before");
     public static final Uri URI_PLAYLIST_AFTER              = Uri.parse(SCHEME + AUTHORITY + "/playlist/after");
+    
+    public static final Uri URI_PLAYLIST_WITH_DETAILS       = Uri.parse(SCHEME + AUTHORITY + "/playlist+details");
 
     private static final UriMatcher mMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
@@ -163,6 +168,8 @@ public class MuckeboxProvider extends ContentProvider {
         mMatcher.addURI(AUTHORITY, "playlist/entry/#",          PLAYLIST_ENTRY_ID);
         mMatcher.addURI(AUTHORITY, "playlist/before/#",         PLAYLIST_BEFORE);
         mMatcher.addURI(AUTHORITY, "playlist/after/#",          PLAYLIST_AFTER);
+        
+        mMatcher.addURI(AUTHORITY, "playlist+details/#",        PLAYLIST_WITH_DETAILS_ID);
     }
 
     private static MuckeboxDbHelper mDbHelper;
@@ -697,6 +704,24 @@ public class MuckeboxProvider extends ContentProvider {
                 projection == null ? PlaylistEntry.PROJECTION : projection,
                     selection, selectionArgs, null, null,
                     (sortOrder == null) ? PlaylistEntry.SORT_ORDER : sortOrder, null);
+
+            result.setNotificationUri(resolver, URI_PLAYLIST);
+
+            break;
+            
+        case PLAYLIST_WITH_DETAILS:
+            switch (match) {
+            case PLAYLIST_WITH_DETAILS_ID:
+                selection = PlaylistEntry.FULL_PLAYLIST_ID + " = ?";
+                selectionArgs = new String[] { uri.getLastPathSegment() };
+
+                break;
+            }
+
+            result = db.query(TrackArtistDownloadCacheAlbumPlaylistJoin.TABLE_NAME,
+                (projection == null ? TrackArtistDownloadCacheAlbumPlaylistJoin.PROJECTION : projection),
+                selection, selectionArgs, TrackArtistDownloadCacheAlbumPlaylistJoin.GROUP_BY, null, 
+                (sortOrder == null ? TrackArtistDownloadCacheAlbumPlaylistJoin.SORT_ORDER : sortOrder), null);
 
             result.setNotificationUri(resolver, URI_PLAYLIST);
 
