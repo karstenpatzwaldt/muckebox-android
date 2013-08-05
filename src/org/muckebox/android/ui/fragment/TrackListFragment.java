@@ -499,12 +499,13 @@ public class TrackListFragment extends RefreshableListFragment
         mAdapter.swapCursor(data);
         
         if (data.getCount() == 0) {
-            TextView emptyText = (TextView) mList.getEmptyView();
-            
-            emptyText.setText(R.string.empty);
-            
+
             if (! wasRefreshedOnce()) {
                 onRefreshRequested();
+            } else {
+                TextView emptyText = (TextView) mList.getEmptyView();
+                                
+                emptyText.setText(R.string.empty);
             }
         }
         
