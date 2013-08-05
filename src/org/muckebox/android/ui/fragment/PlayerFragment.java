@@ -76,13 +76,49 @@ public class PlayerFragment
 	TextView mTitleText;
 	TextView mPlaytimeText;
 	
-	private Timer mTimer;
+	private ElapsedTimeTimer mTimer = new ElapsedTimeTimer();
 	private Handler mMainHandler;
 	
 	PlayerService mService = null;
 	boolean mBound = false;
 	
 	private String mCurrentTitle = "";
+	
+    private class ElapsedTimeTimer {
+        private Timer mTimer;
+        private boolean mStopped = false;
+        
+        private class ElapsedTimeTask extends TimerTask {
+            private Runnable mNotifyTask = new Runnable() {
+                public void run() {
+                    if (! mStopped)
+                        updateProgress(mService.getCurrentPlayPosition());
+                }
+            };
+    
+            public void run() {
+                mMainHandler.post(mNotifyTask);
+            }
+        }
+        
+        public ElapsedTimeTimer() {
+            mTimer = new Timer();
+        }
+        
+        synchronized public void start() {
+            mStopped = false;
+            
+            mTimer = new Timer();
+            mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 200, 200);
+        }
+        
+        synchronized public void stop() {
+            if (! mStopped) {
+                mStopped = true;
+                mTimer.cancel();
+            }
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -145,7 +181,7 @@ public class PlayerFragment
     	mService.removeListener(this);
     	getActivity().getApplicationContext().unbindService(mConnection);
     	
-    	stopProgressTimer();
+    	mTimer.stop();
     }
     
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -183,18 +219,6 @@ public class PlayerFragment
 			Log.d(LOG_TAG, "Unbound from service");
 		}
     };
-    
-    private class ElapsedTimeTask extends TimerTask {
-        private Runnable mNotifyTask = new Runnable() {
-            public void run() {
-                updateProgress(mService.getCurrentPlayPosition());
-            }
-        };
-
-        public void run() {
-            mMainHandler.post(mNotifyTask);
-        }
-    }
     
     private void attachButtonListeners() {
     	mCollapseButton = (ImageButton) mView.findViewById(R.id.player_collapse_button);
@@ -291,18 +315,6 @@ public class PlayerFragment
         mSeekBar.setProgress(position);
 	}
 	
-	private void startProgressTimer() {
-        mTimer = new Timer();
-        mTimer.scheduleAtFixedRate(new ElapsedTimeTask(), 200, 200);
-	}
-	
-	private void stopProgressTimer() {
-	    if (mTimer != null) {
-	        mTimer.cancel();
-	        mTimer = null;
-	    }
-	}
-	
     private void onPlayPauseButton()
     {
     	if (mBound)
@@ -380,7 +392,9 @@ public class PlayerFragment
 
 	@Override
 	public void onStopPlaying() {
-		mTitleText.setText(R.string.no_track);
+        mTimer.stop();
+        
+        mTitleText.setText(R.string.no_track);
 		
         ImageButtonHelper.setImageButtonEnabled(
             getActivity(), false, mPlayPauseButton, R.drawable.av_play);
@@ -397,8 +411,6 @@ public class PlayerFragment
 		
 		mSeekBar.setProgress(0);
 		mSeekBar.setEnabled(false);
-		
-		stopProgressTimer();
 	}
 
 	@Override
@@ -409,7 +421,7 @@ public class PlayerFragment
 		ImageButtonHelper.setImageViewDisabled(getActivity(),
 		    mPlayIndicator, R.drawable.av_pause);
 		
-		stopProgressTimer();
+		mTimer.stop();
 	}
 
 	@Override
@@ -420,7 +432,7 @@ public class PlayerFragment
 		    mPlayIndicator, R.drawable.av_play);
 		mTitleText.setText(mCurrentTitle);
 		
-		startProgressTimer();
+		mTimer.start();
 	}
 
     @Override
