@@ -28,12 +28,24 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class MuckeboxDbHelper extends SQLiteOpenHelper {
+    private static final String CREATE_INDEX = "CREATE INDEX ";
+    private static final String IDX = "_idx";
+    private static final String ON = " ON ";
 	private static final String TEXT_TYPE = " TEXT ";
 	private static final String INT_TYPE = " INTEGER ";
 	private static final String PRIMARY_KEY = " PRIMARY KEY ";
 	private static final String SEP = ",";
 	private static final String DEFAULT_NOW = " DEFAULT CURRENT_TIMESTAMP";
 	private static final String DEFAULT_ZERO = " DEFAULT 0";
+	
+	private static final String createIndex(String table, String column) {
+	    return CREATE_INDEX + table + "_" + column + IDX + ON + table +
+	        " (" + column + ")";
+	}
+	
+	private static final String dropIndex(String table, String column) {
+	    return "DROP INDEX IF EXISTS " + table + "_" + column + IDX;
+	}
 	
 	private static final String SQL_CREATE_ARTIST_TABLE = 
 			"CREATE TABLE " + ArtistEntry.TABLE_NAME + " (" +
@@ -130,21 +142,45 @@ public class MuckeboxDbHelper extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(SQL_CREATE_ARTIST_TABLE);
+		db.execSQL(createIndex(ArtistEntry.TABLE_NAME, ArtistEntry.SHORT_NAME));
+		
 		db.execSQL(SQL_CREATE_ALBUM_TABLE);
+		db.execSQL(createIndex(AlbumEntry.TABLE_NAME, AlbumEntry.SHORT_ARTIST_ID));
+		db.execSQL(createIndex(AlbumEntry.TABLE_NAME, AlbumEntry.SHORT_TITLE));
+		
 		db.execSQL(SQL_CREATE_TRACK_TABLE);
+		db.execSQL(createIndex(TrackEntry.TABLE_NAME, TrackEntry.SHORT_ALBUM_ID));
+		
 		db.execSQL(SQL_CREATE_DOWNLOAD_TABLE);
+		db.execSQL(createIndex(DownloadEntry.TABLE_NAME, DownloadEntry.SHORT_TRACK_ID));
+		
 		db.execSQL(SQL_CREATE_CACHE_TABLE);
+		db.execSQL(createIndex(CacheEntry.TABLE_NAME, CacheEntry.SHORT_TRACK_ID));
+		
 		db.execSQL(SQL_CREATE_PLAYLIST_TABLE);
+		db.execSQL(createIndex(PlaylistEntry.TABLE_NAME, PlaylistEntry.SHORT_TRACK_ID));
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		db.execSQL(SQL_DROP_ARTIST_TABLE);
+		db.execSQL(dropIndex(ArtistEntry.TABLE_NAME, ArtistEntry.SHORT_NAME));
+		
 		db.execSQL(SQL_DROP_ALBUM_TABLE);
+		db.execSQL(dropIndex(AlbumEntry.TABLE_NAME, AlbumEntry.SHORT_ARTIST_ID));
+		db.execSQL(dropIndex(AlbumEntry.TABLE_NAME, AlbumEntry.SHORT_TITLE));
+		
 		db.execSQL(SQL_DROP_TRACK_TABLE);
+		db.execSQL(dropIndex(TrackEntry.TABLE_NAME, TrackEntry.SHORT_ALBUM_ID));
+		
 		db.execSQL(SQL_DROP_DOWNLOAD_TABLE);
+		db.execSQL(dropIndex(DownloadEntry.TABLE_NAME, DownloadEntry.SHORT_TRACK_ID));
+		
 		db.execSQL(SQL_DROP_CACHE_TABLE);
+		db.execSQL(dropIndex(CacheEntry.TABLE_NAME, CacheEntry.SHORT_TRACK_ID));
+		
 		db.execSQL(SQL_DROP_PLAYLIST_TABLE);
+		db.execSQL(dropIndex(PlaylistEntry.TABLE_NAME, PlaylistEntry.SHORT_TRACK_ID));
 		
 		onCreate(db);
 	}
