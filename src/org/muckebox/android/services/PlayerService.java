@@ -97,6 +97,7 @@ public class PlayerService extends Service
     
     private boolean mReceiverRegistered = false;
     private boolean mHasAudioFocus = false;
+    private boolean mTransientFocusLoss = false;
     
     private DownloadService mDownloadService;
     
@@ -111,11 +112,16 @@ public class PlayerService extends Service
             Log.d(LOG_TAG, "onAudioFocusChange");
             
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                mTransientFocusLoss = true;
                 onFocusLoss();
                 pause();
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 onFocusGained();
-                resume();
+                
+                if (mTransientFocusLoss) {
+                    mTransientFocusLoss = false;
+                    resume();
+                }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
                 Log.d(LOG_TAG, "audio focus lost, stopping");
                 onFocusLoss();
@@ -479,16 +485,14 @@ public class PlayerService extends Service
 	public void resume() {
 		if (mState == State.PAUSED)
 		{
-		    if (getAudioFocus()) {
-    			mState = State.PLAYING;
-    			
-    			mCurrentPlayer.resume();
-    
-    			for (PlayerListener l: mListeners)
-    				if (l != null) l.onPlayResumed();
-    			
-    			onResumed();
-		    }
+			mState = State.PLAYING;
+			
+			mCurrentPlayer.resume();
+
+			for (PlayerListener l: mListeners)
+				if (l != null) l.onPlayResumed();
+			
+			onResumed();
 		}
 	}
 	
@@ -513,7 +517,6 @@ public class PlayerService extends Service
         
         updateNotification();
         stopPrefetchTimer();
-        dropAudioFocus();
         
         Log.d(LOG_TAG, "Paused");
 	}
