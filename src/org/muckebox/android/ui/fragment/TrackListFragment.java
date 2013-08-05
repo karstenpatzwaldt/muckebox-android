@@ -500,7 +500,7 @@ public class TrackListFragment extends RefreshableListFragment
         
         if (data.getCount() == 0) {
 
-            if (! wasRefreshedOnce()) {
+            if (! wasRefreshedOnce() && isRefreshable()) {
                 onRefreshRequested();
             } else {
                 TextView emptyText = (TextView) mList.getEmptyView();
