@@ -255,6 +255,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_DOWNLOADS);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
@@ -276,6 +277,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_CACHE);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
@@ -326,6 +328,7 @@ public class MuckeboxProvider extends ContentProvider {
             ret = db.delete(TrackEntry.TABLE_NAME, selection, selectionArgs);
 
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
@@ -374,6 +377,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_DOWNLOADS);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             ret = URI_DOWNLOADS.buildUpon().appendPath(Long.toString(id)).build();
 
@@ -384,6 +388,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_CACHE);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             ret = Uri.withAppendedPath(URI_CACHE, Long.toString(id));
 
@@ -758,6 +763,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_DOWNLOADS);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
@@ -779,6 +785,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_CACHE);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
@@ -794,6 +801,7 @@ public class MuckeboxProvider extends ContentProvider {
 
             sendNotification(URI_PLAYLIST);
             sendNotification(URI_TRACKS);
+            sendNotification(URI_PLAYLIST);
 
             break;
 
