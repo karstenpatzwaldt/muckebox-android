@@ -21,8 +21,7 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.net.RefreshArtistsAlbumsTask;
-import org.muckebox.android.ui.widgets.LiveSearchView;
-import org.muckebox.android.ui.widgets.RefreshableListFragment;
+import org.muckebox.android.ui.widgets.SearchableListFragment;
 
 import android.database.Cursor;
 import android.net.Uri;
@@ -32,29 +31,19 @@ import android.app.FragmentTransaction;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
-import android.widget.SearchView.OnCloseListener;
-import android.widget.SearchView.OnQueryTextListener;
 
-public class ArtistListFragment extends RefreshableListFragment
-	implements OnQueryTextListener, OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor>
+public class ArtistListFragment extends SearchableListFragment
+	implements LoaderManager.LoaderCallbacks<Cursor>
 {
 	private final static String LOG_TAG = "ArtistListFragment";
 	
 	SimpleCursorAdapter mAdapter;
-	SearchView mSearchView;
-	String mCurFilter;
 	
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -66,8 +55,6 @@ public class ArtistListFragment extends RefreshableListFragment
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 
-        setHasOptionsMenu(true);
-
         mAdapter = new SimpleCursorAdapter(getActivity(),
                 R.layout.list_row_artist, null,
                 new String[] { ArtistEntry.ALIAS_NAME, AlbumEntry.ALIAS_TITLE },
@@ -78,57 +65,9 @@ public class ArtistListFragment extends RefreshableListFragment
         
         getActivity().setTitle(R.string.title_artists);
     }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	MenuItem searchItem = menu.findItem(R.id.artist_list_action_search);
-    	
-    	if (searchItem == null) {
-    	    inflater.inflate(R.menu.artist_list, menu);
-    	    searchItem = menu.findItem(R.id.artist_list_action_search);
-    	}
-    	
-    	LiveSearchView searchAction =
-    			(LiveSearchView) searchItem.getActionView();
-    	
-        searchAction.setOnQueryTextListener(this);
-        searchAction.setOnCloseListener(this);
-        
-        super.onCreateOptionsMenu(menu, inflater);
-    }
     
     protected void onRefreshRequested() {
     	new RefreshArtistsAlbumsTask().setCallbacks(this).execute();
-    }
-    
-    public boolean onQueryTextChange(String newText) {
-        String newFilter = !TextUtils.isEmpty(newText) ? newText : null;
-
-        if (mCurFilter == null && newFilter == null) {
-            return true;
-        }
-        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
-            return true;
-        }
-        mCurFilter = newFilter;
-        getLoaderManager().restartLoader(0, null, this);
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextSubmit(String query) {
-        return true;
-    }
-
-    @Override
-    public boolean onClose() {
-        if (!TextUtils.isEmpty(mSearchView.getQuery())) {
-            mSearchView.setQuery(null, true);
-        }
-        
-        Log.d(LOG_TAG, "Closing");
-        
-        return true;
     }
 
     @Override
@@ -150,8 +89,9 @@ public class ArtistListFragment extends RefreshableListFragment
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
-        if (mCurFilter != null) {
-        	baseUri = MuckeboxProvider.URI_ARTISTS_WITH_ALBUMS_NAME.buildUpon().appendPath(mCurFilter).build();
+        if (hasFilter()) {
+        	baseUri = Uri.withAppendedPath(
+        	    MuckeboxProvider.URI_ARTISTS_WITH_ALBUMS_NAME, getFilter());
         } else {
             baseUri = MuckeboxProvider.URI_ARTISTS_WITH_ALBUMS;
         }
@@ -162,12 +102,17 @@ public class ArtistListFragment extends RefreshableListFragment
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
         
-        if (data.getCount() == 0 && ! wasRefreshedOnce() && mCurFilter == null) {
+        if (data.getCount() == 0 && ! wasRefreshedOnce() && ! hasFilter()) {
             onRefreshRequested();
         }
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
+    }
+    
+    @Override
+    protected void reload() {
+        getLoaderManager().restartLoader(0, null, this);
     }
 }

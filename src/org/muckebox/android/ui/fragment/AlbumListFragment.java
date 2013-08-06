@@ -22,34 +22,23 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshArtistsAlbumsTask;
 import org.muckebox.android.ui.activity.BrowseActivity;
-import org.muckebox.android.ui.widgets.RefreshableListFragment;
+import org.muckebox.android.ui.widgets.SearchableListFragment;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
-import android.widget.SearchView.OnCloseListener;
-import android.widget.SearchView.OnQueryTextListener;
 
-public class AlbumListFragment extends RefreshableListFragment
-	implements OnQueryTextListener, OnCloseListener,
-	LoaderManager.LoaderCallbacks<Cursor> {
+public class AlbumListFragment extends SearchableListFragment
+	implements LoaderManager.LoaderCallbacks<Cursor> {
 	SimpleCursorAdapter mAdapter;
-	SearchView mSearchView;
-	String mCurFilter;
 	
 	private long mArtistId = -1;
 	private String mTitle;
@@ -86,6 +75,11 @@ public class AlbumListFragment extends RefreshableListFragment
 	
 	public boolean isLatest() {
 	    return mIsLatest;
+	}
+	
+	@Override
+	protected boolean isSearchable() {
+	    return ! hasArtistId();
 	}
 
 	@Override
@@ -131,76 +125,9 @@ public class AlbumListFragment extends RefreshableListFragment
             getActivity().setTitle(R.string.title_albums);
     }
 
-    public static class MySearchView extends SearchView {
-        public MySearchView(Context context) {
-            super(context);
-        }
-
-        @Override
-        public void onActionViewCollapsed() {
-            setQuery("", false);
-            super.onActionViewCollapsed();
-        }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-    	MenuItem searchItem = menu.findItem(R.id.album_list_action_search);
-        
-    	if (searchItem == null) {
-    	    inflater.inflate(R.menu.album_list, menu);
-    	    searchItem = menu.findItem(R.id.album_list_action_search);
-    	}
-        	
-    	if (hasArtistId())
-    	{
-    		searchItem.setVisible(false);
-    	} else
-    	{
-	        mSearchView = new MySearchView(getActivity());
-	        mSearchView.setOnQueryTextListener(this);
-	        mSearchView.setOnCloseListener(this);
-	        mSearchView.setIconifiedByDefault(true);
-	        
-	        searchItem.setActionView(mSearchView);
-    	}
-    	
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-   
-    @Override
-    public void onDestroyOptionsMenu()
-    {
-    	if (mSearchView != null)
-    		mSearchView.setQuery(null, true);
-
-    	super.onDestroyOptionsMenu();
-    }
-
     @Override
     protected void onRefreshRequested() {
   		new RefreshArtistsAlbumsTask().setCallbacks(this).execute();
-    }
-
-    public boolean onQueryTextChange(String newText) {
-        String newFilter = !TextUtils.isEmpty(newText) ? newText : null;
-
-        if (mCurFilter == null && newFilter == null) {
-            return true;
-        }
-        
-        if (mCurFilter != null && mCurFilter.equals(newFilter)) {
-            return true;
-        }
-        
-        mCurFilter = newFilter;
-        getLoaderManager().restartLoader(0, null, this);
-        return true;
-    }
-
-    @Override
-    public boolean onQueryTextSubmit(String query) {
-        return true;
     }
 
     @Override
@@ -228,9 +155,9 @@ public class AlbumListFragment extends RefreshableListFragment
         	baseUri = Uri.withAppendedPath(
         	    MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_ARTIST,
         	    Long.toString(mArtistId));
-        } else if (mCurFilter != null) {
+        } else if (hasFilter()) {
             baseUri = Uri.withAppendedPath(
-                MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE, mCurFilter);
+                MuckeboxProvider.URI_ALBUMS_WITH_ARTIST_TITLE, getFilter());
         } else {
             baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST;
         }
@@ -245,7 +172,7 @@ public class AlbumListFragment extends RefreshableListFragment
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         mAdapter.swapCursor(data);
         
-        if (data.getCount() == 0 && ! wasRefreshedOnce() && mCurFilter == null) {
+        if (data.getCount() == 0 && ! wasRefreshedOnce() && ! hasFilter()) {
             onRefreshRequested();
         }
     }
@@ -253,13 +180,9 @@ public class AlbumListFragment extends RefreshableListFragment
     public void onLoaderReset(Loader<Cursor> loader) {
         mAdapter.swapCursor(null);
     }
-
-	@Override
-	public boolean onClose() {
-        if (!TextUtils.isEmpty(mSearchView.getQuery())) {
-            mSearchView.setQuery(null, true);
-        }
-
-        return true;
-	}
+    
+    @Override
+    protected void reload() {
+        getLoaderManager().restartLoader(0, null, this);
+    }
 }
