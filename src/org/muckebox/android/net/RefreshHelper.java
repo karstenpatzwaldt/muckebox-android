@@ -118,7 +118,8 @@ public class RefreshHelper {
                         ContentProviderOperation.newInsert(MuckeboxProvider.URI_ALBUMS).
                             withValue(AlbumEntry.SHORT_ID, o.getInt("id")).
                             withValue(AlbumEntry.SHORT_TITLE, o.getString("title")).
-                            withValue(AlbumEntry.SHORT_ARTIST_ID, o.getInt("artist_id")).build());
+                            withValue(AlbumEntry.SHORT_ARTIST_ID, o.getInt("artist_id")).
+                            withValue(AlbumEntry.SHORT_CREATED, o.getInt("created")).build());
             }
             
             Muckebox.getAppContext().getContentResolver().applyBatch(

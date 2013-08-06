@@ -53,9 +53,11 @@ public class AlbumListFragment extends RefreshableListFragment
 	
 	private long mArtistId = -1;
 	private String mTitle;
+	private boolean mIsLatest = false;
 	
 	private static final String STATE_ARTIST_ID = "artist_id";
 	private static final String STATE_TITLE = "title";
+	private static final String STATE_ISLATEST = "islatest";
 	
 	public interface OnAlbumSelectedListener {
 	    public void onAlbumSelected(long id, String title);
@@ -69,9 +71,21 @@ public class AlbumListFragment extends RefreshableListFragment
 		
 		return f;
 	}
+	
+	public static AlbumListFragment newInstanceLatest() {
+	    AlbumListFragment f = new AlbumListFragment();
+	    
+	    f.mIsLatest = true;
+	    
+	    return f;
+	}
 
 	public boolean hasArtistId() {
 		return mArtistId != -1;
+	}
+	
+	public boolean isLatest() {
+	    return mIsLatest;
 	}
 
 	@Override
@@ -82,6 +96,7 @@ public class AlbumListFragment extends RefreshableListFragment
         if (savedInstanceState != null) {
             mArtistId = savedInstanceState.getLong(STATE_ARTIST_ID);
             mTitle = savedInstanceState.getString(STATE_TITLE);
+            mIsLatest = savedInstanceState.getBoolean(STATE_ISLATEST);
         }
         
         return inflater.inflate(R.layout.fragment_album_browse, container, false);
@@ -93,6 +108,7 @@ public class AlbumListFragment extends RefreshableListFragment
 
 	    outState.putLong(STATE_ARTIST_ID, mArtistId);
 	    outState.putString(STATE_TITLE, mTitle);
+	    outState.putBoolean(STATE_ISLATEST, mIsLatest);
 	}
 	
 	@Override
@@ -206,6 +222,7 @@ public class AlbumListFragment extends RefreshableListFragment
 
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri baseUri;
+        String sortOrder = null;
         
         if (hasArtistId()) {
         	baseUri = Uri.withAppendedPath(
@@ -217,8 +234,12 @@ public class AlbumListFragment extends RefreshableListFragment
         } else {
             baseUri = MuckeboxProvider.URI_ALBUMS_WITH_ARTIST;
         }
+        
+        if (isLatest()) {
+            sortOrder = AlbumEntry.SORT_ORDER_CREATED;
+        }
 
-        return new CursorLoader(getActivity(), baseUri, null, null, null, null);
+        return new CursorLoader(getActivity(), baseUri, null, null, null, sortOrder);
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {

@@ -70,6 +70,7 @@ public class BrowseActivity extends Activity
     private static final DrawerEntry DRAWER_BROWSE_ENTRIES[] = new DrawerEntry[] {
         new DrawerEntry(R.drawable.social_group, R.string.title_artists),
         new DrawerEntry(R.drawable.collections_collection, R.string.title_albums),
+        new DrawerEntry(R.drawable.device_access_time, R.string.title_latest),
         new DrawerEntry(R.drawable.av_play, R.string.title_now_playing)
     };
     
@@ -148,6 +149,9 @@ public class BrowseActivity extends Activity
                     break;
                 case R.string.title_albums:
                     target = new AlbumListFragment();
+                    break;
+                case R.string.title_latest:
+                    target = AlbumListFragment.newInstanceLatest();
                     break;
                 case R.string.title_now_playing:
                     target = TrackListFragment.newInstanceFromPlaylist(

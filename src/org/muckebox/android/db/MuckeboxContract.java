@@ -51,23 +51,28 @@ public final class MuckeboxContract {
 		public static final String SHORT_COUNT		= _COUNT;
 		public static final String SHORT_ARTIST_ID	= "artist_id";
 		public static final String SHORT_TITLE 		= "title";
+		public static final String SHORT_CREATED    = "created";
 		
 		public static final String FULL_ID 			= TABLE_NAME + "." + SHORT_ID;
 		public static final String FULL_ARTIST_ID 	= TABLE_NAME + "." + SHORT_ARTIST_ID;
 		public static final String FULL_TITLE		= TABLE_NAME + "." + SHORT_TITLE;
+		public static final String FULL_CREATED     = TABLE_NAME + "." + SHORT_CREATED;
 
 		public static final String ALIAS_ID 		= TABLE_NAME + "_" + SHORT_ID;
 		public static final String ALIAS_COUNT		= TABLE_NAME + "_" + SHORT_COUNT;
 		public static final String ALIAS_ARTIST_ID 	= TABLE_NAME + "_" + SHORT_ARTIST_ID;
 		public static final String ALIAS_TITLE		= TABLE_NAME + "_" + SHORT_TITLE;
+		public static final String ALIAS_CREATED    = TABLE_NAME + "_" + SHORT_CREATED;
 		
 		public static final String[] PROJECTION = {
 			FULL_ID,
 			FULL_ARTIST_ID + AS + ALIAS_ARTIST_ID,
-			FULL_TITLE + AS + ALIAS_TITLE
+			FULL_TITLE + AS + ALIAS_TITLE,
+			FULL_CREATED + AS + ALIAS_CREATED
 		};
 		
-		public static final String SORT_ORDER = ALIAS_TITLE + ASC;
+		public static final String SORT_ORDER = FULL_TITLE + ASC;
+		public static final String SORT_ORDER_CREATED = FULL_CREATED + " DESC";
 	}
 	
 	public static abstract class TrackEntry implements BaseColumns {

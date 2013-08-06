@@ -9,6 +9,7 @@
     <string name="title_artists">Artists</string>
     <string name="title_albums">Albums</string>
     <string name="title_now_playing">Now Playing</string>
+    <string name="title_latest">Recently Added</string>
     <string name="refresh">Refresh</string>
     
     <string name="empty">Empty.</string>
