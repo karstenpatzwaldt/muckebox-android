@@ -22,90 +22,23 @@ import org.muckebox.android.ui.fragment.DownloadListFragment;
 import org.muckebox.android.ui.fragment.SettingsFragment;
 import org.muckebox.android.ui.fragment.TrackListFragment;
 import org.muckebox.android.ui.fragment.AlbumListFragment;
+import org.muckebox.android.ui.utils.NavigationListener;
 import org.muckebox.android.utils.Preferences;
 
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.support.v4.app.ActionBarDrawerToggle;
-import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
 
 public class BrowseActivity extends Activity
-    implements AlbumListFragment.OnAlbumSelectedListener {
+    implements NavigationListener {
     public final static String ACTION_PLAYLIST = "playlist";
     public final static String ACTION_DOWNLOADS = "downloads";
     
     private final static String LOG_TAG = "BrowseActivity";
-    
-    private ListView mBrowseList;
-    private ListView mOtherList;
-    private DrawerLayout mDrawer;
-    
-    private ActionBarDrawerToggle mDrawerToggle;
-    
-    private static class DrawerEntry {
-        public DrawerEntry(int newIconId, int newTextId) {
-            iconId = newIconId;
-            textId = newTextId;
-        }
-        int iconId;
-        int textId;
-    }
-    
-    private static final DrawerEntry DRAWER_BROWSE_ENTRIES[] = new DrawerEntry[] {
-        new DrawerEntry(R.drawable.social_group, R.string.title_artists),
-        new DrawerEntry(R.drawable.collections_collection, R.string.title_albums),
-        new DrawerEntry(R.drawable.device_access_time, R.string.title_latest),
-        new DrawerEntry(R.drawable.av_play, R.string.title_now_playing)
-    };
-    
-    private static final DrawerEntry DRAWER_OTHER_ENTRIES[] = new DrawerEntry[] {
-        new DrawerEntry(R.drawable.av_download, R.string.title_activity_downloads),
-        new DrawerEntry(R.drawable.action_settings, R.string.title_activity_settings)
-    };
-    
-    private class DrawerListAdapter extends ArrayAdapter<DrawerEntry> {
-        DrawerEntry[] mEntries;
-        Activity mActivity;
-        
-        public DrawerListAdapter(Activity activity, DrawerEntry[] entries) {
-            super(activity, 0, entries);
-            
-            mEntries = entries;
-            mActivity = activity;
-        }
-        
-        @Override
-        public View getView(int position, View view, ViewGroup parent) {
-            if (view == null) {
-                LayoutInflater inflater = mActivity.getLayoutInflater();
-                view = inflater.inflate(R.layout.list_row_drawer, null);
-            }
-            
-            TextView textView = (TextView) view.findViewById(R.id.drawer_list_row_title);
-            ImageView iconView = (ImageView) view.findViewById(R.id.drawer_list_row_icon);
-            
-            textView.setText(mEntries[position].textId);
-            iconView.setImageResource(mEntries[position].iconId);
-            
-            return view;
-        }
-    }
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,98 +68,32 @@ public class BrowseActivity extends Activity
                 tf.commit();
             }
         }
-
-        mBrowseList = (ListView) findViewById(R.id.drawer_browse_list);
-        mBrowseList.setAdapter(new DrawerListAdapter(this, DRAWER_BROWSE_ENTRIES));
-        
-        mBrowseList.setOnItemClickListener(new ListView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Fragment target = null;
-
-                switch (DRAWER_BROWSE_ENTRIES[position].textId) {
-                case R.string.title_artists:
-                    target = new ArtistListFragment();
-                    break;
-                case R.string.title_albums:
-                    target = new AlbumListFragment();
-                    break;
-                case R.string.title_latest:
-                    target = AlbumListFragment.newInstanceLatest();
-                    break;
-                case R.string.title_now_playing:
-                    target = TrackListFragment.newInstanceFromPlaylist(
-                        Preferences.getCurrentPlaylistId());
-                    break;
-                }
-                
-                switchFragment(target);
-                mDrawer.closeDrawers();
-            }
-        });
-        
-        mOtherList = (ListView) findViewById(R.id.drawer_other_list);
-        mOtherList.setAdapter(new DrawerListAdapter(this, DRAWER_OTHER_ENTRIES));
-        
-        mOtherList.setOnItemClickListener(new ListView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Fragment target = null;
-
-                switch (DRAWER_OTHER_ENTRIES[position].textId) {
-                case R.string.title_activity_downloads:
-                    target = new DownloadListFragment();
-                    break;
-                case R.string.title_activity_settings:
-                    target = new SettingsFragment();
-                    break;
-                }
-                
-                switchFragment(target);
-                mDrawer.closeDrawers();
-            }
-        });
-       
-        mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        mDrawer.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-            }
-        });
-        
-        mDrawerToggle = new ActionBarDrawerToggle(
-            this, mDrawer, R.drawable.ic_drawer,
-            R.string.drawer_open, R.string.drawer_close);
-        
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setHomeButtonEnabled(true);
     }
     
     private void switchFragment(Fragment newFragment) {
         FragmentTransaction tf = getFragmentManager().beginTransaction();
+        
         tf.replace(R.id.fragment_container, newFragment);
         tf.addToBackStack(null);
-        tf.commit();
-    }
-    
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-	{
-        return mDrawerToggle.onOptionsItemSelected(item);
-	}
-    
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
         
-        mDrawerToggle.syncState();
+        tf.commit();
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        
-        mDrawerToggle.onConfigurationChanged(newConfig);
+    public void onAllAlbumsSelected() {
+        switchFragment(new AlbumListFragment());
     }
-    
+
+    @Override
+    public void onAllArtistsSelected() {
+        switchFragment(new ArtistListFragment());
+    }
+
+    @Override
+    public void onRecentAlbumsSelected() {
+        switchFragment(AlbumListFragment.newInstanceLatest());
+    }
+
     @Override
     public void onAlbumSelected(long id, String title) {
         Log.d(LOG_TAG, "Opening track list for album " + id + "(" + title + ")");
@@ -246,5 +113,21 @@ public class BrowseActivity extends Activity
         } else {
             tracklist.reInit(id, title);
         }
+    }
+
+    @Override
+    public void onNowPlayingSelected() {
+        switchFragment(TrackListFragment.newInstanceFromPlaylist(
+            Preferences.getCurrentPlaylistId()));
+    }
+
+    @Override
+    public void onDownloadsSelected() {
+        switchFragment(new DownloadListFragment());
+    }
+    
+    @Override
+    public void onSettingsSelected() {
+        switchFragment(new SettingsFragment());
     }
 }

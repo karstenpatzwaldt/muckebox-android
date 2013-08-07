@@ -28,6 +28,12 @@
 
 	</LinearLayout>
 	
-	<include layout="@layout/drawer" />
+	<fragment
+	    android:id="@+id/drawer_fragment"
+	   	android:layout_width="240dp"
+	    android:layout_height="match_parent"
+	    android:layout_gravity="start"
+	    android:name="org.muckebox.android.ui.fragment.DrawerFragment"
+	    tools:layout="@layout/fragment_drawer" />
     
 </android.support.v4.widget.DrawerLayout>

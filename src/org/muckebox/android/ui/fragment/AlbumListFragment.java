@@ -21,7 +21,7 @@ import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.net.RefreshArtistsAlbumsTask;
-import org.muckebox.android.ui.activity.BrowseActivity;
+import org.muckebox.android.ui.utils.NavigationListener;
 import org.muckebox.android.ui.widgets.SearchableListFragment;
 
 import android.database.Cursor;
@@ -47,10 +47,6 @@ public class AlbumListFragment extends SearchableListFragment
 	private static final String STATE_ARTIST_ID = "artist_id";
 	private static final String STATE_TITLE = "title";
 	private static final String STATE_ISLATEST = "islatest";
-	
-	public interface OnAlbumSelectedListener {
-	    public void onAlbumSelected(long id, String title);
-	}
 
 	public static AlbumListFragment newInstanceFromArtist(long artist_id, String title) {
 		AlbumListFragment f = new AlbumListFragment();
@@ -142,7 +138,7 @@ public class AlbumListFragment extends SearchableListFragment
     	
     	String title = artist_name + " - " + album_title;
     	
-    	BrowseActivity parent = (BrowseActivity) getActivity();
+    	NavigationListener parent = (NavigationListener) getActivity();
     	
     	parent.onAlbumSelected(id,  title);
     }
