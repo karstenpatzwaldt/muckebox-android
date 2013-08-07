@@ -641,19 +641,21 @@ public class PlayerService extends Service
 	}
 	
 	private void startPrefetchTimer() {
-	    Integer length = mCurrentPlayer.getTrackLength();
-	    Integer position = mCurrentPlayer.getPlayPosition();
-	    
-	    if (length != null && position != null) {
-    	    long delay = length - position - PREFETCH_INTERVAL;
+	    if (mCurrentPlayer != null) {
+    	    Integer length = mCurrentPlayer.getTrackLength();
+    	    Integer position = mCurrentPlayer.getPlayPosition();
     	    
-    	    delay *= 1000;
-    	    
-    	    if (delay > 0) {
-    	        stopPrefetchTimer();
-    	        
-                mTimer = new Timer();
-                mTimer.schedule(new PrefetchTask(), delay);
+    	    if (length != null && position != null) {
+        	    long delay = length - position - PREFETCH_INTERVAL;
+        	    
+        	    delay *= 1000;
+        	    
+        	    if (delay > 0) {
+        	        stopPrefetchTimer();
+        	        
+                    mTimer = new Timer();
+                    mTimer.schedule(new PrefetchTask(), delay);
+        	    }
     	    }
 	    }
 	}
