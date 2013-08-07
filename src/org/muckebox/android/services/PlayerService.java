@@ -26,7 +26,7 @@ import org.muckebox.android.audio.PlayerWrapper;
 import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
-import org.muckebox.android.ui.activity.BrowseActivity;
+import org.muckebox.android.ui.activity.MuckeboxActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
 
@@ -410,8 +410,8 @@ public class PlayerService extends Service
 	            getPendingIntent(KeyEvent.KEYCODE_MEDIA_NEXT));
 	    }
 	    
-	    Intent contentIntent = new Intent(this, BrowseActivity.class);
-	    contentIntent.setAction(BrowseActivity.ACTION_PLAYLIST);
+	    Intent contentIntent = new Intent(this, MuckeboxActivity.class);
+	    contentIntent.setAction(MuckeboxActivity.ACTION_PLAYLIST);
 	    contentIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 	    
 	    builder.setContentIntent(PendingIntent.getActivity(

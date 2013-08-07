@@ -33,7 +33,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.util.Log;
 
-public class BrowseActivity extends Activity
+public class MuckeboxActivity extends Activity
     implements NavigationListener {
     public final static String ACTION_PLAYLIST = "playlist";
     public final static String ACTION_DOWNLOADS = "downloads";

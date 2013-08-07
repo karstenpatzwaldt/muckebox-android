@@ -20,7 +20,7 @@
         android:theme="@style/AppTheme" >
         
         <activity
-            android:name="org.muckebox.android.ui.activity.BrowseActivity"
+            android:name="org.muckebox.android.ui.activity.MuckeboxActivity"
             android:label="@string/app_name"
             android:configChanges="orientation" >
             <intent-filter>
