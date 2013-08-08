@@ -19,6 +19,8 @@ package org.muckebox.android.net;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.net.ssl.SSLException;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,6 +88,8 @@ public class RefreshHelper {
             
             Muckebox.getAppContext().getContentResolver().applyBatch(
                     MuckeboxProvider.AUTHORITY, operations);
+        } catch (SSLException e) {
+            return R.string.error_ssl;
         } catch (IOException e) {
             Log.d(LOG_TAG, "IOException: " + e.getMessage());
             return R.string.error_reload_tracks;
@@ -126,6 +130,8 @@ public class RefreshHelper {
                     MuckeboxProvider.AUTHORITY, operations);
     
             Log.d(LOG_TAG, "Got " + json.length() + " albums");
+        } catch (SSLException e) {
+            return R.string.error_ssl;
         } catch (IOException e) {
             Log.d(LOG_TAG, "IOException: " + e.getMessage());
             return R.string.error_reload_albums;
@@ -159,6 +165,8 @@ public class RefreshHelper {
             
             Muckebox.getAppContext().getContentResolver().applyBatch(
                     MuckeboxProvider.AUTHORITY, operations);
+        } catch (SSLException e) {
+            return R.string.error_ssl;
         } catch (IOException e) {
             Log.d(LOG_TAG, "IOException: " + e.getMessage());
             return R.string.error_reload_artists;

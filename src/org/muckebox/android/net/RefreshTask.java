@@ -56,7 +56,7 @@ public abstract class RefreshTask<Params> extends AsyncTask<Params, Void, Intege
 		if (errorCode != null)
 			Toast.makeText(Muckebox.getAppContext(),
 					errorCode,
-					Toast.LENGTH_SHORT).show();
+					Toast.LENGTH_LONG).show();
 		
 		if (mCallbacks != null)
 			mCallbacks.onRefreshFinished(errorCode == null);
