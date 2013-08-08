@@ -38,7 +38,7 @@ public class MuckeboxActivity extends Activity
     public final static String ACTION_PLAYLIST = "playlist";
     public final static String ACTION_DOWNLOADS = "downloads";
     
-    private final static String LOG_TAG = "BrowseActivity";
+    private final static String LOG_TAG = "MuckeboxActivity";
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {

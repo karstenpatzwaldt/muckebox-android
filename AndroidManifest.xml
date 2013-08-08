@@ -29,7 +29,7 @@
             </intent-filter>
             
             <intent-filter>
-                <action android:name="org.muckebox.android.ui.activity.BrowseActivity.ACTION_DOWNLOADS" />
+                <action android:name="org.muckebox.android.ui.activity.MuckeboxActivity.ACTION_DOWNLOADS" />
             </intent-filter>
         </activity>
 		           
