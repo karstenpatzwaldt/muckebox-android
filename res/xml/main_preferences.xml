@@ -13,6 +13,11 @@
             android:summary="@string/server_port_setting_summary"
             android:numeric="integer"
             android:defaultValue="2342"/>
+        <CheckBoxPreference
+            android:key="ssl_enable"
+            android:title="@string/server_ssl_enable_setting_title"
+            android:summary="@string/server_ssl_enable_setting_summary"
+            android:defaultValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory

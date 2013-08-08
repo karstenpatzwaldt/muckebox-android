@@ -26,7 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.muckebox.android.utils.Preferences;
 
-import android.content.SharedPreferences;
+import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.util.Log;
 
@@ -62,14 +62,14 @@ public class NetHelper {
 		return callApi(query, null, null, null);
 	}
 	
+	@SuppressLint("DefaultLocale")
 	public static String getApiUrl(String query, String extra,
 			String[] keys, String[] values) throws IOException {
-		SharedPreferences prefs = Preferences.getPreferences();
-		
 		Uri.Builder builder = Uri.parse(
-				String.format("http://%s:%s",
-						prefs.getString("server_address", ""),
-						prefs.getString("server_port", "2342"))).buildUpon();
+				String.format("http%s://%s:%d",
+				    Preferences.getSSLEnabled() ? "s" : "",
+				    Preferences.getServerAddress(),
+					Preferences.getServerPort())).buildUpon();
 		
 		builder.path(String.format("/api/%s", query));
 		

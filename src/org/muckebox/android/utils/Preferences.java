@@ -31,6 +31,14 @@ public class Preferences {
 		return mSharedPref;
 	}
 	
+	public static String getServerAddress() {
+	    return getPreferences().getString("server_address", "");
+	}
+	
+	public static int getServerPort() {
+	    return Integer.parseInt(getPreferences().getString("server_port", "2342"));
+	}
+	
 	public static boolean getTranscodingEnabled() {
 		return getPreferences().getBoolean("transcoding_enable", true);
 	}
@@ -60,5 +68,9 @@ public class Preferences {
 	
 	public static int getCacheSize() {
 	    return Integer.parseInt(getPreferences().getString("cache_size", "500")) * (1024 * 1024);
+	}
+	
+	public static boolean getSSLEnabled() {
+	    return getPreferences().getBoolean("ssl_enabled", true);
 	}
 }
