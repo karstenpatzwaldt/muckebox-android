@@ -541,7 +541,7 @@ public class PlayerService extends Service
 	}
 	
 	public void prevNext(final boolean isNext) {
-	    if (mState == State.PLAYING || mState == State.PAUSED) {
+	    if (mState != State.STOPPED) {
 	        mHelperHandler.post(new Runnable() {
 	            public void run() {
 	                Cursor c = getContentResolver().query(
