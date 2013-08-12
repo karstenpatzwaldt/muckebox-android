@@ -27,7 +27,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.utils.BufferUtils;
 import org.muckebox.android.utils.Preferences;
@@ -114,14 +113,14 @@ public class DownloadRunnable implements Runnable
 		
 		if (mTranscodingEnabled)
 		{
-			url = NetHelper.getApiUrl(
+			url = ApiHelper.getApiUrl(
 					"stream",
 					idString,
 					new String[] { "format", "quality" },
 					new String[] { mTranscodingType, mTranscodingQuality });
 		} else
 		{
-			url = NetHelper.getApiUrl("stream", idString, null, null);
+			url = ApiHelper.getApiUrl("stream", idString, null, null);
 		}
 		
 		return url;
@@ -210,7 +209,7 @@ public class DownloadRunnable implements Runnable
 	}
 	
 	public boolean downloadFile() throws IOException {
-        HttpClient httpClient = new DefaultHttpClient();
+        HttpClient httpClient = HttpHelper.getHttpClient();
         HttpGet httpGet = null;
        
         try {
@@ -261,6 +260,9 @@ public class DownloadRunnable implements Runnable
         } finally {
             if (httpGet != null)
                 httpGet.abort();
+            
+            if (httpClient != null)
+                httpClient.getConnectionManager().shutdown();
         }
 	}
 	

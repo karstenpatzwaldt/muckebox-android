@@ -39,6 +39,10 @@ public class Preferences {
 	    return Integer.parseInt(getPreferences().getString("server_port", "2342"));
 	}
 	
+	public static String getServerPassword() {
+	    return getPreferences().getString("server_password", "");
+	}
+	
 	public static boolean getTranscodingEnabled() {
 		return getPreferences().getBoolean("transcoding_enable", true);
 	}

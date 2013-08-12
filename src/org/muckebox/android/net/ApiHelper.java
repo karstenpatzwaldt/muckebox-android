@@ -19,9 +19,11 @@ package org.muckebox.android.net;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.muckebox.android.utils.Preferences;
@@ -30,25 +32,31 @@ import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.util.Log;
 
-public class NetHelper {
-	private static final String LOG_TAG = "NetHelper";
-	
-	private static final int TIMEOUT = 30 * 1000;
+public class ApiHelper {
+	private static final String LOG_TAG = "ApiHelper";
 	
 	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
 		String str_url = getApiUrl(query, id, keys, values);
 		
 		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
-		HttpURLConnection conn = getDefaultConnection(new URL(str_url));
-		
-		try
-		{
-			String response = getResponseAsString(conn);
-			
-			return new JSONArray(response);
+        HttpClient httpClient = HttpHelper.getHttpClient();
+        HttpGet httpGet = null;
+       
+        try {
+            httpGet = new HttpGet(str_url);
+            
+            HttpResponse httpResponse = httpClient.execute(httpGet);
+            
+            String response = getResponseAsString(httpResponse);
+            
+            return new JSONArray(response);
 		} finally {
-			conn.disconnect();
+		    if (httpGet != null)
+		        httpGet.abort();
+		    
+		    if (httpClient != null)
+		        httpClient.getConnectionManager().shutdown();
 		}
 	}
 	
@@ -90,28 +98,19 @@ public class NetHelper {
 		return builder.build().toString();
 	}
 	
-	public static HttpURLConnection getDefaultConnection(URL url) throws IOException {
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		
-		conn.setReadTimeout(TIMEOUT);
-		conn.setConnectTimeout(TIMEOUT);
-		conn.setRequestMethod("GET");
-		conn.setDoInput(true);
-		conn.connect();
-		
-		return conn;
-	}
-	
-	public static String getResponseAsString(HttpURLConnection conn) throws IOException {
-		int response = conn.getResponseCode();
-        Log.d(LOG_TAG, "HTTP Response " + response);
+	public static String getResponseAsString(HttpResponse response) throws IOException {
+        StatusLine statusLine = response.getStatusLine();
         
-        if (response != 200) {
+        Log.d(LOG_TAG, "HTTP Response " + statusLine.getStatusCode() +
+            " " + statusLine.getReasonPhrase());
+        
+        if (statusLine.getStatusCode() != 200) {
         	throw new IOException();
         }
         
         BufferedReader reader = new BufferedReader(
-        		new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        		new InputStreamReader(
+        		    response.getEntity().getContent(), "UTF-8"));
         StringBuilder str = new StringBuilder();
         char[] charBuf = new char[1024];
         

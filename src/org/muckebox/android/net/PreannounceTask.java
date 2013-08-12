@@ -33,7 +33,7 @@ public class PreannounceTask extends AsyncTask<Integer, Void, Void> {
             int trackId = trackIds[i];
             
             try {
-                String url = NetHelper.getApiUrl(
+                String url = ApiHelper.getApiUrl(
                     "hint",
                     Integer.toString(trackId),
                     new String[] { "format", "quality" },

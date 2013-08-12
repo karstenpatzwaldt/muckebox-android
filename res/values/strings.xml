@@ -29,10 +29,12 @@
     <string name="server_settings_title">Server</string>
     <string name="server_address_setting_title">Server</string>
     <string name="server_address_setting_summary">Hostname or IP of your server</string>
+    <string name="server_password_setting_title">Password</string>
+    <string name="server_password_setting_summary">The password you set on the server</string>
     <string name="server_port_setting_title">Port</string>
     <string name="server_port_setting_summary">Port your server is listening on</string>
     <string name="server_ssl_enable_setting_title">Enable SSL</string>
-    <string name="server_ssl_enable_setting_summary">Encrypt the network communication</string>
+    <string name="server_ssl_enable_setting_summary">Encrypt all network communication</string>
     <string name="transcoding_settings_title">Transcoding</string>
     <string name="transcoding_enable_setting_title">Enable</string>
     <string name="transcoding_enable_setting_summary">Transcode music on the server</string>
