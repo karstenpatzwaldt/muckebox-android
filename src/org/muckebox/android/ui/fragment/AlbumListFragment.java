@@ -117,6 +117,8 @@ public class AlbumListFragment extends SearchableListFragment
 
         if (hasArtistId())
             getActivity().setTitle(mTitle);
+        else if (isLatest())
+            getActivity().setTitle(R.string.title_latest);
         else
             getActivity().setTitle(R.string.title_albums);
     }
