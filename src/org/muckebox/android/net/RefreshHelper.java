@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import javax.net.ssl.SSLException;
 
+import org.apache.http.auth.AuthenticationException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -88,6 +89,8 @@ public class RefreshHelper {
             
             Muckebox.getAppContext().getContentResolver().applyBatch(
                     MuckeboxProvider.AUTHORITY, operations);
+        } catch (AuthenticationException e) {
+            return R.string.error_authentication;
         } catch (SSLException e) {
             return R.string.error_ssl;
         } catch (IOException e) {
@@ -130,6 +133,8 @@ public class RefreshHelper {
                     MuckeboxProvider.AUTHORITY, operations);
     
             Log.d(LOG_TAG, "Got " + json.length() + " albums");
+        } catch (AuthenticationException e) {
+            return R.string.error_authentication;
         } catch (SSLException e) {
             return R.string.error_ssl;
         } catch (IOException e) {
@@ -165,6 +170,8 @@ public class RefreshHelper {
             
             Muckebox.getAppContext().getContentResolver().applyBatch(
                     MuckeboxProvider.AUTHORITY, operations);
+        } catch (AuthenticationException e) {
+            return R.string.error_authentication;
         } catch (SSLException e) {
             return R.string.error_ssl;
         } catch (IOException e) {

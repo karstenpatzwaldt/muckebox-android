@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.auth.AuthenticationException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
@@ -35,7 +36,8 @@ import android.util.Log;
 public class ApiHelper {
 	private static final String LOG_TAG = "ApiHelper";
 	
-	public static JSONArray callApi(String query, String id, String[] keys, String[] values) throws IOException, JSONException {
+	public static JSONArray callApi(String query, String id, String[] keys, String[] values)
+	    throws IOException, JSONException, AuthenticationException {
 		String str_url = getApiUrl(query, id, keys, values);
 		
 		Log.i(LOG_TAG, "Connecting to " + str_url);
@@ -60,12 +62,14 @@ public class ApiHelper {
 		}
 	}
 	
-	public static JSONArray callApi(String query, String id) throws IOException, JSONException
+	public static JSONArray callApi(String query, String id)
+	    throws IOException, JSONException, AuthenticationException
 	{
 		return callApi(query, id, null, null);
 	}
 	
-	public static JSONArray callApi(String query) throws IOException, JSONException
+	public static JSONArray callApi(String query)
+	    throws IOException, JSONException, AuthenticationException
 	{
 		return callApi(query, null, null, null);
 	}
@@ -98,14 +102,19 @@ public class ApiHelper {
 		return builder.build().toString();
 	}
 	
-	public static String getResponseAsString(HttpResponse response) throws IOException {
+	public static String getResponseAsString(HttpResponse response) throws IOException, AuthenticationException {
         StatusLine statusLine = response.getStatusLine();
         
         Log.d(LOG_TAG, "HTTP Response " + statusLine.getStatusCode() +
             " " + statusLine.getReasonPhrase());
         
-        if (statusLine.getStatusCode() != 200) {
-        	throw new IOException();
+        switch (statusLine.getStatusCode()) {
+        case 401:
+            throw new AuthenticationException(statusLine.getReasonPhrase());
+        case 200:
+            break;
+        default:
+            throw new IOException();
         }
         
         BufferedReader reader = new BufferedReader(
