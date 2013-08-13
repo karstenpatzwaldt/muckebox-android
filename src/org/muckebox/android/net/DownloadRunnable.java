@@ -25,7 +25,6 @@ import java.nio.channels.ClosedByInterruptException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.muckebox.android.Muckebox;
 import org.muckebox.android.utils.BufferUtils;
@@ -209,7 +208,7 @@ public class DownloadRunnable implements Runnable
 	}
 	
 	public boolean downloadFile() throws IOException {
-        HttpClient httpClient = HttpHelper.getHttpClient();
+        MuckeboxHttpClient httpClient = new MuckeboxHttpClient();
         HttpGet httpGet = null;
        
         try {
@@ -262,7 +261,7 @@ public class DownloadRunnable implements Runnable
                 httpGet.abort();
             
             if (httpClient != null)
-                httpClient.getConnectionManager().shutdown();
+                httpClient.destroy();
         }
 	}
 	

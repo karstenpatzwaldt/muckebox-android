@@ -137,4 +137,6 @@
     
     <string name="null_null">-:--</string>
     <string name="no_track">No track loaded</string>
+    
+    <string name="user_agent">Muckebox</string>
 </resources>

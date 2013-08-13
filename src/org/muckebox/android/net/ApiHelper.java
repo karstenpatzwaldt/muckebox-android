@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthenticationException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -42,7 +41,7 @@ public class ApiHelper {
 		
 		Log.i(LOG_TAG, "Connecting to " + str_url);
 		
-        HttpClient httpClient = HttpHelper.getHttpClient();
+        MuckeboxHttpClient httpClient = new MuckeboxHttpClient();
         HttpGet httpGet = null;
        
         try {
@@ -58,7 +57,7 @@ public class ApiHelper {
 		        httpGet.abort();
 		    
 		    if (httpClient != null)
-		        httpClient.getConnectionManager().shutdown();
+		        httpClient.destroy();
 		}
 	}
 	

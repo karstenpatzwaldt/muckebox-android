@@ -18,7 +18,6 @@ package org.muckebox.android.net;
 
 import java.io.IOException;
 
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.muckebox.android.utils.Preferences;
 
@@ -30,7 +29,7 @@ public class PreannounceTask extends AsyncTask<Integer, Void, Void> {
         for (int i = 0; i < trackIds.length; ++i)
         {
             int trackId = trackIds[i];
-            HttpClient httpClient = null;
+            MuckeboxHttpClient httpClient = null;
             
             try {
                 String url = ApiHelper.getApiUrl(
@@ -42,7 +41,7 @@ public class PreannounceTask extends AsyncTask<Integer, Void, Void> {
                         Preferences.getTranscodingQuality()
                         });
                 
-                httpClient = HttpHelper.getHttpClient();
+                httpClient = new MuckeboxHttpClient();
                 HttpPost httpPost = new HttpPost(url);
                 
                 httpClient.execute(httpPost);
@@ -50,7 +49,7 @@ public class PreannounceTask extends AsyncTask<Integer, Void, Void> {
             } finally
             {
                 if (httpClient != null)
-                    httpClient.getConnectionManager().shutdown();
+                    httpClient.destroy();
             }
         }
         
