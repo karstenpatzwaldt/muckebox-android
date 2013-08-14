@@ -93,7 +93,6 @@ public class PlayerFragment
                 public void run() {
                     if (! mStopped)
                         updateProgress(mService.getCurrentPlayPosition());
-                    Log.d(LOG_TAG, "Timer update");
                 }
             };
     
