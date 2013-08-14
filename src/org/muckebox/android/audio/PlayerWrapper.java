@@ -98,8 +98,6 @@ public class PlayerWrapper
     private DownloadService mDownloadService;
     private DownloadServer mServer;
     
-    private FileInputStream mCurrentFile = null;
-    
     private TrackInfo mTrackInfo;
 
     private Handler mMainHandler;
@@ -146,16 +144,6 @@ public class PlayerWrapper
         
         if (mServer != null)
             mServer.quit();
-        
-
-        if (mCurrentFile != null) {
-            try {
-                mCurrentFile.close();
-            } catch (IOException e) {
-                // WTF?
-                e.printStackTrace();
-            }
-        }
         
         mDownloadService.removeListener(this);
     }
@@ -264,29 +252,24 @@ public class PlayerWrapper
         Log.d(LOG_TAG, "Playing from local file " + filename);
         
         try {
-            mCurrentFile = mContext.openFileInput(filename);
+            FileInputStream input = mContext.openFileInput(filename);
             
             mMediaPlayer.reset();
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mMediaPlayer.setDataSource(mCurrentFile.getFD());
+            mMediaPlayer.setDataSource(input.getFD());
             mMediaPlayer.prepareAsync();
+            
+            input.close();
             
             mPreparing = true;
         } catch (IOException e) {
             Log.e(LOG_TAG, "Could not open file " + filename);
+
+            DownloadService.discardTrack(mContext, trackId);
             
-            try {
-                mCurrentFile.close();
-                mCurrentFile = null;
-                
-                DownloadService.discardTrack(mContext, trackId);
-                
-                Toast.makeText(mContext, mContext.getText(
-                    R.string.error_local_playback), Toast.LENGTH_LONG).show();
-            } catch (IOException e1) {
-                // srsly?
-            }
-            
+            Toast.makeText(mContext, mContext.getText(
+                R.string.error_local_playback), Toast.LENGTH_LONG).show();
+
             stop();
         }
     }
