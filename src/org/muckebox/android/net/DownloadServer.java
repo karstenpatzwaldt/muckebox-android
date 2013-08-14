@@ -172,7 +172,7 @@ public class DownloadServer extends Thread {
             
             d("Server stopped");
         } catch (IOException e) {
-            Log.e(LOG_TAG, "IOException, maybe ok");
+            Log.i(LOG_TAG, "IOException, probably ok");
             e.printStackTrace();
         }
     }
