@@ -93,6 +93,7 @@ public class PlayerFragment
                 public void run() {
                     if (! mStopped)
                         updateProgress(mService.getCurrentPlayPosition());
+                    Log.d(LOG_TAG, "Timer update");
                 }
             };
     
@@ -158,6 +159,13 @@ public class PlayerFragment
     }
     
     @Override
+    public void onPause() {
+        super.onPause();
+        
+        mTimer.stop();
+    }
+    
+    @Override
     public void onResume() {
         super.onResume();
         
@@ -165,6 +173,9 @@ public class PlayerFragment
         
         if (mCollapsed)
             simpleCollapse();
+        
+        if (mBound && mService.isPlaying())
+            mTimer.start();
     }
     
     @Override
