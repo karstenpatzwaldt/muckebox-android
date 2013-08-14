@@ -76,6 +76,11 @@ public class ApiHelper {
 	@SuppressLint("DefaultLocale")
 	public static String getApiUrl(String query, String extra,
 			String[] keys, String[] values) throws IOException {
+	    String serverAddress = Preferences.getServerAddress();
+	    
+	    if (serverAddress == null || serverAddress.length() == 0)
+	        throw new IOException("Empty server");
+	    
 		Uri.Builder builder = Uri.parse(
 				String.format("http%s://%s:%d",
 				    Preferences.getSSLEnabled() ? "s" : "",
