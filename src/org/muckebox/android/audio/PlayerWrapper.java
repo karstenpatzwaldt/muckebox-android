@@ -338,7 +338,8 @@ public class PlayerWrapper
             trackInfo.nextTrackId = PlaylistHelper.getNextTrackId(
                 mContext, mPlaylistEntryUri);
             
-            if (isStreaming && Preferences.getTranscodingEnabled())
+            if (! mDownloadService.isInCache(trackInfo.nextTrackId) &&
+                Preferences.getTranscodingEnabled())
                 new PreannounceTask().execute(trackInfo.nextTrackId);
         }
   

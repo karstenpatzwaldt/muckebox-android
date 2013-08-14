@@ -384,11 +384,17 @@ public class DownloadService
         });
     }
 
-    private boolean isInCache(int trackId)
+    public boolean isInCache(int trackId)
 	{
-		return getContentResolver().query(
+        Cursor c = getContentResolver().query(
 				MuckeboxProvider.URI_CACHE_TRACK.buildUpon().appendPath(Integer.toString(trackId)).build(),
-				null, null, null, null, null).getCount() > 0;
+				null, null, null, null, null);
+        
+        try {
+            return c.getCount() > 0;
+        } finally {
+            c.close();
+        }
 	}
 	
 	private void pinInCache(int trackId)
