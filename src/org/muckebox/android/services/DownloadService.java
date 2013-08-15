@@ -461,6 +461,9 @@ public class DownloadService
 
 	@Override
 	public boolean handleMessage(final Message msg) {
+	    if (mCurrentDownload == null)
+	        return false;
+	    
 		final Uri currentUri = mCurrentDownload.mUri;
 		final int trackId = msg.arg1;
 		
