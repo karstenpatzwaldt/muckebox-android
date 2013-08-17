@@ -2,7 +2,20 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="TypographyDashes">
+    
+    <!-- Wizard -->
+    <string name="welcome">Welcome!</string>
+    <string name="wizard_text">Before getting started, I need to know how to reach your server.</string>
+    <string name="test">Test connection</string>
+    <string name="done">Close</string>
+    
+    <string name="wizard_success">Looks good!</string>
+    <string name="wizard_error_mount_point">The server did not send a valid reply. Please validate the mount point of the API.</string>
+    <string name="wizard_error_connection">Could not connect to the server. Please make sure that the address and/or the port are set correctly and the server is running.</string>
+    <string name="wizard_error_password">The password you entered is incorrect.</string>
+    <string name="wizard_error_ssl">Failed to establish a secure connection to your server. Please make sure you imported the certificate used to sign the server key on this device. See <a href="http://muckebox.org/ssl.html">http://muckebox.org/ssl.html</a> for details.</string>
 
+	<!-- Titles -->
     <string name="app_name">Muckebox</string>
     <string name="action_settings">Settings</string>
     <string name="download_list_title">Downloads</string>
@@ -10,6 +23,7 @@
     <string name="title_albums">Albums</string>
     <string name="title_now_playing">Now Playing</string>
     <string name="title_latest">Recently Added</string>
+    
     <string name="refresh">Refresh</string>
     
     <string name="empty">Empty.</string>

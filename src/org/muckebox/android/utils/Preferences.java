@@ -35,12 +35,24 @@ public class Preferences {
 	    return getPreferences().getString("server_address", "");
 	}
 	
+	public static void setServerAddress(String newAddress) {
+	    getPreferences().edit().putString("server_address", newAddress).commit();
+	}
+	
 	public static int getServerPort() {
-	    return Integer.parseInt(getPreferences().getString("server_port", "2342"));
+	    return getPreferences().getInt("server_port", 2342);
+	}
+	
+	public static void setServerPort(int newPort) {
+	    getPreferences().edit().putInt("server_port", newPort).commit();
 	}
 	
 	public static String getServerPassword() {
 	    return getPreferences().getString("server_password", "");
+	}
+	
+	public static void setServerPassword(String newPassword) {
+	    getPreferences().edit().putString("server_password", newPassword).commit();
 	}
 	
 	public static boolean getTranscodingEnabled() {
@@ -76,5 +88,17 @@ public class Preferences {
 	
 	public static boolean getSSLEnabled() {
 	    return getPreferences().getBoolean("ssl_enabled", true);
+	}
+	
+	public static void setSSLEnabled(boolean enabled) {
+	    getPreferences().edit().putBoolean("ssl_enabled", enabled).commit();
+	}
+	
+	public static boolean getWizardCompleted() {
+	    return getPreferences().getBoolean("wizard_completed", false);
+	}
+	
+	public static void setWizardCompleted() {
+	    getPreferences().edit().putBoolean("wizard_completed", true).commit();
 	}
 }

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp" >
+    
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/welcome"
+        android:textSize="24sp"
+        android:gravity="center_horizontal"
+        android:padding="24dp" />
+    
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wizard_text"
+        android:paddingBottom="24dp" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/wizard_server_text"
+        android:hint="@string/server_address_setting_title"/>
+    
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textPassword"
+        android:id="@+id/wizard_server_password"
+        android:hint="@string/server_password_setting_title"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        
+        <View
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="1dp" />
+        
+	    <ImageButton
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:paddingTop="16dp"
+	        android:id="@+id/wizard_expand_button"
+	        android:src="@drawable/navigation_collapse"
+	        android:contentDescription="@string/expand" 
+	        android:layout_gravity="right"
+	        android:background="@color/blue_transparent" />
+	    
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/wizard_extra_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+	    
+        <EditText
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:id="@+id/wizard_port_text"
+	        android:inputType="number"
+	        android:hint="@string/server_port_setting_title" />
+    
+	    <LinearLayout
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal"
+	        android:paddingTop="8dp"
+	        android:paddingLeft="4dp">
+	        
+	
+	        <TextView
+	            android:layout_width="0dp"
+	            android:layout_height="wrap_content"
+	            android:layout_weight="5"
+	            android:gravity="center_vertical"
+	            android:text="@string/server_ssl_enable_setting_title"/>
+	        
+		    <CheckBox
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:gravity="right"
+		        android:id="@+id/wizard_ssl_enabled"
+		        android:text=""/>
+		    
+	    </LinearLayout>
+	    
+	</LinearLayout>
+	
+    <TextView
+        android:paddingTop="16dp"
+        android:id="@+id/wizard_result_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:autoLink="web" />
+
+</LinearLayout>

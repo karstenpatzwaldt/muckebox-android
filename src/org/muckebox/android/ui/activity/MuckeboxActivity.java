@@ -44,28 +44,32 @@ public class MuckeboxActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        setContentView(R.layout.activity_browse);
-        
-        Intent intent = getIntent();
-        
-        if (ACTION_DOWNLOADS.equals(intent.getAction()))
-        {
-            FragmentTransaction tf = getFragmentManager().beginTransaction();
-            tf.replace(R.id.fragment_container, new DownloadListFragment());
-            tf.commit();
-        } else if (ACTION_PLAYLIST.equals(intent.getAction())) {
-            Fragment fragment = TrackListFragment.newInstanceFromPlaylist(
-                Preferences.getCurrentPlaylistId());
-            
-            FragmentTransaction tf = getFragmentManager().beginTransaction();
-            tf.replace(R.id.fragment_container, fragment);
-            tf.commit();
+        if (! Preferences.getWizardCompleted()) {
+            Intent intent = new Intent(this, WizardActivity.class);
+            startActivity(intent);
         } else {
-            if (savedInstanceState == null)
-            {
+            setContentView(R.layout.activity_browse);
+            
+            Intent intent = getIntent();
+            
+            if (ACTION_DOWNLOADS.equals(intent.getAction())) {
                 FragmentTransaction tf = getFragmentManager().beginTransaction();
-                tf.add(R.id.fragment_container, new ArtistListFragment());
+                tf.replace(R.id.fragment_container, new DownloadListFragment());
                 tf.commit();
+            } else if (ACTION_PLAYLIST.equals(intent.getAction())) {
+                Fragment fragment = TrackListFragment.newInstanceFromPlaylist(
+                    Preferences.getCurrentPlaylistId());
+                
+                FragmentTransaction tf = getFragmentManager().beginTransaction();
+                tf.replace(R.id.fragment_container, fragment);
+                tf.commit();
+            } else {
+                if (savedInstanceState == null)
+                {
+                    FragmentTransaction tf = getFragmentManager().beginTransaction();
+                    tf.add(R.id.fragment_container, new ArtistListFragment());
+                    tf.commit();
+                }
             }
         }
     }

@@ -32,6 +32,10 @@
                 <action android:name="org.muckebox.android.ui.activity.MuckeboxActivity.ACTION_DOWNLOADS" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name="org.muckebox.android.ui.activity.WizardActivity"
+            android:label="@string/app_name" />
 		           
         <provider
             android:name="org.muckebox.android.db.MuckeboxProvider"

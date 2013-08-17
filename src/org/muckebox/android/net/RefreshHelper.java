@@ -47,7 +47,7 @@ public class RefreshHelper {
             ArrayList<ContentProviderOperation> operations =
                     new ArrayList<ContentProviderOperation>(1);
 
-            JSONArray json = ApiHelper.callApi("tracks", null,
+            JSONArray json = ApiHelper.callApiForArray("tracks", null,
                     new String[] { "album" },
                     new String[] { Long.toString(albumId) });
             operations.ensureCapacity(operations.size() + json.length() + 1);
@@ -111,7 +111,7 @@ public class RefreshHelper {
     
     public static Integer refreshAlbums() {
         try {
-            JSONArray json = ApiHelper.callApi("albums");
+            JSONArray json = ApiHelper.callApiForArray("albums");
             ArrayList<ContentProviderOperation> operations = 
                     new ArrayList<ContentProviderOperation>(json.length() + 1);
             
@@ -155,7 +155,7 @@ public class RefreshHelper {
     
     public static Integer refreshArtists() {
         try {
-            JSONArray json = ApiHelper.callApi("artists");
+            JSONArray json = ApiHelper.callApiForArray("artists");
             ArrayList<ContentProviderOperation> operations =
                     new ArrayList<ContentProviderOperation>(json.length() + 1);
             

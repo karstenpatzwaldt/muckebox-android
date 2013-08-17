@@ -26,6 +26,7 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.muckebox.android.utils.Preferences;
 
 import android.annotation.SuppressLint;
@@ -35,7 +36,7 @@ import android.util.Log;
 public class ApiHelper {
 	private static final String LOG_TAG = "ApiHelper";
 	
-	public static JSONArray callApi(String query, String id, String[] keys, String[] values)
+	public static String callApi(String query, String id, String[] keys, String[] values)
 	    throws IOException, JSONException, AuthenticationException {
 		String str_url = getApiUrl(query, id, keys, values);
 		
@@ -49,9 +50,7 @@ public class ApiHelper {
             
             HttpResponse httpResponse = httpClient.execute(httpGet);
             
-            String response = getResponseAsString(httpResponse);
-            
-            return new JSONArray(response);
+            return getResponseAsString(httpResponse);
 		} finally {
 		    if (httpGet != null)
 		        httpGet.abort();
@@ -61,16 +60,26 @@ public class ApiHelper {
 		}
 	}
 	
-	public static JSONArray callApi(String query, String id)
+    public static JSONArray callApiForArray(String query, String id, String[] keys, String[] values)
+        throws AuthenticationException, JSONException, IOException {
+        return new JSONArray(callApi(query, id, keys, values));
+    }
+	
+	public static JSONArray callApiForArray(String query, String id)
 	    throws IOException, JSONException, AuthenticationException
 	{
-		return callApi(query, id, null, null);
+		return callApiForArray(query, id, null, null);
 	}
 	
-	public static JSONArray callApi(String query)
+	public static JSONArray callApiForArray(String query)
 	    throws IOException, JSONException, AuthenticationException
 	{
-		return callApi(query, null, null, null);
+		return callApiForArray(query, null, null, null);
+	}
+	
+	public static JSONObject callApiForObject(String query)
+	    throws AuthenticationException, JSONException, IOException {
+	    return new JSONObject(callApi(query, null, null, null));
 	}
 	
 	@SuppressLint("DefaultLocale")
