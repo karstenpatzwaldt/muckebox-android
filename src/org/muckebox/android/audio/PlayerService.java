@@ -26,7 +26,6 @@ import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
 import org.muckebox.android.net.DownloadService;
-import org.muckebox.android.net.DownloadService.DownloadBinder;
 import org.muckebox.android.ui.activity.MuckeboxActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;
@@ -98,7 +97,7 @@ public class PlayerService extends Service
     
     private boolean mReceiverRegistered = false;
     private boolean mHasAudioFocus = false;
-    private boolean mTransientFocusLoss = false;
+    private boolean mResumeAfterFocusGain = false;
     
     private DownloadService mDownloadService;
     
@@ -113,14 +112,17 @@ public class PlayerService extends Service
             Log.d(LOG_TAG, "onAudioFocusChange");
             
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                mTransientFocusLoss = true;
                 onFocusLoss();
-                pause();
+                
+                if (mState == State.PLAYING || mState == State.BUFFERING) {
+                    mResumeAfterFocusGain = true;
+                    pause();
+                }
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
                 onFocusGained();
                 
-                if (mTransientFocusLoss) {
-                    mTransientFocusLoss = false;
+                if (mResumeAfterFocusGain) {
+                    mResumeAfterFocusGain = false;
                     resume();
                 }
             } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
