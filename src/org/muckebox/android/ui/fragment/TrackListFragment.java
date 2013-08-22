@@ -17,6 +17,7 @@
 package org.muckebox.android.ui.fragment;
 
 import org.muckebox.android.R;
+import org.muckebox.android.audio.PlayerService;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
@@ -24,9 +25,8 @@ import org.muckebox.android.db.MuckeboxContract.TrackArtistDownloadCacheAlbumPla
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
+import org.muckebox.android.net.DownloadService;
 import org.muckebox.android.net.RefreshTracksTask;
-import org.muckebox.android.services.DownloadService;
-import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
 import org.muckebox.android.ui.utils.ImageButtonHelper;
 import org.muckebox.android.ui.utils.TimeFormatter;

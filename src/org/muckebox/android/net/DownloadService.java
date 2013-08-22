@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.muckebox.android.services;
+package org.muckebox.android.net;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -32,8 +32,6 @@ import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.ui.activity.MuckeboxActivity;
 import org.muckebox.android.utils.CacheCleaner;
 import org.muckebox.android.utils.Preferences;
-import org.muckebox.android.net.DownloadCatchupRunnable;
-import org.muckebox.android.net.DownloadRunnable;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;

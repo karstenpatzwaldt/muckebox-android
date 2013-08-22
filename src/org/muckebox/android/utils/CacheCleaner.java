@@ -23,7 +23,7 @@ import org.muckebox.android.Muckebox;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.CachePlaylistEntry;
-import org.muckebox.android.services.DownloadService;
+import org.muckebox.android.net.DownloadService;
 
 import android.database.ContentObserver;
 import android.database.Cursor;

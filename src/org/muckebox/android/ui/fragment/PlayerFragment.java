@@ -20,9 +20,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.muckebox.android.R;
+import org.muckebox.android.audio.PlayerListener;
+import org.muckebox.android.audio.PlayerService;
 import org.muckebox.android.audio.PlayerWrapper;
-import org.muckebox.android.services.PlayerListener;
-import org.muckebox.android.services.PlayerService;
 import org.muckebox.android.ui.utils.HeightEvaluator;
 import org.muckebox.android.ui.utils.ImageButtonHelper;
 import org.muckebox.android.ui.utils.TimeFormatter;

@@ -45,12 +45,12 @@
         </provider>
         
         <service
-            android:name="org.muckebox.android.services.PlayerService"
+            android:name="org.muckebox.android.audio.PlayerService"
             android:icon="@drawable/av_play">
         </service>
         
         <service
-            android:name="org.muckebox.android.services.DownloadService"
+            android:name="org.muckebox.android.net.DownloadService"
             android:icon="@drawable/av_download">
         </service>
         

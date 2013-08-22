@@ -16,7 +16,7 @@
 
 package org.muckebox.android.utils;
 
-import org.muckebox.android.services.PlayerService;
+import org.muckebox.android.audio.PlayerService;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

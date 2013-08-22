@@ -21,7 +21,7 @@ import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.DownloadEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
-import org.muckebox.android.services.DownloadService;
+import org.muckebox.android.net.DownloadService;
 import org.muckebox.android.ui.utils.ExpandableCursorAdapter;
 
 import android.app.ListFragment;

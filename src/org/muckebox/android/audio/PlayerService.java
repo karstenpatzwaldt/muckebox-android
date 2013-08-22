@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.muckebox.android.services;
+package org.muckebox.android.audio;
 
 import java.util.Set;
 import java.util.Timer;
@@ -22,10 +22,11 @@ import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.muckebox.android.R;
-import org.muckebox.android.audio.PlayerWrapper;
 import org.muckebox.android.db.MuckeboxContract.PlaylistEntry;
 import org.muckebox.android.db.MuckeboxProvider;
 import org.muckebox.android.db.PlaylistHelper;
+import org.muckebox.android.net.DownloadService;
+import org.muckebox.android.net.DownloadService.DownloadBinder;
 import org.muckebox.android.ui.activity.MuckeboxActivity;
 import org.muckebox.android.utils.Preferences;
 import org.muckebox.android.utils.RemoteControlReceiver;

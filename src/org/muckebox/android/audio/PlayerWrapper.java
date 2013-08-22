@@ -27,10 +27,10 @@ import org.muckebox.android.db.MuckeboxContract.AlbumEntry;
 import org.muckebox.android.db.MuckeboxContract.ArtistEntry;
 import org.muckebox.android.db.MuckeboxContract.CacheEntry;
 import org.muckebox.android.db.MuckeboxContract.TrackEntry;
+import org.muckebox.android.net.DownloadListener;
 import org.muckebox.android.net.DownloadServer;
+import org.muckebox.android.net.DownloadService;
 import org.muckebox.android.net.PreannounceTask;
-import org.muckebox.android.services.DownloadListener;
-import org.muckebox.android.services.DownloadService;
 import org.muckebox.android.utils.Preferences;
 
 import android.content.Context;

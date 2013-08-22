@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.muckebox.android.services;
+package org.muckebox.android.net;
 
-import org.muckebox.android.audio.PlayerWrapper;
+import java.nio.ByteBuffer;
 
-public interface PlayerListener {
-	void onConnected();
+public interface DownloadListener {
+	void onDownloadStarted(long trackId, String mimeType);
 	
-	void onNewTrack(PlayerWrapper.TrackInfo trackInfo);
+	void onDataReceived(long trackId, ByteBuffer buffer);
 	
-	void onStartBuffering();
+	void onDownloadCanceled(long trackId);
 	
-	void onStartPlaying();
+	void onDownloadFinished(long trackId);
 	
-	void onPlayPaused();
-	void onPlayResumed();
-
-	void onStopPlaying();
+	void onDownloadFailed(long trackId);
 }

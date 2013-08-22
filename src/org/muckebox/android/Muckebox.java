@@ -16,7 +16,7 @@
 
 package org.muckebox.android;
 
-import org.muckebox.android.services.DownloadService;
+import org.muckebox.android.net.DownloadService;
 
 import android.app.Application;
 import android.content.Context;
