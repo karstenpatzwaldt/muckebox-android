@@ -40,11 +40,11 @@ public class Preferences {
 	}
 	
 	public static int getServerPort() {
-	    return getPreferences().getInt("server_port", 2342);
+	    return Integer.parseInt(getPreferences().getString("server_port", "2342"));
 	}
 	
 	public static void setServerPort(int newPort) {
-	    getPreferences().edit().putInt("server_port", newPort).commit();
+	    getPreferences().edit().putString("server_port", Integer.toString(newPort)).commit();
 	}
 	
 	public static String getServerPassword() {
